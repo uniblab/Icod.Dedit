@@ -24,8 +24,8 @@ Icod.Terminal integration; xUnit tests.
 
 **Current progress:** The owner accepted the [D1001 behavior matrix](../../Behavior-Matrix.md),
 [decision records](../../decisions/) and [released library contracts](../../Library-Contracts.md).
-D1002 supplies an executable shell and lifecycle foundation. Later milestones
-have not begun; this shell does not load or edit files.
+D1002 supplies an executable shell and lifecycle foundation. D1003 has begun
+with an in-memory Untitled editor. File loading and later milestones remain.
 
 ## Global constraints
 
@@ -198,6 +198,11 @@ then Ctrl+Q exited with code 0 and restored the alternate screen/input modes.
 `build.cmd` is written for Windows but has not been exercised here.
 
 ## D1003 — One-document editing foundation
+
+**Current slice:** The no-path Untitled shell binds one Widgets document/view,
+supports typed Unicode and paste input with undo/redo, and renders in a bounded
+viewport. Integration tests exercise checkpoint identity and a tiny viewport.
+The remaining checklist below still gates the full D1003 milestone.
 
 **Files:** document/view-state types, `EditorShell.cs`, document/interaction tests;
 reusable editor implementation remains in Widgets.

@@ -22,28 +22,31 @@
 namespace Icod.Dedit.Application;
 
 using Icod.DCurses;
+using Icod.Dedit.Presentation;
 using Icod.Widgets;
 
 internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly CursesSession session;
 	private readonly WidgetHost host;
 	private readonly WidgetTabStrip tabs = new( "workspace-tabs" );
+	private readonly EditorShell? editor;
 	private readonly List<CursesInputProtocolLease> leases = [];
 	private string? activeKey;
 
-	private DeditTerminal( CursesSession session ) {
+	private DeditTerminal( CursesSession session, bool newDocument ) {
 		this.session = session;
 		this.host = new WidgetHost( session, WidgetTheme.Default );
 		this.host.Attach( this.tabs );
-		this.host.Focus( this.tabs );
+		if ( newDocument ) this.editor = new EditorShell( this.host );
+		else this.host.Focus( this.tabs );
 		session.StandardScreen.WrapMode = CursesWrapMode.Clip;
 	}
 
-	internal static async ValueTask<IDeditTerminal> OpenAsync() {
+	internal static async ValueTask<IDeditTerminal> OpenAsync( bool newDocument ) {
 		CursesSession session = await CursesSession.OpenAsync( new CursesSessionOptions { InputMode = CursesInputMode.Raw } );
 		DeditTerminal? terminal = null;
 		try {
-			terminal = new DeditTerminal( session );
+			terminal = new DeditTerminal( session, newDocument );
 			foreach ( CursesInputProtocolOptions options in new[] {
 				new CursesInputProtocolOptions { MouseTrackingMode = CursesMouseTrackingMode.ButtonEvents },
 				new CursesInputProtocolOptions { BracketedPaste = true },
@@ -73,25 +76,29 @@ internal sealed class DeditTerminal : IDeditTerminal {
 
 	public async ValueTask DrawAsync( IReadOnlyList<string> captions, TimeSpan elapsed, CancellationToken cancellationToken ) {
 		CursesScreen screen = this.session.Screen;
-		WidgetTab[] items = captions.Select( ( name, index ) => new WidgetTab( index.ToString( System.Globalization.CultureInfo.InvariantCulture ), name, IsClosable: false ) ).ToArray();
+		WidgetTab[] items = captions.Select( ( name, index ) => new WidgetTab( index.ToString( System.Globalization.CultureInfo.InvariantCulture ), name,
+			IsModified: index == 0 && this.editor?.Document.IsModified == true, IsClosable: false ) ).ToArray();
 		this.tabs.SetTabs( items, this.activeKey );
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
+		this.editor?.Arrange();
 		this.session.StandardScreen.Clear();
 		this.Write( 0, "dedit  |  Ctrl+Q Exit" );
-		this.Write( 2, "Editor foundation in progress. Files are not loaded in this shell yet." );
-		this.Write( screen.Rows - 1, "Use arrows on tabs to preview paths. Ctrl+Q exits." );
+		if ( this.editor is null ) this.Write( 2, "Files are not loaded in this shell yet." );
+		this.Write( screen.Rows - 1, this.editor is null ? "Use arrows on tabs to preview paths. Ctrl+Q exits." :
+			"Untitled in memory; changes are lost on exit. Ctrl+Z/Y undo/redo. Ctrl+Q exits." );
 		this.host.Render();
 		await this.session.RefreshAsync( cancellationToken );
 	}
 
 	public void Process( WidgetInput input, TimeSpan elapsed ) {
-		foreach ( WidgetAction action in this.host.Process( input, elapsed ).Actions ) {
+		IReadOnlyList<WidgetAction> actions = this.editor is null ? this.host.Process( input, elapsed ).Actions : this.editor.Process( input, elapsed );
+		foreach ( WidgetAction action in actions ) {
 			if ( action is WidgetTabActivationRequestedAction selection ) this.activeKey = selection.TabKey;
 		}
 	}
 
 	public void Resize() {
-		this.session.SynchronizeDimensions(); this.session.Invalidate();
+		this.session.SynchronizeDimensions(); this.editor?.Arrange(); this.session.Invalidate();
 	}
 
 	private void Write( int row, string text ) {
@@ -108,7 +115,8 @@ internal sealed class DeditTerminal : IDeditTerminal {
 				for ( int index = this.leases.Count - 1; index >= 0; index-- ) await this.leases[ index ].DisposeAsync();
 			}
 		} finally {
-			await DisposeOwnedResourcesAsync( this.host, this.session );
+			try { this.editor?.Dispose(); }
+			finally { await DisposeOwnedResourcesAsync( this.host, this.session ); }
 		}
 	}
 

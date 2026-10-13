@@ -18,10 +18,12 @@ editor policy belong here.
 
 ## STATUS
 
-The D1001 behavior decisions are accepted. D1002 provides a runnable
-terminal shell and CLI with placeholder tabs. It does not load or edit files
-yet. Document editing, file operations and the full tab behavior are later
-milestones; do not rely on this build to modify a document.
+The D1001 behavior decisions are accepted. D1002 provides a runnable terminal
+shell and CLI. D1003 has begun: with no file arguments, the Untitled tab is an
+editable in-memory document with undo/redo. Changes are lost on exit. Supplying
+file paths shows placeholder tabs; those files are not loaded or editable yet.
+File operations and full multi-document behavior remain later milestones. Do
+not rely on this build to modify a file.
 
 Build with a .NET 10 SDK (which targets .NET 8, 9, and 10) and run in an
 interactive terminal with the selected runtime installed:
@@ -33,9 +35,9 @@ dotnet run --project Icod.Dedit.csproj -f net10.0 -- "first file.txt" "second.tx
 ```
 
 On Windows, use `build.cmd` and the same `dotnet run` commands. The shell
-shows one Untitled tab without paths and path captions in argument order when
-paths are supplied. Use `--` before a path beginning with `-`. Ctrl+Q exits.
-The shell does not read the supplied paths in D1002.
+shows one editable Untitled tab without paths and path captions in argument
+order when paths are supplied. Use `--` before a path beginning with `-`.
+Ctrl+Z/Ctrl+Y undo and redo in Untitled; Ctrl+Q exits. No document is saved.
 
 - [Product and architecture design](docs/DESIGN.md)
 - [Master implementation plan](docs/superpowers/plans/2026-10-11-dedit-master-plan.md)
@@ -53,7 +55,7 @@ Icod.DCurses 2.5.0 dependency.
 - Baseline: C# 13, .NET 8/9/10, managed cross-platform code.
 - Planned: multiple independently editable documents, visible tabs, familiar menus and shortcuts.
 - No printing, print preview, or printer dependencies.
-- The current shell is not a working text editor or a qualified release.
+- The in-memory editor is a development slice, not a qualified file editor release.
 
 ## LICENSE
 
