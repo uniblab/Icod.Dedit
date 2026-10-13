@@ -60,3 +60,15 @@ text, accepted Ctrl+Z/Ctrl+Y, and exited with Ctrl+Q (exit 0); both alternate
 screen enter and exit sequences were observed. An initial unsized pseudo-terminal
 attempt exited 1, so it is not counted as a successful smoke check. Hardware
 terminal, Windows, and macOS observations remain outstanding.
+
+## D1004 first menu route
+
+The View menu now routes its Go to File mnemonic (`Alt+V`, then plain `F`)
+and `Ctrl+P` through one command identity. The terminal action focuses the
+tab strip. Unit interaction tests cover the distinct paths, Escape backing
+out of nested menus, and an OK modal blocking that shortcut with Escape
+reporting Cancel. A sized xterm pseudo-terminal with two path captions showed
+the focused tab after `Ctrl+P` and restored the terminal after Ctrl+Q.
+The local xterm's raw Escape+V byte sequence did not report an Alt modifier and
+was interpreted as ordinary text; it is not live evidence for Alt+V support.
+The remaining menu, commands, forms, and file loading milestones remain open.

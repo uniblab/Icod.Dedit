@@ -230,6 +230,11 @@ full-file pad allocation, or unmeasured performance claims.
 
 ## D1004 — Commands, focus and forms
 
+**Current slice:** View → Go to File routes both a menu mnemonic and a direct
+Ctrl+P shortcut through one Widgets action. The live command focuses the tab
+strip. Nested Escape and modal shortcut isolation have integration coverage;
+the rest of this milestone's menus and forms are still open.
+
 **Files:** `CommandRouter.cs`, `EditorShell.cs`, interaction tests.
 
 - [ ] Add failing tests for Alt+V then plain F versus Ctrl+P, menu Escape, disabled

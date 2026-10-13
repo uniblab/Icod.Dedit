@@ -28,6 +28,7 @@ using Icod.Widgets;
 internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly CursesSession session;
 	private readonly WidgetHost host;
+	private readonly WidgetMenuBar menu = DeditMenu.Create();
 	private readonly WidgetTabStrip tabs = new( "workspace-tabs" );
 	private readonly EditorShell? editor;
 	private readonly List<CursesInputProtocolLease> leases = [];
@@ -36,6 +37,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private DeditTerminal( CursesSession session, bool newDocument ) {
 		this.session = session;
 		this.host = new WidgetHost( session, WidgetTheme.Default );
+		this.host.Attach( this.menu );
 		this.host.Attach( this.tabs );
 		if ( newDocument ) this.editor = new EditorShell( this.host );
 		else this.host.Focus( this.tabs );
@@ -79,10 +81,10 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		WidgetTab[] items = captions.Select( ( name, index ) => new WidgetTab( index.ToString( System.Globalization.CultureInfo.InvariantCulture ), name,
 			IsModified: index == 0 && this.editor?.Document.IsModified == true, IsClosable: false ) ).ToArray();
 		this.tabs.SetTabs( items, this.activeKey );
+		this.menu.Arrange( screen.Bounds );
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.editor?.Arrange();
 		this.session.StandardScreen.Clear();
-		this.Write( 0, "dedit  |  Ctrl+Q Exit" );
 		if ( this.editor is null ) this.Write( 2, "Files are not loaded in this shell yet." );
 		this.Write( screen.Rows - 1, this.editor is null ? "Use arrows on tabs to preview paths. Ctrl+Q exits." :
 			"Untitled in memory; changes are lost on exit. Ctrl+Z/Y undo/redo. Ctrl+Q exits." );
@@ -94,6 +96,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		IReadOnlyList<WidgetAction> actions = this.editor is null ? this.host.Process( input, elapsed ).Actions : this.editor.Process( input, elapsed );
 		foreach ( WidgetAction action in actions ) {
 			if ( action is WidgetTabActivationRequestedAction selection ) this.activeKey = selection.TabKey;
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToFile } ) this.host.Focus( this.tabs );
 		}
 	}
 
