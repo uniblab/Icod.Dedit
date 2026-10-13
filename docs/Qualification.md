@@ -76,3 +76,6 @@ Edit → Undo/Redo now dispatches through the focused Widgets edit target.
 Menu availability follows actual undo/redo history, while Ctrl+Z/Ctrl+Y
 remain direct editor routes. A test exercises menu Undo followed by direct
 Redo and the disabled state of an empty history.
+View → Word Wrap and Alt+Z share one checked action. An integration test toggles
+the editor between word wrap and no wrap, confirms the menu's checked state,
+and verifies the stored document text is unchanged.

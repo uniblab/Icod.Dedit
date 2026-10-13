@@ -234,6 +234,8 @@ full-file pad allocation, or unmeasured performance claims.
 Ctrl+P shortcut through one Widgets action. The live command focuses the tab
 strip. Nested Escape and modal shortcut isolation have integration coverage;
 Edit → Undo/Redo now use the focused edit target and dynamic history state.
+View → Word Wrap and Alt+Z change only the active view and reflect its checked
+state without editing stored text.
 The rest of this milestone's menus and forms are still open.
 
 **Files:** `CommandRouter.cs`, `EditorShell.cs`, interaction tests.

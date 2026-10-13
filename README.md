@@ -21,7 +21,8 @@ editor policy belong here.
 The D1001 behavior decisions are accepted. D1002 provides a runnable terminal
 shell and CLI. D1003 has begun: with no file arguments, the Untitled tab is an
 editable in-memory document with undo/redo. The current D1004 menu slice exposes
-View → Go to File and Edit → Undo/Redo; `Ctrl+P` focuses the tab strip. Where the terminal reports
+View → Go to File, View → Word Wrap, and Edit → Undo/Redo. `Ctrl+P` focuses the tab strip;
+`Alt+Z` toggles wrap for the active editor. Where the terminal reports
 Alt+V distinctly, open View and press plain F for that same action. Changes
 are lost on exit. Supplying
 file paths shows placeholder tabs; those files are not loaded or editable yet.

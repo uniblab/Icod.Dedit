@@ -81,7 +81,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		WidgetTab[] items = captions.Select( ( name, index ) => new WidgetTab( index.ToString( System.Globalization.CultureInfo.InvariantCulture ), name,
 			IsModified: index == 0 && this.editor?.Document.IsModified == true, IsClosable: false ) ).ToArray();
 		this.tabs.SetTabs( items, this.activeKey );
-		DeditMenu.UpdateEditState( this.menu, this.editor?.Editor );
+		DeditMenu.UpdateState( this.menu, this.editor?.Editor );
 		this.menu.Arrange( screen.Bounds );
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.editor?.Arrange();
@@ -98,6 +98,8 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		foreach ( WidgetAction action in actions ) {
 			if ( action is WidgetTabActivationRequestedAction selection ) this.activeKey = selection.TabKey;
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToFile } ) this.host.Focus( this.tabs );
+			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.Wrap } wrap && this.editor is not null )
+				DeditMenu.ApplyWrap( this.editor.Editor, wrap.IsChecked );
 		}
 	}
 

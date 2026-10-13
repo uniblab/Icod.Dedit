@@ -21,10 +21,12 @@
 
 namespace Icod.Dedit.Presentation;
 
+using Icod.DCurses;
 using Icod.Widgets;
 
 internal static class DeditMenu {
 	internal const string GoToFile = "view.go-file";
+	internal const string Wrap = "view.wrap";
 
 	internal static WidgetMenuBar Create() => new( "dedit-menu", [
 		WidgetMenuItem.Submenu( "edit", "Edit", [
@@ -35,18 +37,27 @@ internal static class DeditMenu {
 		], 'e' ),
 		WidgetMenuItem.Submenu( "view", "View", [
 			WidgetMenuItem.Command( "view.go-file", "Go to File...", GoToFile, 'f',
-				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'p' ) )
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'p' ) ),
+			WidgetMenuItem.Checkable( "view.wrap", "Word Wrap", Wrap, 'w',
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Alt, 'z' ) )
 		], 'v' )
 	] );
 
-	internal static void UpdateEditState( WidgetMenuBar menu, WidgetTextEditor? editor ) {
+	internal static void UpdateState( WidgetMenuBar menu, WidgetTextEditor? editor ) {
 		ArgumentNullException.ThrowIfNull( menu );
 		bool undo = editor?.CanExecuteEditCommand( WidgetEditCommand.Undo ) == true;
 		bool redo = editor?.CanExecuteEditCommand( WidgetEditCommand.Redo ) == true;
 		menu.SetPresentation( [
 			new WidgetMenuItemPresentation( "edit", "Edit", undo || redo ),
 			new WidgetMenuItemPresentation( "edit.undo", "Undo", undo ),
-			new WidgetMenuItemPresentation( "edit.redo", "Redo", redo )
+			new WidgetMenuItemPresentation( "edit.redo", "Redo", redo ),
+			new WidgetMenuItemPresentation( "view.wrap", "Word Wrap", editor is not null,
+				editor is not null && editor.View.WrapMode != CursesTextWrapMode.NoWrap )
 		] );
+	}
+
+	internal static void ApplyWrap( WidgetTextEditor editor, bool enabled ) {
+		ArgumentNullException.ThrowIfNull( editor );
+		editor.View.WrapMode = enabled ? CursesTextWrapMode.Word : CursesTextWrapMode.NoWrap;
 	}
 }

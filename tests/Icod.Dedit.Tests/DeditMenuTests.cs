@@ -73,7 +73,7 @@ public sealed class DeditMenuTests {
 		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
 		using EditorShell shell = new( host );
 		shell.Process( WidgetInput.Paste( "draft" ), TimeSpan.FromMilliseconds( 1 ) );
-		DeditMenu.UpdateEditState( menu, shell.Editor );
+		DeditMenu.UpdateState( menu, shell.Editor );
 		shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'e' ) ), TimeSpan.FromMilliseconds( 2 ) );
 		Assert.True( menu.IsOpen );
 		Assert.Contains( shell.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'u' ) ), TimeSpan.FromMilliseconds( 3 ) ),
@@ -87,12 +87,34 @@ public sealed class DeditMenuTests {
 	public void EditMenuIsDisabledUntilThereIsHistory() {
 		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
 		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
-		using EditorShell shell = new( host ); DeditMenu.UpdateEditState( menu, shell.Editor );
+		using EditorShell shell = new( host ); DeditMenu.UpdateState( menu, shell.Editor );
 		Assert.Empty( shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'e' ) ), TimeSpan.FromMilliseconds( 1 ) ) );
 		Assert.False( menu.IsOpen );
 		shell.Process( WidgetInput.TextInput( new Rune( 'x' ) ), TimeSpan.FromMilliseconds( 2 ) );
-		DeditMenu.UpdateEditState( menu, shell.Editor );
+		DeditMenu.UpdateState( menu, shell.Editor );
 		shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'e' ) ), TimeSpan.FromMilliseconds( 3 ) );
 		Assert.True( menu.IsOpen );
+	}
+
+	[Fact]
+	public void WrapCommandChangesViewWithoutChangingDocumentText() {
+		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		using EditorShell shell = new( host ); shell.Process( WidgetInput.Paste( "first line\nsecond line" ), TimeSpan.FromMilliseconds( 1 ) );
+		DeditMenu.UpdateState( menu, shell.Editor );
+		Assert.Equal( CursesTextWrapMode.NoWrap, shell.Editor.View.WrapMode );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'v' ) ), TimeSpan.FromMilliseconds( 2 ) );
+		WidgetCheckedInvokedAction enabled = Assert.IsType<WidgetCheckedInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'w' ) ), TimeSpan.FromMilliseconds( 3 ) ).Actions ) );
+		Assert.Equal( DeditMenu.Wrap, enabled.CommandId ); Assert.True( enabled.IsChecked );
+		DeditMenu.ApplyWrap( shell.Editor, enabled.IsChecked );
+		Assert.Equal( CursesTextWrapMode.Word, shell.Editor.View.WrapMode );
+		DeditMenu.UpdateState( menu, shell.Editor );
+		WidgetCheckedInvokedAction disabled = Assert.IsType<WidgetCheckedInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'z' ) ), TimeSpan.FromMilliseconds( 4 ) ).Actions ) );
+		DeditMenu.ApplyWrap( shell.Editor, disabled.IsChecked );
+		Assert.False( disabled.IsChecked ); Assert.Equal( CursesTextWrapMode.NoWrap, shell.Editor.View.WrapMode );
+		Assert.Equal( "first line\nsecond line", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+		Assert.True( shell.Document.IsModified );
 	}
 }
