@@ -96,6 +96,11 @@ internal sealed class DocumentManager : IDisposable {
 		entry.Shell.Document.MarkSaved( snapshot );
 	}
 
+	internal DocumentEntry? Find( string key ) {
+		this.ThrowIfDisposed();
+		return this.documents.FirstOrDefault( document => document.Key == key );
+	}
+
 	internal bool Close( string key, bool discardModified = false ) {
 		this.ThrowIfDisposed();
 		int index = this.documents.FindIndex( document => document.Key == key );

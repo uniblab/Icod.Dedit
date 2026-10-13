@@ -25,8 +25,46 @@ using Icod.Widgets;
 
 internal enum CloseResolution { Unrelated, Kept, Closed, SaveAsRequired }
 
-internal sealed class CloseCoordinator( WidgetHost host, DocumentManager documents, DocumentFileService files ) {
-	internal bool Request( string key ) => throw new NotImplementedException();
-	internal Task<CloseResolution> CompleteAsync( WidgetDialogCompletedAction action, CancellationToken token ) =>
-		throw new NotImplementedException();
+internal sealed class CloseCoordinator {
+	private const string DialogId = "dedit-close-document";
+	private readonly WidgetHost host;
+	private readonly DocumentManager documents;
+	private readonly DocumentFileService files;
+	private string? pendingKey;
+
+	internal CloseCoordinator( WidgetHost host, DocumentManager documents, DocumentFileService files ) {
+		this.host = host ?? throw new ArgumentNullException( nameof( host ) );
+		this.documents = documents ?? throw new ArgumentNullException( nameof( documents ) );
+		this.files = files ?? throw new ArgumentNullException( nameof( files ) );
+	}
+
+	internal bool Request( string key ) {
+		if ( this.pendingKey is not null ) return false;
+		DocumentEntry? entry = this.documents.Find( key );
+		if ( entry is null ) return false;
+		if ( !entry.Shell.Document.IsModified ) return this.documents.Close( key );
+		this.pendingKey = key;
+		this.host.ShowModal( WidgetFormDialog.SaveDontSaveCancel( DialogId, "Unsaved changes",
+			$"Save changes in {DocumentManager.SanitizeDisplay( entry.Caption )} before closing?" ) );
+		return false;
+	}
+
+	internal async Task<CloseResolution> CompleteAsync( WidgetDialogCompletedAction action, CancellationToken token ) {
+		ArgumentNullException.ThrowIfNull( action );
+		if ( action.WidgetId != DialogId || this.pendingKey is null ) return CloseResolution.Unrelated;
+		string key = this.pendingKey;
+		this.pendingKey = null;
+		DocumentEntry? entry = this.documents.Find( key );
+		if ( entry is null ) return CloseResolution.Kept;
+		switch ( action.Result.Outcome ) {
+			case WidgetDialogOutcome.DontSave:
+				return this.documents.Close( key, discardModified: true ) ? CloseResolution.Closed : CloseResolution.Kept;
+			case WidgetDialogOutcome.Save:
+				if ( entry.FullPath is null ) return CloseResolution.SaveAsRequired;
+				await this.documents.SaveAsync( entry, this.files, token );
+				return !entry.Shell.Document.IsModified && this.documents.Close( key )
+					? CloseResolution.Closed : CloseResolution.Kept;
+			default: return CloseResolution.Kept;
+		}
+	}
 }
