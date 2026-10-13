@@ -341,4 +341,18 @@ public sealed class DeditMenuTests {
 		Assert.Equal( command, toggled.CommandId );
 		Assert.True( toggled.IsChecked );
 	}
+	[Fact]
+	public void GoToLineMenuAndControlGInvokeSameCommand() {
+		using WidgetHost host = new( new CursesScreen( 50, 14 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		using EditorShell shell = new( host, "text" ); DeditMenu.UpdateState( menu, shell.Editor );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'v' ) ), TimeSpan.Zero );
+		WidgetInvokedAction mnemonic = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'l' ) ), TimeSpan.Zero ).Actions ) );
+		WidgetInvokedAction shortcut = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'g' ) ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( DeditMenu.GoToLine, mnemonic.CommandId );
+		Assert.Equal( mnemonic.CommandId, shortcut.CommandId );
+	}
+
 }
