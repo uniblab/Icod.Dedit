@@ -109,6 +109,33 @@ public sealed class DocumentFormatTests {
 			entry.Shell.Document.Read( 0, checked( (int)entry.Shell.Document.Length ) ) );
 	}
 
+	[Theory]
+	[InlineData( "\r\n", "first\r\nsecond\r\n" )]
+	[InlineData( "\r", "first\rsecond\r" )]
+	public void ConversionAlsoSetsFutureEnterPolicy( string ending, string expected ) {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry entry = manager.OpenUntitled();
+		entry.Shell.Process( WidgetInput.Paste( "first\nsecond" ), TimeSpan.Zero );
+		Assert.Equal( WidgetTextEditStatus.Applied,
+			DocumentFormatController.NormalizeLineEndings( entry, ending, TimeSpan.FromSeconds( 1 ) ) );
+		entry.Shell.Editor.View.SetSelection( entry.Shell.Document.Length, entry.Shell.Document.Length );
+		entry.Shell.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.FromSeconds( 2 ) );
+		Assert.Equal( expected, entry.Shell.Document.Read( 0, checked( (int)entry.Shell.Document.Length ) ) );
+	}
+
+	[Fact]
+	public void ChoosingLineEndingForUntitledWithoutTerminatorsChangesFutureEnterWithoutDirtying() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry entry = manager.OpenUntitled();
+		Assert.Equal( WidgetTextEditStatus.NoChange,
+			DocumentFormatController.NormalizeLineEndings( entry, "\r\n", TimeSpan.Zero ) );
+		Assert.False( entry.HasUnsavedChanges );
+		entry.Shell.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.FromSeconds( 1 ) );
+		Assert.Equal( "\r\n", entry.Shell.Document.Read( 0, checked( (int)entry.Shell.Document.Length ) ) );
+	}
+
 	[Fact]
 	public void FileLineEndingMenuOffersExplicitCrLfConversion() {
 		using WidgetHost host = new( new CursesScreen( 55, 18 ), WidgetTheme.Default );
