@@ -36,7 +36,7 @@ public sealed class DeditPreferencesTests {
 				await DeditPreferences.LoadAsync( path, CancellationToken.None ) );
 			await File.WriteAllTextAsync( path, "{\"version\":3,\"tabWidth\":-1}" );
 			Assert.Equal( DeditPreferences.Default, await DeditPreferences.LoadAsync( path, CancellationToken.None ) );
-			await File.WriteAllTextAsync( path, "{\\"version\\":1,\\"tabWidth\\":\\"wide\\"}" );
+			await File.WriteAllTextAsync( path, "{\"version\":1,\"tabWidth\":\"wide\"}" );
 			Assert.Equal( DeditPreferences.Default, await DeditPreferences.LoadAsync( path, CancellationToken.None ) );
 			await File.WriteAllTextAsync( path, "{ broken" );
 			Assert.Equal( DeditPreferences.Default, await DeditPreferences.LoadAsync( path, CancellationToken.None ) );
