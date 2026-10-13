@@ -80,6 +80,18 @@ public sealed class DeditStartupTests {
 	}
 
 	[Fact]
+	public async Task TimeoutUpdatesWidgetsAndRepaintsOnlyAfterAVisibleChange() {
+		FakeTerminal terminal = new( [ new( DeditEventKind.Timeout ), new( DeditEventKind.Timeout ), new( DeditEventKind.Stop ) ] );
+		await DeditApplication.RunAsync( DeditOptions.Parse( [] ), () => ValueTask.FromResult<IDeditTerminal>( terminal ),
+			() => TimeSpan.FromMilliseconds( 100 ) );
+		Assert.Equal( 2, terminal.UpdateCount );
+		Assert.Equal( TimeSpan.FromMilliseconds( 100 ), terminal.UpdatedAt );
+		Assert.Equal( 2, terminal.DrawCount );
+		Assert.Equal( 0, terminal.ProcessCount );
+		Assert.True( terminal.Disposed );
+	}
+
+	[Fact]
 	public async Task ResizeAndStopRepaintThenDispose() {
 		FakeTerminal terminal = new( [ new( DeditEventKind.Resize ), new( DeditEventKind.Input, WidgetInput.Paste( "\u0011" ) ),
 			new( DeditEventKind.Input, WidgetInput.Key( WidgetKey.Enter ) ), new( DeditEventKind.Stop ) ] );
@@ -103,6 +115,25 @@ public sealed class DeditStartupTests {
 	}
 
 	[Fact]
+	public async Task StartupDiagnosticsRenderControlCharactersAsData() {
+		StringWriter error = new();
+		int code = await Program.RunAsync( [], new StringWriter(), error,
+			() => throw new IOException( "bad\u001b]52;c;payload\u0007\u009bpath" ) );
+		Assert.Equal( 1, code );
+		Assert.Equal( "dedit: bad�]52;c;payload��path" + Environment.NewLine, error.ToString() );
+	}
+
+	[Fact]
+	public async Task InvalidOptionDiagnosticsRenderControlCharactersAsData() {
+		StringWriter error = new();
+		int code = await Program.RunAsync( [ "--bad\u001b\u0007" ], new StringWriter(), error );
+		Assert.Equal( 2, code );
+		Assert.DoesNotContain( '\u001b', error.ToString() );
+		Assert.DoesNotContain( '\u0007', error.ToString() );
+		Assert.Contains( "--bad��", error.ToString() );
+	}
+
+	[Fact]
 	public async Task AggregateStartupFailureIsDiagnosed() {
 		StringWriter error = new();
 		int code = await Program.RunAsync( [], new StringWriter(), error,
@@ -123,6 +154,12 @@ public sealed class DeditStartupTests {
 		public int DrawCount { get; private set; }
 		public int ResizeCount { get; private set; }
 		public int ProcessCount { get; private set; }
+		public int UpdateCount { get; private set; }
+		public TimeSpan UpdatedAt { get; private set; }
+		public bool Update( TimeSpan elapsed ) {
+			this.UpdatedAt = elapsed;
+			return ++this.UpdateCount == 1;
+		}
 		public string[] Captions { get; private set; } = [];
 		public ValueTask<DeditEvent> ReadAsync( CancellationToken cancellationToken ) => ValueTask.FromResult( this.events.Dequeue() );
 		public ValueTask DrawAsync( IReadOnlyList<string> captions, TimeSpan elapsed, CancellationToken cancellationToken ) {

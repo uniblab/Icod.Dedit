@@ -8,6 +8,8 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Application and editing
 
+- Feed idle elapsed-time updates to Widgets for drag autoscroll, repainting
+  after a visible update instead of redrawing every idle tick.
 - Added the `dedit` console executable and .NET tool payloads for .NET 8, 9
   and 10, with a no-path Untitled document and multiple path arguments.
 - Added independent editable tabs with stable keys, disambiguated duplicate
@@ -33,6 +35,7 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Files and safety
 
+- Escape terminal control characters in command-line and startup diagnostics.
 - Resolve file and parent-directory symlinks consistently for duplicate tabs,
   Save As collisions and save-time retarget checks. New-file saves keep their
   temporary file in the resolved directory and recheck cancellation immediately

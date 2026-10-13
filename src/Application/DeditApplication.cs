@@ -31,6 +31,7 @@ internal interface IDeditTerminal : IAsyncDisposable {
 	ValueTask<DeditEvent> ReadAsync( CancellationToken cancellationToken );
 	ValueTask DrawAsync( IReadOnlyList<string> captions, TimeSpan elapsed, CancellationToken cancellationToken );
 	ValueTask<bool> ProcessAsync( WidgetInput input, TimeSpan elapsed );
+	bool Update( TimeSpan elapsed );
 	void Resize();
 }
 
@@ -48,6 +49,7 @@ internal static class DeditApplication {
 			switch ( current.Kind ) {
 				case DeditEventKind.Stop: return;
 				case DeditEventKind.Resize: terminal.Resize(); redraw = true; break;
+				case DeditEventKind.Timeout: redraw = terminal.Update( clock() ); break;
 				case DeditEventKind.Input when current.Input is { } input:
 					if ( input.Kind == WidgetInputKind.EndOfInput ) return;
 					if ( await terminal.ProcessAsync( input, clock() ) ) return;

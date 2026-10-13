@@ -24,6 +24,7 @@ namespace Icod.Dedit;
 using System.Diagnostics;
 using Icod.Dedit.Application;
 using Icod.Dedit.CommandLine;
+using Icod.Dedit.Documents;
 
 internal static class Program {
 	public static Task<int> Main( string[] args ) => RunAsync( args, Console.Out, Console.Error );
@@ -33,7 +34,7 @@ internal static class Program {
 		ArgumentNullException.ThrowIfNull( output ); ArgumentNullException.ThrowIfNull( error );
 		DeditOptions options;
 		try { options = DeditOptions.Parse( args ); }
-		catch ( ArgumentException exception ) { await error.WriteLineAsync( $"dedit: {exception.Message}" ); return 2; }
+		catch ( ArgumentException exception ) { await error.WriteLineAsync( $"dedit: {DocumentManager.SanitizeDisplay( exception.Message )}" ); return 2; }
 		if ( options.Mode == DeditOptionMode.Help ) {
 			await output.WriteLineAsync( "Usage: dedit [--help|-h] [--version|-v] [--] [FILE ...]\nCtrl+Q exits the current shell." );
 			return 0;
@@ -47,7 +48,7 @@ internal static class Program {
 			await DeditApplication.RunAsync( options, open ?? ( () => DeditTerminal.OpenAsync( options ) ), () => clock.Elapsed );
 			return 0;
 		} catch ( Exception exception ) when ( exception is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException or AggregateException ) {
-			await error.WriteLineAsync( $"dedit: {exception.Message}" ); return 1;
+			await error.WriteLineAsync( $"dedit: {DocumentManager.SanitizeDisplay( exception.Message )}" ); return 1;
 		}
 	}
 }

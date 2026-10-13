@@ -113,7 +113,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	}
 
 	public async ValueTask<DeditEvent> ReadAsync( CancellationToken cancellationToken ) {
-		CursesEvent current = await this.session.ReadEventAsync( cancellationToken );
+		CursesEvent current = await this.session.ReadEventAsync( TimeSpan.FromMilliseconds( 50 ), cancellationToken );
 		if ( current.Kind == CursesEventKind.Input && current.Input is { } input ) return new DeditEvent( DeditEventKind.Input, WidgetInput.From( input ) );
 		if ( current.Lifecycle is { } lifecycle ) return lifecycle.Kind switch {
 			CursesLifecycleEventKind.Interrupt or CursesLifecycleEventKind.Termination => new DeditEvent( DeditEventKind.Stop ),
@@ -122,6 +122,8 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		};
 		return new DeditEvent( DeditEventKind.Timeout );
 	}
+
+	public bool Update( TimeSpan elapsed ) => this.host.Update( elapsed ).Actions.Count > 0;
 
 	public async ValueTask DrawAsync( IReadOnlyList<string> captions, TimeSpan elapsed, CancellationToken cancellationToken ) {
 		CursesScreen screen = this.session.Screen;
