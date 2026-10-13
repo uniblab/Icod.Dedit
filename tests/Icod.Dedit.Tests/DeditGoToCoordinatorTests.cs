@@ -61,10 +61,11 @@ public sealed class DeditGoToCoordinatorTests {
 		host.Process( WidgetInput.Paste( "2:2" ), TimeSpan.Zero );
 		WidgetDialogValidationRequestedAction validation = Assert.IsType<WidgetDialogValidationRequestedAction>(
 			Assert.Single( host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.Zero ).Actions ) );
-		entry.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.Zero );
+		long originalCaret = entry.Shell.Editor.View.Caret;
+		entry.Shell.Document.Undo();
 		Assert.True( goTo.Validate( validation ) );
 		Assert.Empty( host.DrainActions() );
-		Assert.Equal( entry.Shell.Document.Length, entry.Shell.Editor.View.Caret );
+		Assert.Equal( originalCaret, entry.Shell.Editor.View.Caret );
 		WidgetDialogCompletedAction canceled = Assert.IsType<WidgetDialogCompletedAction>(
 			Assert.Single( host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.Zero ).Actions ) );
 		Assert.True( goTo.Complete( canceled ) );
