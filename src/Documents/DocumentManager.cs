@@ -115,9 +115,11 @@ internal sealed class DocumentManager : IDisposable {
 		byte[] baseline = entry.Identity is not null && this.pathComparer.Equals( entry.Identity, identity )
 			? entry.Fingerprint : target.Fingerprint;
 		using WidgetTextSnapshot snapshot = entry.Shell.Document.CreateSnapshot();
+		TextFileEncoding selectedEncoding = entry.Encoding;
 		string text = snapshot.Read( 0, checked( (int)snapshot.Length ) );
 		byte[] fingerprint = await files.SaveAsync( fullPath, target.Identity, baseline, text, selectedEncoding, cancellationToken );
 		entry.FullPath = fullPath; entry.Identity = identity; entry.Fingerprint = fingerprint;
+		entry.SavedEncoding = selectedEncoding;
 		this.UpdateCaptions();
 		entry.Shell.Document.MarkSaved( snapshot );
 	}
@@ -129,6 +131,7 @@ internal sealed class DocumentManager : IDisposable {
 		if ( !this.documents.Contains( entry ) ) throw new ArgumentException( "Document is not open.", nameof( entry ) );
 		if ( entry.FullPath is null || entry.Identity is null ) throw new InvalidOperationException( "Untitled documents require Save As." );
 		using WidgetTextSnapshot snapshot = entry.Shell.Document.CreateSnapshot();
+		TextFileEncoding selectedEncoding = entry.Encoding;
 		string text = snapshot.Read( 0, checked( (int)snapshot.Length ) );
 		byte[] fingerprint = await files.SaveAsync( entry.FullPath, entry.Identity, entry.Fingerprint, text, selectedEncoding, cancellationToken );
 		entry.Fingerprint = fingerprint;
