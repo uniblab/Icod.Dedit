@@ -41,7 +41,8 @@ public sealed class DeditGoToCoordinatorTests {
 		Assert.True( goTo.Validate( invalid ) );
 		Assert.True( form.IsOpen );
 		Assert.NotNull( form.Error );
-		goTo.Input.SetSelection( 0, goTo.Input.Value.Length );
+		WidgetTextInput input = Assert.IsType<WidgetTextInput>( goTo.Input );
+		input.SetSelection( 0, input.Value.Length );
 		host.Process( WidgetInput.Paste( "2:3" ), TimeSpan.Zero );
 		WidgetDialogValidationRequestedAction valid = Assert.IsType<WidgetDialogValidationRequestedAction>(
 			Assert.Single( host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.Zero ).Actions ) );
