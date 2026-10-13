@@ -128,7 +128,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	public async ValueTask DrawAsync( IReadOnlyList<string> captions, TimeSpan elapsed, CancellationToken cancellationToken ) {
 		CursesScreen screen = this.session.Screen;
 		this.tabs.SetTabs( this.documents.Tabs, this.documents.Active?.Key );
-		DeditMenu.UpdateState( this.menu, this.Editor?.Editor, this.documents.Active?.FullPath is not null, this.search.Options, this.documents.Active?.Encoding );
+		DeditMenu.UpdateState( this.menu, this.Editor?.Editor, this.documents.Active?.FullPath is not null, this.search.Options, this.documents.Active?.Encoding, this.documents.Active?.Shell.IndentationWidth );
 		this.menu.Arrange( screen.Bounds );
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.Editor?.Arrange();
@@ -279,6 +279,14 @@ internal sealed class DeditTerminal : IDeditTerminal {
 				lineEndingEntry, ending, elapsed );
 			this.saveError = status is WidgetTextEditStatus.Applied or WidgetTextEditStatus.NoChange
 				? null : $"Line ending conversion was not applied ({status}).";
+			}
+			else if ( action is WidgetCheckedInvokedAction indentation &&
+			this.documents.Active is { } indentationEntry &&
+			indentation.CommandId is DeditMenu.IndentTwo or DeditMenu.IndentFour or DeditMenu.IndentEight ) {
+			indentationEntry.Shell.SetIndentationWidth( indentation.CommandId switch {
+				DeditMenu.IndentTwo => 2, DeditMenu.IndentFour => 4, _ => 8
+			} );
+			this.saveError = null;
 			}
 			else if ( action is WidgetCheckedInvokedAction format &&
 			this.documents.Active is { } formatEntry &&
