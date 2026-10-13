@@ -21,11 +21,15 @@ if [ "$section" = all ] || [ "$section" = validate ]; then
     version=$(dotnet msbuild Icod.Dedit.csproj -nologo -getProperty:PackageVersion)
     package="artifacts/Icod.Dedit.$version.nupkg"
     test -f "$package" || { printf 'Missing tool package: %s\n' "$package" >&2; exit 1; }
+    set -- artifacts/*.nupkg
+    test "$#" -eq 1 && test "$1" = "$package" || { printf 'Expected exactly one dedit tool package\n' >&2; exit 1; }
     tool_dir=$(mktemp -d)
     trap 'rm -rf "$tool_dir"' EXIT HUP INT TERM
     package_source=$(cd artifacts && pwd)
-    dotnet tool install Icod.Dedit --tool-path "$tool_dir" --version "$version" --add-source "$package_source" --ignore-failed-sources
-    actual=$("$tool_dir/dedit" --version)
+    escaped_source=$(printf '%s' "$package_source" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/"/\&quot;/g')
+    printf '<configuration><packageSources><clear/><add key="local" value="%s"/></packageSources></configuration>\n' "$escaped_source" > "$tool_dir/NuGet.Config"
+    dotnet tool install Icod.Dedit --tool-path "$tool_dir/tool" --version "$version" --configfile "$tool_dir/NuGet.Config"
+    actual=$("$tool_dir/tool/dedit" --version)
     test "$actual" = "dedit $version" || { printf 'Unexpected tool version: %s\n' "$actual" >&2; exit 1; }
-    "$tool_dir/dedit" --help
+    "$tool_dir/tool/dedit" --help
 fi
