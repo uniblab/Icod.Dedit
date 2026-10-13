@@ -53,6 +53,28 @@ jobs:
             8.0.x
             9.0.x
             10.0.x
+      - name: Check out reviewed Widgets 1.3.1 candidate
+        uses: actions/checkout@v4
+        with:
+          repository: uniblab/Icod.Widgets
+          ref: ecb0ae6de6a29a4f97983d2e2d9a03f4a8a725f6
+          path: _widgets_candidate
+          persist-credentials: false
+      - name: Pack candidate dependency and configure local restore
+        shell: pwsh
+        run: |
+          dotnet pack _widgets_candidate/Icod.Widgets.csproj -c Release -o artifacts/widgets-candidate
+          if (0 -ne $LASTEXITCODE) { throw 'Widgets candidate package build failed.' }
+          $source = [System.Security.SecurityElement]::Escape(
+              [System.IO.Path]::GetFullPath('artifacts/widgets-candidate'))
+          $config = @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration><packageSources>
+            <add key="Widgets candidate" value="$source" />
+            <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+          </packageSources></configuration>
+          "@
+          [System.IO.File]::WriteAllText('NuGet.Config', $config, [System.Text.UTF8Encoding]::new($false))
       - name: Build, test, pack and install Staging tool
         shell: pwsh
         run: ./packaging/VerifyDistribution.ps1 -Configuration '${{ env.CONFIGURATION }}'
