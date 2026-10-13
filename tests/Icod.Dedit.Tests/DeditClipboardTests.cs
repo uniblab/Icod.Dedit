@@ -93,6 +93,50 @@ public sealed class DeditClipboardTests {
 		Assert.Equal( "kept", clipboard.Text );
 	}
 
+	[Fact]
+	public async Task TerminalClipboardReadOverridesFallbackAndCopyWritesBestEffort() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using EditorShell shell = new( host );
+		string? written = null;
+		DeditClipboard clipboard = new( host,
+			write: ( text, _ ) => { written = text; return ValueTask.CompletedTask; },
+			read: ( _, _ ) => ValueTask.FromResult( Encoding.UTF8.GetBytes( "terminal" ) ) );
+		shell.Process( WidgetInput.Paste( "local" ), TimeSpan.Zero );
+		shell.Editor.View.SetSelection( 0, 5 );
+		WidgetClipboardRequestedAction copy = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+			shell.Process( Ctrl( 'c' ), TimeSpan.FromMilliseconds( 1 ) ) ) );
+		Assert.True( await clipboard.CompleteAsync( copy.Request ) );
+		Assert.Equal( "local", written );
+		shell.Editor.View.SetSelection( 5, 5 );
+		WidgetClipboardRequestedAction paste = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+			shell.Process( Ctrl( 'v' ), TimeSpan.FromMilliseconds( 2 ) ) ) );
+		Assert.True( await clipboard.CompleteAsync( paste.Request ) );
+		Assert.Equal( "localterminal", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+	}
+
+	[Fact]
+	public async Task TerminalTimeoutUsesLocalClipboardAndStaleReadCannotPaste() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		WidgetTabStrip tabs = new( "tabs" ); host.Attach( tabs ); tabs.SetTabs( [ new WidgetTab( "0", "Untitled" ) ], "0" );
+		tabs.Arrange( new CursesRectangle( 1, 0, 1, 50 ) );
+		using EditorShell shell = new( host );
+		DeditClipboard fallback = new( host, read: ( _, _ ) => throw new TimeoutException() );
+		fallback.SetText( "kept" );
+		WidgetClipboardRequestedAction first = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+			shell.Process( Ctrl( 'v' ), TimeSpan.Zero ) ) );
+		Assert.True( await fallback.CompleteAsync( first.Request ) );
+		Assert.Equal( "kept", shell.Document.Read( 0, 4 ) );
+		TaskCompletionSource<byte[]> pending = new( TaskCreationOptions.RunContinuationsAsynchronously );
+		DeditClipboard delayed = new( host, read: ( _, _ ) => new ValueTask<byte[]>( pending.Task ) );
+		WidgetClipboardRequestedAction second = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+			shell.Process( Ctrl( 'v' ), TimeSpan.FromMilliseconds( 1 ) ) ) );
+		Task<bool> completion = delayed.CompleteAsync( second.Request ).AsTask();
+		host.Focus( tabs );
+		pending.SetResult( Encoding.UTF8.GetBytes( "late" ) );
+		Assert.False( await completion );
+		Assert.Equal( "kept", shell.Document.Read( 0, 4 ) );
+	}
+
 	private static WidgetInput Ctrl( char key ) => WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( key ) );
 	private static WidgetInput Alt( char key ) => WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( key ) );
 }
