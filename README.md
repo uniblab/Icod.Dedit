@@ -66,6 +66,21 @@ The development branch references Icod.Widgets 1.3.1 and its Icod.DCurses
 [PR #7](https://github.com/uniblab/Icod.Widgets/pull/7); a clean external
 restore of this branch requires that package to be published.
 
+## BUILD AND DISTRIBUTION
+
+Run `build.cmd` on Windows or `./build.sh` on Unix-like systems with a .NET 10 SDK. Both run clean, restore, build, test, pack and a local install smoke check in Debug. On Unix-like systems, PowerShell 7 runs the shared packaging scripts; the shell script also supports the same sequence without PowerShell. An optional argument selects a stage: `clean`, `restore`, `build`, `test`, `pack` or `validate`.
+
+The `Icod.Dedit` NuGet artifact contains one `dedit` .NET tool command with .NET 8, 9 and 10 payloads. The project remains a single EXE. Before a public release, an exact locally built package can be installed and checked with:
+
+```sh
+dotnet tool install Icod.Dedit --tool-path ./artifacts/tool --add-source ./artifacts --version 0.1.0
+./artifacts/tool/dedit --version
+```
+
+On Windows, invoke `artifacts\tool\dedit.exe`. The local build scripts perform this check automatically. CI runs Staging validation on pull requests and Release validation across Windows, Linux and macOS x64/ARM64 after a merge. A `v<semver>` tag on a main-branch commit must equal the project's package version; only then does the release workflow publish the one tool package and six framework-dependent, single-file ZIP archives. No tag or release is created by a build.
+
+The NuGet publication job requires a GitHub `Release` environment, an Actions secret `NUGET_USER`, and a NuGet.org Trusted Publishing policy for `release.yaml` in this repository. The standalone ZIP executables require the .NET 10 runtime. Local builds that run every test target need .NET 8, 9 and 10 runtimes, or an explicit runtime roll-forward policy.
+
 ## PROJECT CONTRACT
 
 - Console application: `OutputType=Exe`, not a reusable library or GUI application.

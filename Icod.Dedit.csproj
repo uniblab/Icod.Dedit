@@ -30,7 +30,18 @@
 		<AssemblyName>dedit</AssemblyName>
 		<RootNamespace>Icod.Dedit</RootNamespace>
 		<Version>0.1.0</Version>
-		<IsPackable>false</IsPackable>
+		<PackageVersion>0.1.0</PackageVersion>
+		<Configurations>Debug;Staging;Release</Configurations>
+		<PackAsTool>true</PackAsTool>
+		<ToolCommandName>dedit</ToolCommandName>
+		<PackageId>Icod.Dedit</PackageId>
+		<Authors>Timothy J. Bruce</Authors>
+		<Description>Tabbed terminal text editor for .NET 8, 9 and 10.</Description>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageProjectUrl>https://github.com/uniblab/Icod.Dedit</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/uniblab/Icod.Dedit</RepositoryUrl>
+		<PackageTags>editor;text-editor;terminal;console;tui;cli;dotnet-tool;dedit;icod;cross-platform</PackageTags>
 		<PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
 		<Copyright>Copyright (C) 2026 Timothy J. Bruce</Copyright>
 		<TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
@@ -41,5 +52,9 @@
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
 			<_Parameter1>Icod.Dedit.Tests</_Parameter1>
 		</AssemblyAttribute>
+	</ItemGroup>
+	<ItemGroup>
+		<None Update="README.md" Pack="true" PackagePath="/" />
+		<None Update="LICENSE" Pack="true" PackagePath="/" />
 	</ItemGroup>
 </Project>
