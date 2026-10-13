@@ -22,6 +22,7 @@
 namespace Icod.Dedit.Tests;
 
 using System.Security.Cryptography;
+using System.Diagnostics;
 using Icod.Dedit.Documents;
 using Xunit;
 
@@ -79,6 +80,47 @@ public sealed class DocumentFileServiceTests {
 				"editor", TextFileEncoding.Utf8, CancellationToken.None ) );
 			Assert.Equal( "original", await File.ReadAllTextAsync( Path.Combine( first, "file.txt" ) ) );
 			Assert.Equal( "original", await File.ReadAllTextAsync( Path.Combine( second, "file.txt" ) ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SavingOneHardLinkReplacesOnlyThatDirectoryEntry() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-hard-link-" ).FullName;
+		try {
+			string original = Path.Combine( directory, "original.txt" );
+			string alias = Path.Combine( directory, "alias.txt" );
+			await File.WriteAllTextAsync( original, "before" );
+			using Process link = new();
+			link.StartInfo = new ProcessStartInfo {
+				FileName = OperatingSystem.IsWindows() ? "cmd.exe" : "ln",
+				UseShellExecute = false, RedirectStandardError = true
+			};
+			if ( OperatingSystem.IsWindows() ) {
+				link.StartInfo.ArgumentList.Add( "/d" );
+				link.StartInfo.ArgumentList.Add( "/c" );
+				link.StartInfo.ArgumentList.Add( "mklink" );
+				link.StartInfo.ArgumentList.Add( "/H" );
+				link.StartInfo.ArgumentList.Add( alias );
+				link.StartInfo.ArgumentList.Add( original );
+			} else {
+				link.StartInfo.ArgumentList.Add( original );
+				link.StartInfo.ArgumentList.Add( alias );
+			}
+			Assert.True( link.Start() );
+			string error = await link.StandardError.ReadToEndAsync();
+			await link.WaitForExitAsync();
+			Assert.True( link.ExitCode == 0, error );
+			Assert.Equal( "before", await File.ReadAllTextAsync( alias ) );
+			Assert.NotEqual( PathIdentity.Resolve( original ), PathIdentity.Resolve( alias ) );
+
+			DocumentFileService files = new( directory );
+			LoadedTextFile opened = await files.OpenAsync( original, CancellationToken.None );
+			await files.SaveAsync( original, PathIdentity.Resolve( original ), opened.Fingerprint,
+				"after", TextFileEncoding.Utf8, CancellationToken.None );
+
+			Assert.Equal( "after", await File.ReadAllTextAsync( original ) );
+			Assert.Equal( "before", await File.ReadAllTextAsync( alias ) );
+			Assert.Equal( 2, Directory.GetFiles( directory ).Length );
 		} finally { Directory.Delete( directory, true ); }
 	}
 
