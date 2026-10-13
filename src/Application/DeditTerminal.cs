@@ -28,7 +28,6 @@ using Icod.Dedit.Presentation;
 using Icod.Widgets;
 
 internal sealed class DeditTerminal : IDeditTerminal {
-	private const string QuitDialogId = "dedit-discard-and-quit";
 	private const string SaveAsDialogId = "dedit-save-as";
 	private readonly CursesSession session;
 	private readonly WidgetHost host;
@@ -247,19 +246,6 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		WidgetDispatchResult result = host.Process( input, elapsed );
 		return !result.Handled && !menu.IsOpen;
 	}
-
-	internal static bool RequestQuit( WidgetHost host, WidgetMenuBar menu, DocumentManager documents, WidgetInput input, TimeSpan elapsed ) {
-		ArgumentNullException.ThrowIfNull( documents );
-		if ( !CanQuitFromKey( host, menu, input, elapsed ) ) return false;
-		int dirty = documents.Tabs.Count( tab => tab.IsModified );
-		if ( dirty == 0 ) return true;
-		host.ShowModal( WidgetMessageDialog.YesNo( QuitDialogId, "Unsaved changes",
-			$"Discard changes in {dirty} modified document{( dirty == 1 ? "" : "s" )} and exit?" ) );
-		return false;
-	}
-
-	internal static bool ConfirmedDiscard( WidgetDialogCompletedAction action ) =>
-		action.WidgetId == QuitDialogId && action.Result.Outcome == WidgetDialogOutcome.Yes;
 
 	internal static bool TryCycleFocus( WidgetHost host, WidgetInput input ) {
 		ArgumentNullException.ThrowIfNull( host ); ArgumentNullException.ThrowIfNull( input );

@@ -317,7 +317,7 @@ each dirty tab; Ctrl+Q and File → Exit share the exit path. Cancellation
 stops before later tabs, while earlier successful saves remain on disk.
 Save failures and external-file conflicts retain the affected tab and reset
 the operation. Unique dialog/picker IDs reject delayed completions from
-earlier requests. The 93-test-per-target matrix covers cancellation at a
+earlier requests. The cross-platform test matrix covers cancellation at a
 later tab, partial saves, save conflicts and late close results. Existing
 target overwrite and explicit external-change reload choices are still open.
 
