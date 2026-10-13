@@ -72,3 +72,7 @@ the focused tab after `Ctrl+P` and restored the terminal after Ctrl+Q.
 The local xterm's raw Escape+V byte sequence did not report an Alt modifier and
 was interpreted as ordinary text; it is not live evidence for Alt+V support.
 The remaining menu, commands, forms, and file loading milestones remain open.
+Edit → Undo/Redo now dispatches through the focused Widgets edit target.
+Menu availability follows actual undo/redo history, while Ctrl+Z/Ctrl+Y
+remain direct editor routes. A test exercises menu Undo followed by direct
+Redo and the disabled state of an empty history.

@@ -233,7 +233,8 @@ full-file pad allocation, or unmeasured performance claims.
 **Current slice:** View → Go to File routes both a menu mnemonic and a direct
 Ctrl+P shortcut through one Widgets action. The live command focuses the tab
 strip. Nested Escape and modal shortcut isolation have integration coverage;
-the rest of this milestone's menus and forms are still open.
+Edit → Undo/Redo now use the focused edit target and dynamic history state.
+The rest of this milestone's menus and forms are still open.
 
 **Files:** `CommandRouter.cs`, `EditorShell.cs`, interaction tests.
 

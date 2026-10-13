@@ -20,8 +20,8 @@ editor policy belong here.
 
 The D1001 behavior decisions are accepted. D1002 provides a runnable terminal
 shell and CLI. D1003 has begun: with no file arguments, the Untitled tab is an
-editable in-memory document with undo/redo. The first D1004 menu slice exposes
-View → Go to File; `Ctrl+P` focuses the tab strip. Where the terminal reports
+editable in-memory document with undo/redo. The current D1004 menu slice exposes
+View → Go to File and Edit → Undo/Redo; `Ctrl+P` focuses the tab strip. Where the terminal reports
 Alt+V distinctly, open View and press plain F for that same action. Changes
 are lost on exit. Supplying
 file paths shows placeholder tabs; those files are not loaded or editable yet.
@@ -41,8 +41,7 @@ On Windows, use `build.cmd` and the same `dotnet run` commands. The shell
 shows one editable Untitled tab without paths and path captions in argument
 order when paths are supplied. Use `--` before a path beginning with `-`.
 Ctrl+Z/Ctrl+Y undo and redo in Untitled; Ctrl+Q exits. No document is saved.
-The View menu is the first menu slice; File, Edit, and Help commands are still
-scheduled for D1004.
+File, additional Edit commands, and Help are still scheduled for D1004.
 
 - [Product and architecture design](docs/DESIGN.md)
 - [Master implementation plan](docs/superpowers/plans/2026-10-11-dedit-master-plan.md)

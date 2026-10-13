@@ -81,6 +81,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		WidgetTab[] items = captions.Select( ( name, index ) => new WidgetTab( index.ToString( System.Globalization.CultureInfo.InvariantCulture ), name,
 			IsModified: index == 0 && this.editor?.Document.IsModified == true, IsClosable: false ) ).ToArray();
 		this.tabs.SetTabs( items, this.activeKey );
+		DeditMenu.UpdateEditState( this.menu, this.editor?.Editor );
 		this.menu.Arrange( screen.Bounds );
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.editor?.Arrange();

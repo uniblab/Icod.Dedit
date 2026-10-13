@@ -66,4 +66,33 @@ public sealed class DeditMenuTests {
 			host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.FromMilliseconds( 2 ) ).Actions ) );
 		Assert.Equal( WidgetDialogOutcome.Cancel, completed.Result.Outcome );
 	}
+
+	[Fact]
+	public void EditMenuUndoAndDirectRedoUseFocusedEditorHistory() {
+		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		using EditorShell shell = new( host );
+		shell.Process( WidgetInput.Paste( "draft" ), TimeSpan.FromMilliseconds( 1 ) );
+		DeditMenu.UpdateEditState( menu, shell.Editor );
+		shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'e' ) ), TimeSpan.FromMilliseconds( 2 ) );
+		Assert.True( menu.IsOpen );
+		Assert.Contains( shell.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'u' ) ), TimeSpan.FromMilliseconds( 3 ) ),
+			action => action is WidgetTextEditedAction );
+		Assert.Equal( "", shell.Document.Read( 0, 0 ) );
+		shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'y' ) ), TimeSpan.FromMilliseconds( 4 ) );
+		Assert.Equal( "draft", shell.Document.Read( 0, 5 ) );
+	}
+
+	[Fact]
+	public void EditMenuIsDisabledUntilThereIsHistory() {
+		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		using EditorShell shell = new( host ); DeditMenu.UpdateEditState( menu, shell.Editor );
+		Assert.Empty( shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'e' ) ), TimeSpan.FromMilliseconds( 1 ) ) );
+		Assert.False( menu.IsOpen );
+		shell.Process( WidgetInput.TextInput( new Rune( 'x' ) ), TimeSpan.FromMilliseconds( 2 ) );
+		DeditMenu.UpdateEditState( menu, shell.Editor );
+		shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'e' ) ), TimeSpan.FromMilliseconds( 3 ) );
+		Assert.True( menu.IsOpen );
+	}
 }

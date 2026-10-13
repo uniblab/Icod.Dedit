@@ -27,9 +27,26 @@ internal static class DeditMenu {
 	internal const string GoToFile = "view.go-file";
 
 	internal static WidgetMenuBar Create() => new( "dedit-menu", [
+		WidgetMenuItem.Submenu( "edit", "Edit", [
+			WidgetMenuItem.Command( "edit.undo", "Undo", "edit.undo", 'u', WidgetEditCommand.Undo,
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'z' ) ),
+			WidgetMenuItem.Command( "edit.redo", "Redo", "edit.redo", 'r', WidgetEditCommand.Redo,
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'y' ) )
+		], 'e' ),
 		WidgetMenuItem.Submenu( "view", "View", [
 			WidgetMenuItem.Command( "view.go-file", "Go to File...", GoToFile, 'f',
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'p' ) )
 		], 'v' )
 	] );
+
+	internal static void UpdateEditState( WidgetMenuBar menu, WidgetTextEditor? editor ) {
+		ArgumentNullException.ThrowIfNull( menu );
+		bool undo = editor?.CanExecuteEditCommand( WidgetEditCommand.Undo ) == true;
+		bool redo = editor?.CanExecuteEditCommand( WidgetEditCommand.Redo ) == true;
+		menu.SetPresentation( [
+			new WidgetMenuItemPresentation( "edit", "Edit", undo || redo ),
+			new WidgetMenuItemPresentation( "edit.undo", "Undo", undo ),
+			new WidgetMenuItemPresentation( "edit.redo", "Redo", redo )
+		] );
+	}
 }
