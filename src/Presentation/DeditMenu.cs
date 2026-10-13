@@ -22,6 +22,7 @@
 namespace Icod.Dedit.Presentation;
 
 using Icod.DCurses;
+using Icod.Dedit.Documents;
 using Icod.Widgets;
 
 internal static class DeditMenu {
@@ -40,6 +41,10 @@ internal static class DeditMenu {
 	internal const string SearchCase = "edit.search-case";
 	internal const string SearchWholeWord = "edit.search-whole-word";
 	internal const string SearchRegex = "edit.search-regex";
+	internal const string EncodingUtf8 = "file.encoding.utf8";
+	internal const string EncodingUtf8Bom = "file.encoding.utf8-bom";
+	internal const string EncodingUtf16Le = "file.encoding.utf16-le";
+	internal const string EncodingUtf16Be = "file.encoding.utf16-be";
 	internal const string GoToFile = "view.go-file";
 	internal const string GoToLine = "view.go-line";
 	internal const string Wrap = "view.wrap";
@@ -56,6 +61,12 @@ internal static class DeditMenu {
 			WidgetMenuItem.Command( "file.save-as", "Save As...", SaveAs, 'a',
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control | WidgetInputModifiers.Shift, 's' ) ),
 			WidgetMenuItem.Command( "file.save-all", "Save All", SaveAll, 'l' ),
+			WidgetMenuItem.Submenu( "file.encoding", "Encoding", [
+				WidgetMenuItem.Checkable( "file.encoding.utf8", "UTF-8", EncodingUtf8, 'u' ),
+				WidgetMenuItem.Checkable( "file.encoding.utf8-bom", "UTF-8 BOM", EncodingUtf8Bom, 'b' ),
+				WidgetMenuItem.Checkable( "file.encoding.utf16-le", "UTF-16 LE", EncodingUtf16Le, 'l' ),
+				WidgetMenuItem.Checkable( "file.encoding.utf16-be", "UTF-16 BE", EncodingUtf16Be, 'e' )
+			], 'e' ),
 			WidgetMenuItem.Command( "file.close", "Close", Close, 'c',
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'w' ) ),
 			WidgetMenuItem.Command( "file.close-all", "Close All", CloseAll, 'd' ),
@@ -111,7 +122,7 @@ internal static class DeditMenu {
 			( hasUnsavedChanges ? "Yes discards unsaved edits. " : "" ) +
 			"No keeps the editor copy; Save As can preserve it separately." );
 
-	internal static void UpdateState( WidgetMenuBar menu, WidgetTextEditor? editor, bool canSave = false, WidgetSearchOptions? searchOptions = null ) {
+	internal static void UpdateState( WidgetMenuBar menu, WidgetTextEditor? editor, bool canSave = false, WidgetSearchOptions? searchOptions = null, TextFileEncoding? encoding = null ) {
 		ArgumentNullException.ThrowIfNull( menu );
 		bool undo = editor?.CanExecuteEditCommand( WidgetEditCommand.Undo ) == true;
 		bool redo = editor?.CanExecuteEditCommand( WidgetEditCommand.Redo ) == true;
@@ -126,6 +137,11 @@ internal static class DeditMenu {
 			new WidgetMenuItemPresentation( "file.save", "Save", canSave || editor is not null ),
 			new WidgetMenuItemPresentation( "file.save-as", "Save As...", editor is not null ),
 			new WidgetMenuItemPresentation( "file.save-all", "Save All", editor is not null ),
+			new WidgetMenuItemPresentation( "file.encoding", "Encoding", editor is not null ),
+			new WidgetMenuItemPresentation( "file.encoding.utf8", "UTF-8", editor is not null, encoding == TextFileEncoding.Utf8 ),
+			new WidgetMenuItemPresentation( "file.encoding.utf8-bom", "UTF-8 BOM", editor is not null, encoding == TextFileEncoding.Utf8Bom ),
+			new WidgetMenuItemPresentation( "file.encoding.utf16-le", "UTF-16 LE", editor is not null, encoding == TextFileEncoding.Utf16LittleEndian ),
+			new WidgetMenuItemPresentation( "file.encoding.utf16-be", "UTF-16 BE", editor is not null, encoding == TextFileEncoding.Utf16BigEndian ),
 			new WidgetMenuItemPresentation( "file.close", "Close", editor is not null ),
 			new WidgetMenuItemPresentation( "file.close-all", "Close All", editor is not null ),
 			new WidgetMenuItemPresentation( "file.exit", "Exit", true ),
