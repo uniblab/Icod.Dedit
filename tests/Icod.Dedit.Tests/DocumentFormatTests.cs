@@ -21,6 +21,8 @@ namespace Icod.Dedit.Tests;
 
 using Icod.DCurses;
 using Icod.Dedit.Documents;
+using Icod.Dedit.Presentation;
+using System.Text;
 using Icod.Widgets;
 using Xunit;
 
@@ -71,4 +73,21 @@ public sealed class DocumentFormatTests {
 			Assert.True( entry.HasUnsavedChanges );
 		} finally { Directory.Delete( directory, true ); }
 	}
+	[Fact]
+	public void FileEncodingMenuExposesAllSupportedFormats() {
+		using WidgetHost host = new( new CursesScreen( 55, 18 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		using DocumentManager manager = new( host );
+		DocumentEntry entry = manager.OpenUntitled();
+		DeditMenu.UpdateState( menu, entry.Shell.Editor, encoding: entry.Encoding );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'f' ) ), TimeSpan.Zero );
+		host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'e' ) ), TimeSpan.Zero );
+		WidgetCheckedInvokedAction selected = Assert.IsType<WidgetCheckedInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'b' ) ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( DeditMenu.EncodingUtf8Bom, selected.CommandId );
+		manager.SetEncoding( entry, TextFileEncoding.Utf8Bom );
+		DeditMenu.UpdateState( menu, entry.Shell.Editor, encoding: entry.Encoding );
+		Assert.True( entry.HasUnsavedChanges );
+	}
+
 }
