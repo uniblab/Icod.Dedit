@@ -42,6 +42,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly DocumentBatchCoordinator batch;
 	private readonly ExternalChangeCoordinator external;
 	private readonly DeditSearchCoordinator search;
+	private readonly DeditGoToCoordinator goTo;
 	private string? closeAfterSaveKey;
 	private readonly LocalWidgetFileSystemProvider browserProvider = new();
 	private readonly DeditSaveTargetProvider saveTargetProvider = new();
@@ -66,6 +67,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.batch = new DocumentBatchCoordinator( this.documents, this.files, this.close );
 		this.external = new ExternalChangeCoordinator( this.host, this.documents, this.files );
 		this.search = new DeditSearchCoordinator( this.host, this.documents );
+		this.goTo = new DeditGoToCoordinator( this.host, this.documents );
 		this.host.Attach( this.menu );
 		this.host.Attach( this.tabs );
 		session.StandardScreen.WrapMode = CursesWrapMode.Clip;
@@ -122,6 +124,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.menu.Arrange( screen.Bounds );
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.Editor?.Arrange();
+		this.goTo.Arrange();
 		this.session.StandardScreen.Clear();
 		this.Write( screen.Rows - 1, this.saveError is not null ? this.saveError : this.openErrors.Count > 0 ?
 			$"Open error ({this.openErrors.Count}): {this.openErrors[ 0 ]}" :
@@ -249,6 +252,12 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			else if ( action is WidgetTabActivationRequestedAction tabActivation && this.documents.Activate( tabActivation.TabKey, focusEditor: false ) &&
 				this.documents.Active is { } activated ) await this.OfferExternalChangeAsync( activated );
 			else if ( action is WidgetClipboardRequestedAction clipboard ) this.clipboard.Complete( clipboard.Request );
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToLine } && this.documents.Active is { } goToEntry )
+				this.goTo.Open( goToEntry );
+			else if ( action is WidgetDialogValidationRequestedAction goToValidation && this.goTo.Validate( goToValidation ) ) {
+				foreach ( WidgetAction emitted in this.host.DrainActions() ) pending.Enqueue( emitted );
+			}
+			else if ( action is WidgetDialogCompletedAction goToCompleted && this.goTo.Complete( goToCompleted ) ) { }
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToFile } ) this.host.Focus( this.tabs );
 			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.SearchCase } matchCase )
 				this.search.SetOptions( this.search.Options with { MatchCase = matchCase.IsChecked } );
