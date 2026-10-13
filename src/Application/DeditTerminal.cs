@@ -134,9 +134,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.session.StandardScreen.Clear();
 		this.Write( screen.Rows - 1, this.saveError is not null ? this.saveError : this.openErrors.Count > 0 ?
 			$"Open error ({this.openErrors.Count}): {this.openErrors[ 0 ]}" :
-			$"{DocumentManager.SanitizeDisplay( this.documents.Active?.Caption ?? "Untitled" )} | " +
-			$"{EncodingLabel( this.documents.Active?.Encoding )} | " +
-			$"{( this.Editor?.Editor.IsOverwriteMode == true ? "OVR" : "INS" )}; Ctrl+S saves. Ctrl+Q exits." );
+			this.documents.Active is { } active ? EditorStatus.Format( active ) : "Untitled" );
 		this.host.Render();
 		await this.session.RefreshAsync( cancellationToken );
 	}
@@ -387,13 +385,6 @@ internal sealed class DeditTerminal : IDeditTerminal {
 				this.saveError = "File target changed on disk; editor buffer kept. Use Save As.";
 		} catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
 	}
-
-	private static string EncodingLabel( TextFileEncoding? encoding ) => encoding switch {
-		TextFileEncoding.Utf8Bom => "UTF-8 BOM",
-		TextFileEncoding.Utf16LittleEndian => "UTF-16 LE",
-		TextFileEncoding.Utf16BigEndian => "UTF-16 BE",
-		_ => "UTF-8"
-	};
 
 	private static bool IsSaveError( Exception exception ) => exception is IOException or UnauthorizedAccessException
 		or ArgumentException or NotSupportedException or InvalidOperationException;

@@ -36,6 +36,7 @@ internal sealed class EditorShell : IDisposable {
 		this.Document = new WidgetTextDocument( [ initialText.AsMemory() ] );
 		this.view = new WidgetTextViewState( this.Document );
 		DeditPreferences defaults = preferences ?? DeditPreferences.Default;
+		this.IndentationWidth = defaults.IndentWidth;
 		this.Editor = new WidgetTextEditor( editorId, this.view, new WidgetEditorOptions {
 			Indentation = new string( ' ', defaults.IndentWidth ), TabWidth = defaults.TabWidth,
 			WrapMode = defaults.Wrap ? CursesTextWrapMode.Word : CursesTextWrapMode.NoWrap,
@@ -46,6 +47,7 @@ internal sealed class EditorShell : IDisposable {
 
 	internal WidgetTextDocument Document { get; }
 	internal WidgetTextEditor Editor { get; }
+	internal int IndentationWidth { get; }
 	internal bool IsActive { get; private set; }
 
 	internal void Activate( bool focus = true ) {
