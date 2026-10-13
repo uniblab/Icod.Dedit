@@ -189,4 +189,21 @@ public sealed class DocumentFileServiceTests {
 			Assert.Empty( Directory.GetFiles( directory ) );
 		} finally { Directory.Delete( directory, true ); }
 	}
+	[Fact]
+	public async Task ExternalEditAfterFinalPreflightIsNotOverwritten() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-last-check-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "original" );
+			DocumentFileService service = new( directory, beforeSaveStage: stage => {
+				if ( stage == DocumentSaveStage.BeforeReplacement ) File.WriteAllText( path, "external" );
+			} );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			await Assert.ThrowsAsync<IOException>( () => service.SaveAsync( path, path, loaded.Fingerprint,
+				"edited", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Equal( "external", await File.ReadAllTextAsync( path ) );
+			Assert.Equal( [ path ], Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
 }
