@@ -22,6 +22,9 @@
 namespace Icod.Dedit.Tests;
 
 using Icod.Dedit.Interaction;
+using Icod.Dedit.Documents;
+using Icod.DCurses;
+using Icod.Widgets;
 using Xunit;
 
 public sealed class SearchControllerTests {
@@ -51,5 +54,42 @@ public sealed class SearchControllerTests {
 		using CancellationTokenSource source = new(); source.Cancel();
 		Assert.ThrowsAny<OperationCanceledException>( () => SearchController.Search( "tab", 0, "text",
 			new SearchQuery( "text", IsRegex: false, MatchCase: true, WholeWord: false ), source.Token ) );
+	}
+
+	[Fact]
+	public void ReplaceAllIsOneUndoTransactionAndRejectsStaleRevision() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry entry = manager.OpenUntitled();
+		entry.Shell.Process( WidgetInput.Paste( "one One ONE" ), TimeSpan.Zero );
+		SearchQuery query = new( "one", IsRegex: false, MatchCase: false, WholeWord: true );
+		SearchResult result = SearchController.Search( entry.Key, entry.Shell.Document.Revision,
+			entry.Shell.Document.Read( 0, checked( (int)entry.Shell.Document.Length ) ), query, CancellationToken.None );
+		Assert.Equal( WidgetTextEditStatus.Applied,
+			SearchController.ReplaceAll( entry, result, "two", TimeSpan.FromMilliseconds( 1 ) ) );
+		Assert.Equal( "two two two", entry.Shell.Document.Read( 0, checked( (int)entry.Shell.Document.Length ) ) );
+		entry.Shell.Document.Undo();
+		Assert.Equal( "one One ONE", entry.Shell.Document.Read( 0, checked( (int)entry.Shell.Document.Length ) ) );
+		Assert.Equal( WidgetTextEditStatus.Stale,
+			SearchController.ReplaceAll( entry, result, "bad", TimeSpan.FromMilliseconds( 2 ) ) );
+		Assert.Equal( "one One ONE", entry.Shell.Document.Read( 0, checked( (int)entry.Shell.Document.Length ) ) );
+	}
+
+	[Fact]
+	public void RegexReplaceAllExpandsCapturesButLiteralReplacementKeepsDollarText() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry entry = manager.OpenUntitled();
+		entry.Shell.Process( WidgetInput.Paste( "a1 b2" ), TimeSpan.Zero );
+		SearchResult regex = SearchController.Search( entry.Key, entry.Shell.Document.Revision, "a1 b2",
+			new SearchQuery( @"([a-z])(\d)", true, true, false ), CancellationToken.None );
+		Assert.Equal( WidgetTextEditStatus.Applied,
+			SearchController.ReplaceAll( entry, regex, "$2$1", TimeSpan.FromMilliseconds( 1 ) ) );
+		Assert.Equal( "1a 2b", entry.Shell.Document.Read( 0, 5 ) );
+		SearchResult literal = SearchController.Search( entry.Key, entry.Shell.Document.Revision, "1a 2b",
+			new SearchQuery( "1a", false, true, false ), CancellationToken.None );
+		Assert.Equal( WidgetTextEditStatus.Applied,
+			SearchController.ReplaceAll( entry, literal, "$1", TimeSpan.FromMilliseconds( 2 ) ) );
+		Assert.Equal( "$1 2b", entry.Shell.Document.Read( 0, 5 ) );
 	}
 }
