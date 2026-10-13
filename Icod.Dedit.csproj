@@ -54,7 +54,7 @@
 		</AssemblyAttribute>
 	</ItemGroup>
 	<ItemGroup>
-		<None Update="README.md" Pack="true" PackagePath="/" />
-		<None Update="LICENSE" Pack="true" PackagePath="/" />
+		<Content Include="README.md" Pack="true" PackagePath="/" />
+		<Content Include="LICENSE" Pack="true" PackagePath="/" />
 	</ItemGroup>
 </Project>
