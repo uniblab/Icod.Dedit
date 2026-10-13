@@ -59,8 +59,31 @@ internal sealed class DocumentFileService {
 	}
 	internal string ResolvePath( string path ) => Path.GetFullPath( path, this.initialDirectory );
 
-	internal Task<byte[]> SaveNewAsync( string path, string text, TextFileEncoding encoding,
-		CancellationToken cancellationToken ) => throw new NotImplementedException();
+	internal async Task<byte[]> SaveNewAsync( string path, string text, TextFileEncoding encoding,
+		CancellationToken cancellationToken ) {
+		ArgumentException.ThrowIfNullOrWhiteSpace( path );
+		ArgumentNullException.ThrowIfNull( text );
+		cancellationToken.ThrowIfCancellationRequested();
+		string target = this.ResolvePath( path );
+		if ( File.Exists( target ) || Directory.Exists( target ) ) throw new IOException( "The save target already exists." );
+		byte[] bytes = TextFileCodec.Encode( text, encoding );
+		if ( bytes.Length > this.maximumBytes ) throw new InvalidDataException( $"File exceeds the {this.maximumBytes} byte save limit." );
+		string temporary = Path.Combine( Path.GetDirectoryName( target )!,
+			$".{Path.GetFileName( target )}.dedit-{Guid.NewGuid():N}.tmp" );
+		try {
+			await using ( FileStream stream = new( temporary, new FileStreamOptions {
+				Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None, Options = FileOptions.Asynchronous
+			} ) ) {
+				await stream.WriteAsync( bytes, cancellationToken );
+				await stream.FlushAsync( cancellationToken );
+			}
+			cancellationToken.ThrowIfCancellationRequested();
+			File.Move( temporary, target );
+			return SHA256.HashData( bytes );
+		} finally {
+			if ( File.Exists( temporary ) ) File.Delete( temporary );
+		}
+	}
 
 	internal async Task<byte[]> SaveAsync( string fullPath, string expectedIdentity, byte[] expectedFingerprint, string text,
 		TextFileEncoding encoding, CancellationToken cancellationToken ) {

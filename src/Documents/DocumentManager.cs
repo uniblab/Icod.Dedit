@@ -28,8 +28,8 @@ internal sealed class DocumentEntry( string key, string caption, string? fullPat
 	byte[] fingerprint, EditorShell shell ) {
 	internal string Key { get; } = key;
 	internal string Caption { get; set; } = caption;
-	internal string? FullPath { get; } = fullPath;
-	internal string? Identity { get; } = identity;
+	internal string? FullPath { get; set; } = fullPath;
+	internal string? Identity { get; set; } = identity;
 	internal TextFileEncoding Encoding { get; } = encoding;
 	internal byte[] Fingerprint { get; set; } = fingerprint;
 	internal EditorShell Shell { get; } = shell;
@@ -63,8 +63,25 @@ internal sealed class DocumentManager : IDisposable {
 		this.UpdateCaptions(); return entry;
 	}
 
-	internal Task SaveAsNewAsync( DocumentEntry entry, DocumentFileService files, string path,
-		CancellationToken cancellationToken ) => throw new NotImplementedException();
+	internal async Task SaveAsNewAsync( DocumentEntry entry, DocumentFileService files, string path,
+		CancellationToken cancellationToken ) {
+		ArgumentNullException.ThrowIfNull( entry );
+		ArgumentNullException.ThrowIfNull( files );
+		ArgumentException.ThrowIfNullOrWhiteSpace( path );
+		this.ThrowIfDisposed();
+		if ( !this.documents.Contains( entry ) ) throw new ArgumentException( "Document is not open.", nameof( entry ) );
+		string fullPath = files.ResolvePath( path );
+		string identity = ResolveIdentity( fullPath );
+		if ( this.documents.Any( other => !ReferenceEquals( other, entry ) &&
+			other.Identity is not null && this.pathComparer.Equals( other.Identity, identity ) ) )
+			throw new IOException( "The save target belongs to another open tab." );
+		using WidgetTextSnapshot snapshot = entry.Shell.Document.CreateSnapshot();
+		string text = snapshot.Read( 0, checked( (int)snapshot.Length ) );
+		byte[] fingerprint = await files.SaveNewAsync( fullPath, text, entry.Encoding, cancellationToken );
+		entry.FullPath = fullPath; entry.Identity = identity; entry.Fingerprint = fingerprint;
+		this.UpdateCaptions();
+		entry.Shell.Document.MarkSaved( snapshot );
+	}
 
 	internal async Task SaveAsync( DocumentEntry entry, DocumentFileService files, CancellationToken cancellationToken ) {
 		ArgumentNullException.ThrowIfNull( entry );
