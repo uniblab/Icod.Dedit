@@ -26,11 +26,14 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using Icod.Dedit.Documents;
+using Icod.Widgets;
 
 internal sealed record SearchQuery( string Pattern, bool IsRegex, bool MatchCase, bool WholeWord );
 internal sealed record SearchHit( int Start, int Length );
 
-internal sealed class SearchResult( string documentKey, long revision, IReadOnlyList<SearchHit> hits ) {
+internal sealed class SearchResult( string documentKey, long revision, SearchQuery query, IReadOnlyList<SearchHit> hits ) {
+	internal SearchQuery Query { get; } = query;
 	internal string DocumentKey { get; } = documentKey;
 	internal long Revision { get; } = revision;
 	internal IReadOnlyList<SearchHit> Hits { get; } = hits.ToArray();
@@ -86,7 +89,39 @@ internal static class SearchController {
 				offset = Math.Max( match.Index + 1, boundary );
 			}
 		}
-		return new SearchResult( documentKey, revision, hits );
+		return new SearchResult( documentKey, revision, query, hits );
+	}
+
+	internal static WidgetTextEditStatus ReplaceAll( DocumentEntry entry, SearchResult result, string replacement, TimeSpan timestamp ) {
+		ArgumentNullException.ThrowIfNull( entry );
+		ArgumentNullException.ThrowIfNull( result );
+		ArgumentNullException.ThrowIfNull( replacement );
+		WidgetTextDocument document = entry.Shell.Document;
+		if ( result.DocumentKey != entry.Key || result.Revision != document.Revision ) return WidgetTextEditStatus.Stale;
+		if ( result.Hits.Count == 0 ) return WidgetTextEditStatus.NoChange;
+		using WidgetTextSnapshot snapshot = document.CreateSnapshot();
+		string text = snapshot.Read( 0, checked( (int)snapshot.Length ) );
+		Regex? expression = null;
+		if ( result.Query.IsRegex ) {
+			RegexOptions options = RegexOptions.CultureInvariant;
+			if ( !result.Query.MatchCase ) options |= RegexOptions.IgnoreCase;
+			expression = new Regex( result.Query.Pattern, options, RegexTimeout );
+		}
+		List<WidgetTextEdit> edits = [];
+		foreach ( SearchHit hit in result.Hits ) {
+			string inserted = replacement;
+			if ( expression is not null ) {
+				Match match = expression.Match( text, hit.Start );
+				if ( !match.Success || match.Index != hit.Start || match.Length != hit.Length )
+					return WidgetTextEditStatus.Stale;
+				inserted = match.Result( replacement );
+			}
+			edits.Add( new WidgetTextEdit( hit.Start, hit.Length, inserted ) );
+		}
+		WidgetTextViewState view = entry.Shell.Editor.View;
+		WidgetTextEditContext context = new( view.Id, view.Anchor, view.Caret, 0, 0,
+			WidgetTextEditKind.Programmatic, timestamp );
+		return document.Apply( edits, result.Revision, context ).Status;
 	}
 
 	private static bool IsWholeWord( string text, int start, int end ) =>
