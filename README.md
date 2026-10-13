@@ -38,9 +38,8 @@ Externally changed files offer an explicit Reload or Keep decision when a tab
 is activated or an active save finds a conflict. The default Keep choice
 preserves the buffer; saving to the original path remains blocked until the
 conflict is resolved. Reload discards unsaved changes only after confirmation.
-Search, coordinate navigation, encoding selection and explicit line-ending
-conversion are available. Other format controls and release qualification
-remain under development.
+Search, coordinate navigation, encoding, line endings and per-tab indentation
+controls are available. Release qualification remains under development.
 Build with a .NET 10 SDK (which targets .NET 8, 9, and 10) and run in an
 interactive terminal with the selected runtime installed:
 
@@ -76,7 +75,11 @@ File → Save All visits dirty documents in tab order. File → Encoding selects
 strict UTF-8, UTF-8 BOM, UTF-16 LE or UTF-16 BE for the next save; a format
 change marks the tab dirty. File → Line Endings explicitly converts mixed
 terminators to LF, CRLF or CR as one undoable edit and preserves whether the
-file ends in a terminator.
+file ends in a terminator. Future Enter keys use the selected ending; opening a
+file uses its first existing terminator for future Enter keys.
+
+File → Indentation selects 2, 4 or 8 spaces for future Tab indentation in
+the active tab. Changing the setting leaves existing text and save state intact.
 
 Ctrl+W closes the active tab after Save / Don't Save / Cancel when it is dirty.
 The close control on each tab uses the same decision, with Cancel selected by
@@ -101,10 +104,6 @@ form. Help → About opens a captioned OK dialog; Escape cancels it.
 - [Released library contracts](https://github.com/uniblab/Icod.Dedit/blob/main/docs/Library-Contracts.md)
 - [Path, text-format, and coordinate decisions](https://github.com/uniblab/Icod.Dedit/tree/main/docs/decisions)
 
-The development branch references Icod.Widgets 1.3.1 and its Icod.DCurses
-2.5.0 dependency. Widgets 1.3.1 is published on NuGet. Pull-request validation restores that
-package from NuGet on Linux, Windows and macOS.
-
 ## PREFERENCES
 
 At startup, dedit reads `Icod.Dedit/preferences.json` under the operating
@@ -120,8 +119,8 @@ file sets defaults for newly opened tabs:
 Untitled tabs only. Existing files retain their detected encoding. A malformed,
 unknown-version, inaccessible, or oversized preferences file uses the defaults
 shown above. Preferences are read only at startup and are kept separate from
-document saves. The File → Encoding and View → Word Wrap commands affect the
-active document/view in this development build.
+document saves. The File → Encoding and File → Indentation commands affect the active tab;
+View → Word Wrap affects the active view.
 
 ## BUILD AND DISTRIBUTION
 
@@ -145,7 +144,7 @@ The NuGet publication job requires a GitHub `Release` environment, an Actions se
 - Baseline: C# 13, .NET 8/9/10, managed cross-platform code.
 - Implemented in this development branch: independent editable tabs and the listed file/menu commands.
 - No printing, print preview, or printer dependencies.
-- The current build has not completed 1.0 qualification, format controls, or all filesystem edge-case checks.
+- The current build has not completed 1.0 qualification or all filesystem edge-case checks.
 
 ## LICENSE
 
