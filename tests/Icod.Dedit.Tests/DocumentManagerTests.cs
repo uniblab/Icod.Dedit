@@ -179,5 +179,40 @@ public sealed class DocumentManagerTests {
 		} finally { Directory.Delete( directory, true ); }
 	}
 
+
+	[Fact]
+	public void CloseRefusesDirtyTabUntilDiscardAndKeepsOtherTabsIntact() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry dirty = manager.OpenUntitled();
+		dirty.Shell.Process( WidgetInput.Paste( "keep" ), TimeSpan.FromMilliseconds( 1 ) );
+		DocumentEntry clean = manager.OpenUntitled();
+		Assert.False( manager.Close( dirty.Key ) );
+		Assert.Equal( 2, manager.Tabs.Count );
+		Assert.True( dirty.Shell.Document.IsModified );
+		Assert.Same( clean, manager.Active );
+		Assert.True( manager.Close( dirty.Key, discardModified: true ) );
+		Assert.Single( manager.Tabs );
+		Assert.Same( clean, manager.Active );
+		Assert.True( manager.Close( clean.Key ) );
+		Assert.Single( manager.Tabs );
+		Assert.NotEqual( clean.Key, manager.Active?.Key );
+		Assert.StartsWith( "Untitled", manager.Active?.Caption );
+	}
+
+	[Fact]
+	public void ClosingActiveTabSelectsNextNeighborWithoutReusingItsKey() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry first = manager.OpenUntitled();
+		DocumentEntry middle = manager.OpenUntitled();
+		DocumentEntry last = manager.OpenUntitled();
+		manager.Activate( middle.Key );
+		Assert.True( manager.Close( middle.Key ) );
+		Assert.Same( last, manager.Active );
+		Assert.Equal( [ first.Key, last.Key ], manager.Tabs.Select( item => item.Key ).ToArray() );
+		Assert.False( manager.Close( "unknown" ) );
+	}
+
 	private static LoadedTextFile Loaded( string path, string text ) => new( path, new DecodedText( text, TextFileEncoding.Utf8 ), [] );
 }

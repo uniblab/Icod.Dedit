@@ -96,6 +96,8 @@ internal sealed class DocumentManager : IDisposable {
 		entry.Shell.Document.MarkSaved( snapshot );
 	}
 
+	internal bool Close( string key, bool discardModified = false ) => throw new NotImplementedException();
+
 	internal bool Activate( string key, bool focusEditor = true ) {
 		this.ThrowIfDisposed();
 		DocumentEntry? next = this.documents.FirstOrDefault( document => document.Key == key );
