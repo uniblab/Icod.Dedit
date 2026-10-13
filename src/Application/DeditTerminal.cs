@@ -122,7 +122,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.session.StandardScreen.Clear();
 		this.Write( screen.Rows - 1, this.saveError is not null ? this.saveError : this.openErrors.Count > 0 ?
 			$"Open error ({this.openErrors.Count}): {this.openErrors[ 0 ]}" :
-			$"{DocumentManager.SanitizeDisplay( this.documents.Active?.Caption ?? "Untitled" )}; Ctrl+S saves existing files. Ctrl+Q exits." );
+			$"{DocumentManager.SanitizeDisplay( this.documents.Active?.Caption ?? "Untitled" )}; Ctrl+S saves. Ctrl+Q exits." );
 		this.host.Render();
 		await this.session.RefreshAsync( cancellationToken );
 	}
@@ -137,8 +137,11 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			if ( action is WidgetInvokedAction { CommandId: DeditMenu.New } ) this.documents.OpenUntitled();
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.Open } ) await this.StartOpenAsync();
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.Save } && this.documents.Active is { } saving ) {
-				try { await this.documents.SaveAsync( saving, this.files, CancellationToken.None ); this.saveError = null; }
-				catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); await this.OfferExternalChangeAsync( saving ); }
+				if ( saving.FullPath is null ) await this.StartSaveAsAsync( saving, closeAfterSave: false );
+				else {
+					try { await this.documents.SaveAsync( saving, this.files, CancellationToken.None ); this.saveError = null; }
+					catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); await this.OfferExternalChangeAsync( saving ); }
+				}
 			}
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.SaveAll } ) {
 				if ( await this.StartBatchAsync( BatchOperation.SaveAll ) ) return true;

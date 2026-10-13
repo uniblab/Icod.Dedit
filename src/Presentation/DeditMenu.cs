@@ -100,7 +100,7 @@ internal static class DeditMenu {
 			new WidgetMenuItemPresentation( "file", "File", true ),
 			new WidgetMenuItemPresentation( "file.new", "New", true ),
 			new WidgetMenuItemPresentation( "file.open", "Open...", true ),
-			new WidgetMenuItemPresentation( "file.save", "Save", canSave ),
+			new WidgetMenuItemPresentation( "file.save", "Save", canSave || editor is not null ),
 			new WidgetMenuItemPresentation( "file.save-as", "Save As...", editor is not null ),
 			new WidgetMenuItemPresentation( "file.save-all", "Save All", editor is not null ),
 			new WidgetMenuItemPresentation( "file.close", "Close", editor is not null ),
