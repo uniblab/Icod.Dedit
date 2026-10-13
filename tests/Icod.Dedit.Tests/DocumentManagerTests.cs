@@ -299,5 +299,92 @@ public sealed class DocumentManagerTests {
 		Assert.False( manager.Close( "unknown" ) );
 	}
 
+
+	[Fact]
+	public async Task ExternalChangeDetectionFindsModifiedAndMissingFilesWithoutReplacingEditorText() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-reload-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "initial" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry entry = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			Assert.Null( await manager.CheckExternalChangeAsync( entry, files, CancellationToken.None ) );
+			await File.WriteAllTextAsync( path, "external" );
+			Assert.Equal( ExternalChangeKind.Modified,
+				( await manager.CheckExternalChangeAsync( entry, files, CancellationToken.None ) )?.Kind );
+			Assert.Equal( "initial", entry.Shell.Document.Read( 0, 7 ) );
+			File.Delete( path );
+			Assert.Equal( ExternalChangeKind.Missing,
+				( await manager.CheckExternalChangeAsync( entry, files, CancellationToken.None ) )?.Kind );
+			Assert.Equal( "initial", entry.Shell.Document.Read( 0, 7 ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task ConfirmedReloadReplacesDiskTextAndEncodingButPreservesTabKey() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-reload-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "initial" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry entry = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			string key = entry.Key;
+			entry.Shell.Process( WidgetInput.Paste( "draft " ), TimeSpan.Zero );
+			await File.WriteAllBytesAsync( path, TextFileCodec.Encode( "external\r\n", TextFileEncoding.Utf16LittleEndian ) );
+			await manager.ReloadAsync( entry, files, discardModified: true, CancellationToken.None );
+			Assert.Equal( key, entry.Key );
+			Assert.Same( entry, manager.Active );
+			Assert.Equal( "external\r\n", entry.Shell.Document.Read( 0, checked( (int)entry.Shell.Document.Length ) ) );
+			Assert.Equal( TextFileEncoding.Utf16LittleEndian, entry.Encoding );
+			Assert.False( entry.Shell.Document.IsModified );
+			Assert.Null( await manager.CheckExternalChangeAsync( entry, files, CancellationToken.None ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task ReloadWithoutExplicitDiscardKeepsDirtyBufferAndOriginalCheckpoint() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-reload-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "initial" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry entry = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			entry.Shell.Process( WidgetInput.Paste( "draft " ), TimeSpan.Zero );
+			await File.WriteAllTextAsync( path, "external" );
+			await Assert.ThrowsAsync<InvalidOperationException>( () =>
+				manager.ReloadAsync( entry, files, discardModified: false, CancellationToken.None ) );
+			Assert.Equal( "draft initial", entry.Shell.Document.Read( 0, checked( (int)entry.Shell.Document.Length ) ) );
+			Assert.True( entry.Shell.Document.IsModified );
+			await Assert.ThrowsAsync<IOException>( () => manager.SaveAsync( entry, files, CancellationToken.None ) );
+			Assert.Equal( "external", await File.ReadAllTextAsync( path ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task InvalidExternalEncodingDoesNotDiscardDirtyBufferEvenAfterReloadConfirmation() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-reload-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "initial" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry entry = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			entry.Shell.Process( WidgetInput.Paste( "draft " ), TimeSpan.Zero );
+			await File.WriteAllBytesAsync( path, [ 0xFF ] );
+			await Assert.ThrowsAsync<InvalidDataException>( () =>
+				manager.ReloadAsync( entry, files, discardModified: true, CancellationToken.None ) );
+			Assert.Equal( "draft initial", entry.Shell.Document.Read( 0, checked( (int)entry.Shell.Document.Length ) ) );
+			Assert.True( entry.Shell.Document.IsModified );
+			Assert.Equal( TextFileEncoding.Utf8, entry.Encoding );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
 	private static LoadedTextFile Loaded( string path, string text ) => new( path, new DecodedText( text, TextFileEncoding.Utf8 ), [] );
 }

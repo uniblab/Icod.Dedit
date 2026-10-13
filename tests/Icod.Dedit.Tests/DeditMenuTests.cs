@@ -253,4 +253,17 @@ public sealed class DeditMenuTests {
 		Assert.True( DeditTerminal.TryCycleFocus( host, WidgetInput.FunctionKey( 6 ) ) );
 		Assert.Same( dialog, host.FocusedWidget );
 	}
+
+	[Fact]
+	public void ExternalChangeDialogDefaultsToKeepAndEscapeCancels() {
+		using WidgetHost host = new( new CursesScreen( 60, 18 ), WidgetTheme.Default );
+		host.ShowModal( DeditMenu.CreateExternalChangeDialog( "reload-one", "sample.txt", true ) );
+		WidgetDialogCompletedAction kept = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( WidgetDialogOutcome.No, kept.Result.Outcome );
+		host.ShowModal( DeditMenu.CreateExternalChangeDialog( "reload-two", "sample.txt", true ) );
+		WidgetDialogCompletedAction canceled = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( WidgetDialogOutcome.Cancel, canceled.Result.Outcome );
+	}
 }
