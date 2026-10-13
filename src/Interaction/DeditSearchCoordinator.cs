@@ -99,7 +99,7 @@ internal sealed class DeditSearchCoordinator {
 				this.form!.ApplyResult( missing ); return missing;
 			}
 			if ( request.Intent == WidgetSearchIntent.ReplaceAll ) {
-				WidgetTextEditStatus status = SearchController.ReplaceAll( target, matches, request.Replacement ?? "", elapsed );
+				WidgetTextEditStatus status = SearchController.ReplaceAll( target, matches, request.Replacement ?? "", elapsed, token );
 				if ( status != WidgetTextEditStatus.Applied ) return new WidgetSearchResult( request, false,
 					Error: $"Replacement was not applied ({status})." );
 				WidgetSearchResult applied = new( request, true );
@@ -112,7 +112,7 @@ internal sealed class DeditSearchCoordinator {
 				: null;
 			if ( hit is not null ) {
 				SearchResult single = new( matches.DocumentKey, matches.Revision, matches.Query, [ hit ] );
-				WidgetTextEditStatus status = SearchController.ReplaceAll( target, single, request.Replacement ?? "", elapsed );
+				WidgetTextEditStatus status = SearchController.ReplaceAll( target, single, request.Replacement ?? "", elapsed, token );
 				if ( status != WidgetTextEditStatus.Applied ) return new WidgetSearchResult( request, false,
 					Error: $"Replacement was not applied ({status})." );
 				WidgetSearchResult applied = new( request, true, hit.Start, hit.Length );
