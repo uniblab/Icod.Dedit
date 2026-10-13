@@ -265,7 +265,7 @@ internal sealed class DocumentManager : IDisposable {
 	}
 
 	private static string ResolveIdentity( string fullPath ) {
-		try { return Path.GetFullPath( new FileInfo( fullPath ).ResolveLinkTarget( true )?.FullName ?? fullPath ); }
+		try { return PathIdentity.Resolve( fullPath ); }
 		catch ( IOException ) { return fullPath; }
 		catch ( UnauthorizedAccessException ) { return fullPath; }
 	}

@@ -84,7 +84,8 @@ internal sealed class DocumentFileService {
 		ArgumentException.ThrowIfNullOrWhiteSpace( path );
 		ArgumentNullException.ThrowIfNull( text );
 		cancellationToken.ThrowIfCancellationRequested();
-		string target = this.ResolvePath( path );
+		string fullPath = this.ResolvePath( path );
+		string target = ResolveTarget( fullPath );
 		if ( File.Exists( target ) || Directory.Exists( target ) ) throw new IOException( "The save target already exists." );
 		byte[] bytes = TextFileCodec.Encode( text, encoding );
 		if ( bytes.Length > this.maximumBytes ) throw new InvalidDataException( $"File exceeds the {this.maximumBytes} byte save limit." );
@@ -100,6 +101,10 @@ internal sealed class DocumentFileService {
 			}
 			cancellationToken.ThrowIfCancellationRequested();
 			this.beforeSaveStage?.Invoke( DocumentSaveStage.BeforeReplacement );
+			cancellationToken.ThrowIfCancellationRequested();
+			if ( !PathComparer.Equals( ResolveTarget( fullPath ), target ) )
+				throw new IOException( "The file target changed during the save." );
+			cancellationToken.ThrowIfCancellationRequested();
 			File.Move( temporary, target );
 			return SHA256.HashData( bytes );
 		} finally {
@@ -158,7 +163,7 @@ internal sealed class DocumentFileService {
 	private static readonly StringComparer PathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
 	private static string ResolveTarget( string path ) =>
-		Path.GetFullPath( new FileInfo( path ).ResolveLinkTarget( true )?.FullName ?? path );
+		PathIdentity.Resolve( path );
 
 	private async Task VerifyUnchangedAsync( string path, byte[] fingerprint, CancellationToken cancellationToken ) {
 		await using FileStream stream = new( path, new FileStreamOptions {

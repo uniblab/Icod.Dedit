@@ -33,6 +33,10 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Files and safety
 
+- Resolve file and parent-directory symlinks consistently for duplicate tabs,
+  Save As collisions and save-time retarget checks. New-file saves keep their
+  temporary file in the resolved directory and recheck cancellation immediately
+  before replacement.
 - Added strict UTF-8 and BOM-marked UTF-16 LE/BE decoding, exact mixed
   line-ending and final-terminator round trips, a 32 MiB open/save limit,
   and explicit diagnostics for missing, invalid or oversized files.

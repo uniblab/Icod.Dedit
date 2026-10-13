@@ -22,6 +22,7 @@
 namespace Icod.Dedit.Tests;
 
 using System.Text;
+using System.Diagnostics;
 using Icod.DCurses;
 using Icod.Dedit.Documents;
 using Icod.Dedit.Presentation;
@@ -63,6 +64,76 @@ public sealed class DocumentManagerTests {
 		Assert.False( manager.Activate( "unknown" ) );
 		Assert.Same( a, manager.Active );
 		Assert.Equal( "B", b.Shell.Document.Read( 0, 1 ) );
+	}
+
+	[Theory]
+	[InlineData( false )]
+	[InlineData( true )]
+	public async Task DirectorySymlinkAndTargetShareOneTabAndBlockSaveAsCollision( bool relative ) {
+		string directory = Directory.CreateTempSubdirectory( "dedit-parent-link-" ).FullName;
+		try {
+			string target = Directory.CreateDirectory( Path.Combine( directory, "target" ) ).FullName;
+			string alias = Path.Combine( directory, "alias" );
+			Directory.CreateSymbolicLink( alias, relative ? "target" : target );
+			string path = Path.Combine( target, "file.txt" );
+			await File.WriteAllTextAsync( path, "original" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry owner = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			string aliasPath = Path.Combine( alias, "file.txt" );
+			Assert.Same( owner, manager.Open( await files.OpenAsync( aliasPath, CancellationToken.None ) ) );
+			string fileAlias = Path.Combine( directory, "file-alias.txt" );
+			File.CreateSymbolicLink( fileAlias, aliasPath );
+			Assert.Same( owner, manager.Open( await files.OpenAsync( fileAlias, CancellationToken.None ) ) );
+			Assert.Single( manager.Tabs );
+			DocumentEntry draft = manager.OpenUntitled();
+			draft.Shell.Process( WidgetInput.Paste( "draft" ), TimeSpan.Zero );
+			ExistingSaveTarget observed = await files.CaptureExistingAsync( aliasPath, CancellationToken.None );
+			await Assert.ThrowsAsync<IOException>( () => manager.SaveAsExistingAsync( draft, files, observed, CancellationToken.None ) );
+			Assert.Equal( "original", await File.ReadAllTextAsync( path ) );
+			Assert.Null( draft.FullPath );
+			Assert.True( draft.HasUnsavedChanges );
+			await manager.SaveAsNewAsync( draft, files, Path.Combine( alias, "new.txt" ), CancellationToken.None );
+			Assert.Same( draft, manager.Open( await files.OpenAsync( Path.Combine( target, "new.txt" ), CancellationToken.None ) ) );
+			Assert.Equal( "draft", await File.ReadAllTextAsync( Path.Combine( target, "new.txt" ) ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task HardLinkAliasesRemainDistinctAndSavingReplacesOnlyTheChosenEntry() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-hardlink-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "original file.txt" );
+			string alias = Path.Combine( directory, "hard link.txt" );
+			await File.WriteAllTextAsync( path, "original" );
+			ProcessStartInfo start = new( OperatingSystem.IsWindows() ? "cmd.exe" : "ln" ) {
+				UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true
+			};
+			if ( OperatingSystem.IsWindows() ) {
+				start.ArgumentList.Add( "/c" ); start.ArgumentList.Add( "mklink" ); start.ArgumentList.Add( "/H" );
+				start.ArgumentList.Add( alias ); start.ArgumentList.Add( path );
+			} else { start.ArgumentList.Add( path ); start.ArgumentList.Add( alias ); }
+			using Process process = Process.Start( start )!;
+			using CancellationTokenSource timeout = new( TimeSpan.FromSeconds( 15 ) );
+			await process.WaitForExitAsync( timeout.Token );
+			Assert.True( process.ExitCode == 0, await process.StandardError.ReadToEndAsync() );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry first = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			DocumentEntry second = manager.Open( await files.OpenAsync( alias, CancellationToken.None ) );
+			Assert.NotSame( first, second );
+			Assert.Equal( 2, manager.Tabs.Count );
+			manager.Activate( first.Key );
+			first.Shell.Process( WidgetInput.Paste( "saved " ), TimeSpan.Zero );
+			await manager.SaveAsync( first, files, CancellationToken.None );
+			Assert.Equal( "saved original", await File.ReadAllTextAsync( path ) );
+			Assert.Equal( "original", await File.ReadAllTextAsync( alias ) );
+			Assert.Null( await manager.CheckExternalChangeAsync( second, files, CancellationToken.None ) );
+			Assert.False( first.HasUnsavedChanges );
+			Assert.False( second.HasUnsavedChanges );
+		} finally { Directory.Delete( directory, true ); }
 	}
 
 	[Fact]
