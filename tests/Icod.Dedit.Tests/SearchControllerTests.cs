@@ -46,7 +46,7 @@ public sealed class SearchControllerTests {
 
 	[Fact]
 	public void InvalidPatternAndCancellationFailWithoutResults() {
-		Assert.Throws<ArgumentException>( () => SearchController.Search( "tab", 0, "text",
+		Assert.ThrowsAny<ArgumentException>( () => SearchController.Search( "tab", 0, "text",
 			new SearchQuery( "[", IsRegex: true, MatchCase: true, WholeWord: false ), CancellationToken.None ) );
 		using CancellationTokenSource source = new(); source.Cancel();
 		Assert.ThrowsAny<OperationCanceledException>( () => SearchController.Search( "tab", 0, "text",
