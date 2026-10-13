@@ -34,7 +34,9 @@ internal static class DeditMenu {
 	internal static WidgetMenuBar Create() => new( "dedit-menu", [
 		WidgetMenuItem.Submenu( "file", "File", [
 			WidgetMenuItem.Command( "file.save", "Save", Save, 's',
-				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 's' ) )
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 's' ) ),
+			WidgetMenuItem.Command( "file.save-as", "Save As...", SaveAs, 'a',
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control | WidgetInputModifiers.Shift, 's' ) )
 		], 'f' ),
 		WidgetMenuItem.Submenu( "edit", "Edit", [
 			WidgetMenuItem.Command( "edit.undo", "Undo", "edit.undo", 'u', WidgetEditCommand.Undo,
@@ -74,8 +76,9 @@ internal static class DeditMenu {
 		bool paste = editor?.CanExecuteEditCommand( WidgetEditCommand.Paste ) == true;
 		bool selectAll = editor?.CanExecuteEditCommand( WidgetEditCommand.SelectAll ) == true;
 		menu.SetPresentation( [
-			new WidgetMenuItemPresentation( "file", "File", canSave ),
+			new WidgetMenuItemPresentation( "file", "File", editor is not null ),
 			new WidgetMenuItemPresentation( "file.save", "Save", canSave ),
+			new WidgetMenuItemPresentation( "file.save-as", "Save As...", editor is not null ),
 			new WidgetMenuItemPresentation( "edit", "Edit", undo || redo || cut || copy || paste || selectAll ),
 			new WidgetMenuItemPresentation( "edit.undo", "Undo", undo ),
 			new WidgetMenuItemPresentation( "edit.redo", "Redo", redo ),

@@ -29,6 +29,7 @@ using Icod.Widgets;
 
 internal sealed class DeditTerminal : IDeditTerminal {
 	private const string QuitDialogId = "dedit-discard-and-quit";
+	private const string SaveAsDialogId = "dedit-save-as";
 	private readonly CursesSession session;
 	private readonly WidgetHost host;
 	private readonly WidgetMenuBar menu = DeditMenu.Create();
@@ -36,6 +37,10 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly DeditClipboard clipboard;
 	private readonly DocumentManager documents;
 	private readonly DocumentFileService files;
+	private readonly LocalWidgetFileSystemProvider browserProvider = new();
+	private readonly DeditSaveTargetProvider saveTargetProvider = new();
+	private WidgetSaveTargetPicker? savePicker;
+	private DocumentEntry? saveEntry;
 	private string? saveError;
 	private readonly List<string> openErrors = [];
 	private readonly List<CursesInputProtocolLease> leases = [];
@@ -104,7 +109,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.Editor?.Arrange();
 		this.session.StandardScreen.Clear();
-				this.Write( screen.Rows - 1, this.saveError is not null ? this.saveError : this.openErrors.Count > 0 ?
+		this.Write( screen.Rows - 1, this.saveError is not null ? this.saveError : this.openErrors.Count > 0 ?
 			$"Open error ({this.openErrors.Count}): {this.openErrors[ 0 ]}" :
 			$"{DocumentManager.SanitizeDisplay( this.documents.Active?.Caption ?? "Untitled" )}; Ctrl+S saves existing files. Ctrl+Q exits." );
 		this.host.Render();
@@ -115,24 +120,56 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		if ( IsQuitKey( input ) ) return RequestQuit( this.host, this.menu, this.documents, input, elapsed );
 		if ( TryCycleFocus( this.host, input ) ) return false;
 		IReadOnlyList<WidgetAction> actions = this.Editor is null ? this.host.Process( input, elapsed ).Actions : this.Editor.Process( input, elapsed );
-		foreach ( WidgetAction action in actions ) {
+		Queue<WidgetAction> pending = new( actions );
+		while ( pending.TryDequeue( out WidgetAction? action ) ) {
 			if ( action is WidgetInvokedAction { CommandId: DeditMenu.Save } && this.documents.Active is { } saving ) {
 				try { await this.documents.SaveAsync( saving, this.files, CancellationToken.None ); this.saveError = null; }
-				catch ( Exception exception ) when ( exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or InvalidOperationException ) {
-					this.saveError = DocumentManager.SanitizeDisplay( $"Save error: {exception.Message}" );
+				catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
+			}
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.SaveAs } && this.documents.Active is { } savingAs ) {
+				string directory = savingAs.FullPath is null ? Environment.CurrentDirectory :
+					Path.GetDirectoryName( savingAs.FullPath ) ?? Environment.CurrentDirectory;
+				string name = savingAs.FullPath is null ? savingAs.Caption + ".txt" : Path.GetFileName( savingAs.FullPath );
+				this.saveEntry = savingAs;
+				WidgetSaveTargetPicker createdPicker = new( SaveAsDialogId, this.browserProvider, this.saveTargetProvider, directory, name );
+				this.savePicker = createdPicker;
+				this.host.ShowModal( createdPicker );
+				createdPicker.ApplyLoadResult( await WidgetBrowserLoader.LoadAsync( this.browserProvider,
+					createdPicker.RequestDirectory( directory ), CancellationToken.None ) );
+			}
+			else if ( action is WidgetBrowserLoadRequestedAction load && this.savePicker is { } browsing && load.WidgetId == browsing.Id )
+				browsing.ApplyLoadResult( await WidgetBrowserLoader.LoadAsync( this.browserProvider, load.Request, CancellationToken.None ) );
+			else if ( action is WidgetSaveTargetInspectionRequestedAction inspect && this.savePicker is { } inspecting && inspect.WidgetId == inspecting.Id ) {
+				WidgetSaveTargetObservation observation = await this.saveTargetProvider.InspectTargetAsync(
+					inspect.Request.Directory, inspect.Request.FileName, CancellationToken.None );
+				inspecting.ApplyInspectionResult( new WidgetSaveTargetInspectionResult( inspect.Request, observation ) );
+				foreach ( WidgetAction emitted in this.host.DrainActions() ) pending.Enqueue( emitted );
+			}
+			else if ( action is WidgetDialogCompletedAction completed && this.savePicker is { } finishedPicker && completed.WidgetId == finishedPicker.Id ) {
+				DocumentEntry? entry = this.saveEntry;
+				this.savePicker = null; this.saveEntry = null;
+				if ( completed.Result is { Outcome: WidgetDialogOutcome.Accepted, Value: WidgetSaveTargetSelection selectedTarget } && entry is not null ) {
+					try { await this.documents.SaveAsNewAsync( entry, this.files, selectedTarget.TargetPath, CancellationToken.None ); this.saveError = null; }
+					catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
 				}
 			}
-			else if ( action is WidgetTabActivationRequestedAction selection ) this.documents.Activate( selection.TabKey, focusEditor: false );
+			else if ( action is WidgetTabActivationRequestedAction tabActivation ) this.documents.Activate( tabActivation.TabKey, focusEditor: false );
 			else if ( action is WidgetClipboardRequestedAction clipboard ) this.clipboard.Complete( clipboard.Request );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToFile } ) this.host.Focus( this.tabs );
 			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.Wrap } wrap && this.Editor is not null )
 				DeditMenu.ApplyWrap( this.Editor.Editor, wrap.IsChecked );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.About } )
 				this.host.ShowModal( DeditMenu.CreateAboutDialog() );
-			else if ( action is WidgetDialogCompletedAction completed && ConfirmedDiscard( completed ) ) return true;
+			else if ( action is WidgetDialogCompletedAction confirmed && ConfirmedDiscard( confirmed ) ) return true;
 		}
 		return false;
 	}
+
+	private static bool IsSaveError( Exception exception ) => exception is IOException or UnauthorizedAccessException
+		or ArgumentException or NotSupportedException or InvalidOperationException;
+
+	private void SetSaveError( Exception exception ) =>
+		this.saveError = DocumentManager.SanitizeDisplay( $"Save error: {exception.Message}" );
 
 	private static bool IsQuitKey( WidgetInput input ) => input.Kind == WidgetInputKind.Key
 		&& input.KeyPhase is null or CursesKeyEventPhase.Press
