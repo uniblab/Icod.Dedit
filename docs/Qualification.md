@@ -87,3 +87,6 @@ while a menu or modal dialog is open. Tests cover both scopes and the normal
 quit path; a sized xterm pseudo-terminal still exited 0 and restored alternate
 screen state after Ctrl+Q. This does not yet provide dirty-document quit
 confirmation, which remains D1006 work.
+F6 and Shift+F6 now cycle focus without taking Tab away from indentation.
+Tests cover forward/backward cycling, ignored function-key release, and focus
+remaining inside an active modal scope.

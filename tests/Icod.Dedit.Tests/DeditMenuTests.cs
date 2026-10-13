@@ -161,4 +161,25 @@ public sealed class DeditMenuTests {
 		Assert.True( DeditTerminal.CanQuitFromKey( host, menu,
 			WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'q' ) ), TimeSpan.FromMilliseconds( 5 ) ) );
 	}
+
+	[Fact]
+	public void F6CyclesFocusWithoutChangingEditorTextOrConsumingTabIndent() {
+		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); WidgetTabStrip tabs = new( "tabs" );
+		host.Attach( menu ); host.Attach( tabs ); menu.Arrange( host.Screen.Bounds );
+		tabs.SetTabs( [ new WidgetTab( "untitled", "Untitled" ) ], "untitled" );
+		tabs.Arrange( new CursesRectangle( 1, 0, 1, 40 ) );
+		using EditorShell shell = new( host ); Assert.Same( shell.Editor, host.FocusedWidget );
+		Assert.True( DeditTerminal.TryCycleFocus( host, WidgetInput.FunctionKey( 6 ) ) );
+		Assert.Same( menu, host.FocusedWidget );
+		Assert.True( DeditTerminal.TryCycleFocus( host, WidgetInput.FunctionKey( 6, WidgetInputModifiers.Shift ) ) );
+		Assert.Same( shell.Editor, host.FocusedWidget );
+		Assert.False( DeditTerminal.TryCycleFocus( host, WidgetInput.FunctionKey( 6 ) with { KeyPhase = CursesKeyEventPhase.Release } ) );
+		Assert.Same( shell.Editor, host.FocusedWidget );
+		shell.Process( WidgetInput.Key( WidgetKey.Tab ), TimeSpan.FromMilliseconds( 1 ) );
+		Assert.Equal( "    ", shell.Document.Read( 0, 4 ) );
+		WidgetMessageDialog dialog = DeditMenu.CreateAboutDialog(); host.ShowModal( dialog );
+		Assert.True( DeditTerminal.TryCycleFocus( host, WidgetInput.FunctionKey( 6 ) ) );
+		Assert.Same( dialog, host.FocusedWidget );
+	}
 }

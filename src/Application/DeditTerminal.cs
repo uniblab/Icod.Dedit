@@ -95,6 +95,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 
 	public bool Process( WidgetInput input, TimeSpan elapsed ) {
 		if ( IsQuitKey( input ) ) return CanQuitFromKey( this.host, this.menu, input, elapsed );
+		if ( TryCycleFocus( this.host, input ) ) return false;
 		IReadOnlyList<WidgetAction> actions = this.editor is null ? this.host.Process( input, elapsed ).Actions : this.editor.Process( input, elapsed );
 		foreach ( WidgetAction action in actions ) {
 			if ( action is WidgetTabActivationRequestedAction selection ) this.activeKey = selection.TabKey;
@@ -117,6 +118,15 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		if ( !IsQuitKey( input ) ) return false;
 		WidgetDispatchResult result = host.Process( input, elapsed );
 		return !result.Handled && !menu.IsOpen;
+	}
+
+	internal static bool TryCycleFocus( WidgetHost host, WidgetInput input ) {
+		ArgumentNullException.ThrowIfNull( host ); ArgumentNullException.ThrowIfNull( input );
+		if ( input.Kind != WidgetInputKind.Key || input.KeyCode != WidgetKey.Function || input.FunctionKeyNumber != 6 ||
+			input.Modifiers is not ( WidgetInputModifiers.None or WidgetInputModifiers.Shift ) ||
+			input.KeyPhase is not ( null or CursesKeyEventPhase.Press ) ) return false;
+		host.MoveFocus( input.Modifiers == WidgetInputModifiers.Shift ? CursesFocusDirection.Backward : CursesFocusDirection.Forward );
+		return true;
 	}
 
 	public void Resize() {

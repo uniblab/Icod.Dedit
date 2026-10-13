@@ -240,6 +240,8 @@ Help → About uses a captioned OK dialog and preserves Escape = Cancel.
 Ctrl+Q now reaches the terminal adapter before a quit decision, so a menu or
 modal dialog can block that background shortcut. Dirty-document quit
 coordination remains in D1006.
+F6/Shift+F6 cycle host focus while editor Tab remains indentation; key release
+does not cycle and an active modal scope keeps focus inside the dialog.
 The rest of this milestone's menus and forms are still open.
 
 **Files:** `CommandRouter.cs`, `EditorShell.cs`, interaction tests.
