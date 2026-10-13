@@ -1,7 +1,36 @@
 # Qualification record
 
-This record describes checks actually run on the current branch. It is not a
-cross-platform release certification.
+This record contains historical checkpoints and current development evidence.
+Earlier sections describe their named revisions; they do not qualify the
+current head or certify a 1.0 release.
+
+## Current development head — 2026-10-13
+
+| Revision and run | Scope | Result |
+| --- | --- | --- |
+| [Dedit `d3f3d3a` / 38451965076](https://github.com/uniblab/Icod.Dedit/actions/runs/38451965076) | Staging restore/build/test/pack/local tool installation on Linux, Windows and macOS | 159 tests per .NET 8/9/10 target and OS passed; zero warnings/errors. |
+| [Dedit `e432cb7` / 38453283144](https://github.com/uniblab/Icod.Dedit/actions/runs/38453283144) | Adds bounded startup preferences and pathological-regex timeout regression | Linux and Windows passed 162 tests per target with zero warnings/errors. The macOS job was queued when this entry was recorded and may be canceled by later commits. |
+| [Widgets `f756d77` / 38453011475](https://github.com/uniblab/Icod.Widgets/actions/runs/38453011475) | Proposed per-editor newline/indentation API | 301 tests per target passed on Linux, Windows and macOS with zero warnings/errors; [Widgets PR #9](https://github.com/uniblab/Icod.Widgets/pull/9) is ready for review and has not been released. |
+
+PR validation restores published Widgets 1.3.1, packs the .NET tool, installs
+the exact local package and checks `--version` and `--help`. These are headless
+checks. The historical xterm pseudo-terminal tests below were performed at
+earlier revisions and do not qualify the current head.
+
+### Remaining release gates
+
+- The Widgets newline/indentation API needs owner review, merge and a NuGet
+  release before Dedit can adopt it. Dedit remains pinned to Widgets 1.3.1.
+- No-selection linewise clipboard policy and its Widgets implementation remain.
+- Hard-link identity and the last cross-process replacement race need an
+  explicit support policy. Fingerprint/target rechecks narrow the window but
+  are not a portable atomic compare-and-swap.
+- Run a keyboard-only current-head terminal exercise of open/edit/select/
+  copy/find/replace/tabs/format/save/conflict/cancel/quit and restoration.
+  Hardware terminals and Windows `build.cmd` remain unverified here.
+- Finish package contents/source/license/version review, clean installation,
+  upgrade/removal and exact candidate matrix before a 1.0.0 tag. No tag or
+  publication has occurred.
 
 ## D1002 executable foundation
 
