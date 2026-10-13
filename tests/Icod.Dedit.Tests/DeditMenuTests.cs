@@ -29,6 +29,23 @@ using Icod.Widgets;
 using Xunit;
 
 public sealed class DeditMenuTests {
+
+	[Fact]
+	public void FileSaveMenuAndShortcutInvokeTheSameCommand() {
+		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		using EditorShell shell = new( host, "text" );
+		DeditMenu.UpdateState( menu, shell.Editor, canSave: true );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'f' ) ), TimeSpan.FromMilliseconds( 1 ) );
+		Assert.True( menu.IsOpen );
+		WidgetInvokedAction mnemonic = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 's' ) ), TimeSpan.FromMilliseconds( 2 ) ).Actions ) );
+		WidgetInvokedAction shortcut = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 's' ) ), TimeSpan.FromMilliseconds( 3 ) ).Actions ) );
+		Assert.Equal( DeditMenu.Save, mnemonic.CommandId );
+		Assert.Equal( mnemonic.CommandId, shortcut.CommandId );
+	}
+
 	[Fact]
 	public void ViewMnemonicAndDirectShortcutInvokeSameGoToFileCommand() {
 		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );

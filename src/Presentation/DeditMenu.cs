@@ -25,6 +25,7 @@ using Icod.DCurses;
 using Icod.Widgets;
 
 internal static class DeditMenu {
+	internal const string Save = "file.save";
 	internal const string GoToFile = "view.go-file";
 	internal const string Wrap = "view.wrap";
 	internal const string About = "help.about";
