@@ -323,8 +323,15 @@ confirmation. It captures the destination's identity and byte fingerprint,
 then checks them again before replacement; a target owned by another tab
 and an external change to the current file are refused. The 96-test-per-target
 matrix covers cancellation, partial saves, conflicts, overwrite decisions,
-and late close results. Explicit external-change reload/keep choices and
-injected write/rename failure cases remain open.
+and late close results. Activation and active-save conflicts now offer a No-default Reload/Keep
+choice; missing/retargeted files retain the buffer and direct the user to
+Save As. Reload requires explicit discard, decodes before replacing a tab,
+and preserves its key. Acknowledged Keep suppresses repeated prompts for
+the same external bytes but does not bypass the save conflict. Injected
+write/replacement failures leave destination bytes intact and remove the
+temporary file. The latest CI run passed 107 tests per target on Linux,
+Windows and macOS. Remaining D1006 qualification includes physical aliases,
+late completion races and a live-terminal conflict exercise.
 
 **Files:** file service, `CloseCoordinator.cs`, document manager, failure-injection tests.
 

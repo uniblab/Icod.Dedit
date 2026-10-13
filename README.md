@@ -33,8 +33,11 @@ confirmation with No selected by default; a changed destination or one owned by
 another open tab is refused. Save All processes dirty tabs in order and pauses
 for Untitled Save As. Close All and Exit ask Save / Don't Save / Cancel for
 each dirty tab. Cancel stops later work while earlier successful saves remain.
-External-change reload choices, search, format controls, and release
-qualification remain under development.
+Externally changed files offer an explicit Reload or Keep decision when a tab
+is activated or an active save finds a conflict. The default Keep choice
+preserves the buffer; saving to the original path remains blocked until the
+conflict is resolved. Reload discards unsaved changes only after confirmation.
+Search, format controls, and release qualification remain under development.
 Build with a .NET 10 SDK (which targets .NET 8, 9, and 10) and run in an
 interactive terminal with the selected runtime installed:
 
@@ -59,6 +62,9 @@ Ctrl+Shift+S opens a directory and name picker. An existing file triggers an
 additional No-default overwrite confirmation; Escape or No leaves it untouched.
 The destination's identity and contents are checked again before replacement.
 A failed save leaves the buffer dirty and shows an error in the status row.
+If another process changed the file, a Reload/Keep prompt lets you load the
+disk copy or retain the editor copy. Keep the latter with Save As under a
+different path; No is the default, and Escape cancels the prompt.
 File → Save All visits dirty documents in tab order.
 
 Ctrl+W closes the active tab after Save / Don't Save / Cancel when it is dirty.
