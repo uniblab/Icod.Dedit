@@ -65,6 +65,24 @@ public sealed class EditorShellTests {
 	}
 
 	[Fact]
+	public void IndentationCanChangeForOneEditorWithoutEditingExistingText() {
+		using WidgetHost host = new( new CursesScreen( 32, 8 ), WidgetTheme.Default );
+		using EditorShell first = new( host );
+		first.Process( WidgetInput.Paste( "one\ntwo" ), TimeSpan.Zero );
+		using ( WidgetTextSnapshot snapshot = first.Document.CreateSnapshot() ) first.Document.MarkSaved( snapshot );
+		first.SetIndentationWidth( 2 );
+		Assert.Equal( 2, first.IndentationWidth );
+		Assert.False( first.Document.IsModified );
+		Assert.Equal( "one\ntwo", first.Document.Read( 0, checked( (int)first.Document.Length ) ) );
+		first.Editor.View.SetSelection( 0, first.Document.Length );
+		first.Process( WidgetInput.Key( WidgetKey.Tab ), TimeSpan.FromSeconds( 1 ) );
+		Assert.Equal( "  one\n  two", first.Document.Read( 0, checked( (int)first.Document.Length ) ) );
+		first.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'z' ) ), TimeSpan.FromSeconds( 2 ) );
+		Assert.False( first.Document.IsModified );
+		Assert.Equal( "one\ntwo", first.Document.Read( 0, checked( (int)first.Document.Length ) ) );
+	}
+
+	[Fact]
 	public void UnicodeMovementAndMixedNewlinesPreserveStoredText() {
 		using WidgetHost host = new( new CursesScreen( 18, 7 ), WidgetTheme.Default );
 		using EditorShell shell = new( host );
