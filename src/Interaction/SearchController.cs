@@ -42,7 +42,7 @@ internal sealed class SearchResult( string documentKey, long revision, SearchQue
 		if ( this.Hits.Count == 0 ) return null;
 		return previous
 			? this.Hits.LastOrDefault( hit => hit.Start < offset ) ?? this.Hits[ ^1 ]
-			: this.Hits.FirstOrDefault( hit => hit.Start >= offset ) ?? this.Hits[ 0 ];
+			: this.Hits.FirstOrDefault( hit => hit.Start > offset || hit.Start == offset && hit.Length > 0 ) ?? this.Hits[ 0 ];
 	}
 }
 
