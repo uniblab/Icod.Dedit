@@ -73,4 +73,27 @@ public sealed class DeditSearchCoordinatorTests {
 		Assert.NotNull( search.CompleteRequest( action, TimeSpan.FromMilliseconds( 2 ), CancellationToken.None ).Error );
 		Assert.Equal( "one one", entry.Shell.Document.Read( 0, 7 ) );
 	}
+
+	[Fact]
+	public void RepeatAfterFormClosesMovesForwardAndBackwardOnCurrentRevision() {
+		using WidgetHost host = new( new CursesScreen( 60, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry entry = manager.OpenUntitled();
+		entry.Shell.Process( WidgetInput.Paste( "one two one" ), TimeSpan.Zero );
+		DeditSearchCoordinator search = new( host, manager );
+		WidgetSearchForm form = search.Open( entry, allowReplace: false );
+		host.Focus( form.QueryInput ); host.Process( WidgetInput.Paste( "one" ), TimeSpan.Zero );
+		WidgetSearchRequestedAction request = Assert.IsType<WidgetSearchRequestedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.FromMilliseconds( 1 ) ).Actions ) );
+		Assert.True( search.CompleteRequest( request, TimeSpan.FromMilliseconds( 1 ), CancellationToken.None ).Found );
+		WidgetDialogCompletedAction closed = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.FromMilliseconds( 2 ) ).Actions ) );
+		Assert.True( search.Close( closed ) );
+		Assert.Equal( new SearchHit( 8, 3 ), search.Repeat( entry, previous: false, CancellationToken.None ) );
+		Assert.Equal( new SearchHit( 0, 3 ), search.Repeat( entry, previous: true, CancellationToken.None ) );
+		entry.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.FromMilliseconds( 3 ) );
+		Assert.NotNull( search.Repeat( entry, previous: false, CancellationToken.None ) );
+		DocumentEntry other = manager.OpenUntitled();
+		Assert.Null( search.Repeat( other, previous: false, CancellationToken.None ) );
+	}
 }
