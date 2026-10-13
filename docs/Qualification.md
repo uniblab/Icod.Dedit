@@ -8,6 +8,7 @@ current head or certify a 1.0 release.
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
+| [Dedit `59f38f8` / 38486418817](https://github.com/uniblab/Icod.Dedit/actions/runs/38486418817) | Real hard-link filesystem test plus Staging restore/build/test/pack/local tool installation on Linux, Windows and macOS | All jobs passed. Linux logged 192 tests per .NET 8/9/10 target and zero build warnings/errors. Two hard-link names open separate tabs; saving one replaces only its directory entry and leaves the other name's original bytes. |
 | [Dedit `a68de78` / 38480327720](https://github.com/uniblab/Icod.Dedit/actions/runs/38480327720) | Staging restore/build/test/pack/local tool installation on Linux, Windows and macOS, using the released Icod.Widgets 1.4.0 package | All jobs passed. Linux logged 191 tests per .NET 8/9/10 target, zero failures and zero build warnings/errors. |
 | [Widgets 1.4.0](https://github.com/uniblab/Icod.Widgets/pull/9) | Per-editor newline and indentation API | Merged to main and available to the Dedit CI NuGet restore. |
 
@@ -18,10 +19,12 @@ package checks do not replace a current-head live-terminal exercise.
 
 ### Remaining release gates
 
-- No-selection linewise clipboard policy and its Widgets implementation remain.
-- Hard-link identity and the last cross-process replacement race need an
-  explicit support policy. Fingerprint/target rechecks narrow the window but
-  are not a portable atomic compare-and-swap.
+- The linewise clipboard contract is implemented and validated in
+  [Widgets PR #10](https://github.com/uniblab/Icod.Widgets/pull/10), pending
+  owner merge/publication of 1.5.0 before Dedit can pin and integrate it.
+- The accepted hard-link policy is exercised on all three CI filesystems.
+  The final cross-process replacement race remains: fingerprint/target
+  rechecks narrow the window but are not a portable atomic compare-and-swap.
 - Run a keyboard-only current-head terminal exercise of open/edit/select/
   copy/find/replace/tabs/format/save/conflict/cancel/quit and restoration.
   Hardware terminals and Windows `build.cmd` remain unverified here.
