@@ -26,6 +26,8 @@ using Icod.Dedit.Documents;
 using Icod.Widgets;
 
 internal static class EditorStatus {
+	private const int MaximumColumnScan = 4_096;
+
 	internal static string Format( DocumentEntry entry ) {
 		ArgumentNullException.ThrowIfNull( entry );
 		WidgetTextDocument document = entry.Shell.Document;
@@ -33,8 +35,9 @@ internal static class EditorStatus {
 		long lineIndex = document.GetLineIndex( caret );
 		WidgetTextLine line = document.GetLine( lineIndex );
 		long localCaret = Math.Clamp( caret - line.Start, 0, line.ContentLength );
-		string content = document.Read( line.Start, checked( (int)localCaret ) );
-		int column = checked( StringInfo.ParseCombiningCharacters( content ).Length + 1 );
+		string column = localCaret > MaximumColumnScan ? $">{MaximumColumnScan}" :
+			checked( StringInfo.ParseCombiningCharacters( document.Read( line.Start, checked( (int)localCaret ) ) ).Length + 1 )
+				.ToString( CultureInfo.InvariantCulture );
 		return $"{DocumentManager.SanitizeDisplay( entry.Caption )} | " +
 			$"Ln {lineIndex + 1}, Col {column} | {EncodingLabel( entry.Encoding )} | " +
 			$"{LineEndingLabel( document, line )} | Indent {entry.Shell.IndentationWidth} | " +
