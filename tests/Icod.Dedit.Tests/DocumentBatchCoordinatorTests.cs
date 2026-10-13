@@ -76,8 +76,35 @@ public sealed class DocumentBatchCoordinatorTests {
 		Assert.True( middle.Shell.Document.IsModified );
 	}
 
+
 	[Fact]
-	public async Task ExitWaitsForSavedDocumentAndStopsOnConflict() {
+	public async Task SaveAllConflictKeepsPriorSaveAndStopsTheOperation() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-batch-" ).FullName;
+		try {
+			string firstPath = Path.Combine( directory, "first.txt" );
+			string secondPath = Path.Combine( directory, "second.txt" );
+			await File.WriteAllTextAsync( firstPath, "first" );
+			await File.WriteAllTextAsync( secondPath, "second" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry first = manager.Open( await files.OpenAsync( firstPath, CancellationToken.None ) );
+			DocumentEntry second = manager.Open( await files.OpenAsync( secondPath, CancellationToken.None ) );
+			first.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.Zero );
+			second.Shell.Process( WidgetInput.Paste( "?" ), TimeSpan.Zero );
+			await File.WriteAllTextAsync( secondPath, "external" );
+			DocumentBatchCoordinator batch = new( manager, files, new CloseCoordinator( host, manager, files ) );
+			await Assert.ThrowsAsync<IOException>( () => batch.StartAsync( BatchOperation.SaveAll, CancellationToken.None ) );
+			Assert.False( batch.IsActive );
+			Assert.Equal( "!first", await File.ReadAllTextAsync( firstPath ) );
+			Assert.False( first.Shell.Document.IsModified );
+			Assert.Equal( "external", await File.ReadAllTextAsync( secondPath ) );
+			Assert.True( second.Shell.Document.IsModified );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task ExitWaitsForSavedDocumentBeforeExiting() {
 		string directory = Directory.CreateTempSubdirectory( "dedit-batch-" ).FullName;
 		try {
 			string path = Path.Combine( directory, "first.txt" );
