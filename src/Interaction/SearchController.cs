@@ -92,10 +92,13 @@ internal static class SearchController {
 		return new SearchResult( documentKey, revision, query, hits );
 	}
 
-	internal static WidgetTextEditStatus ReplaceAll( DocumentEntry entry, SearchResult result, string replacement, TimeSpan timestamp ) {
+	internal static WidgetTextEditStatus ReplaceAll( DocumentEntry entry, SearchResult result, string replacement, TimeSpan timestamp,
+		CancellationToken token = default ) {
 		ArgumentNullException.ThrowIfNull( entry );
 		ArgumentNullException.ThrowIfNull( result );
 		ArgumentNullException.ThrowIfNull( replacement );
+		token.ThrowIfCancellationRequested();
+		Stopwatch timer = Stopwatch.StartNew();
 		WidgetTextDocument document = entry.Shell.Document;
 		if ( result.DocumentKey != entry.Key || result.Revision != document.Revision ) return WidgetTextEditStatus.Stale;
 		if ( result.Hits.Count == 0 ) return WidgetTextEditStatus.NoChange;
@@ -109,6 +112,8 @@ internal static class SearchController {
 		}
 		List<WidgetTextEdit> edits = [];
 		foreach ( SearchHit hit in result.Hits ) {
+			token.ThrowIfCancellationRequested();
+			if ( timer.Elapsed > TotalBudget ) throw new TimeoutException( "Replacement exceeded its time budget." );
 			string inserted = replacement;
 			if ( expression is not null ) {
 				Match match = expression.Match( text, hit.Start );
@@ -118,6 +123,8 @@ internal static class SearchController {
 			}
 			edits.Add( new WidgetTextEdit( hit.Start, hit.Length, inserted ) );
 		}
+		token.ThrowIfCancellationRequested();
+		if ( timer.Elapsed > TotalBudget ) throw new TimeoutException( "Replacement exceeded its time budget." );
 		WidgetTextViewState view = entry.Shell.Editor.View;
 		WidgetTextEditContext context = new( view.Id, view.Anchor, view.Caret, 0, 0,
 			WidgetTextEditKind.Programmatic, timestamp );
