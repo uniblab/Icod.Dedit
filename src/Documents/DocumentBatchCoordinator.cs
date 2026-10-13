@@ -56,7 +56,9 @@ internal sealed class DocumentBatchCoordinator {
 
 	internal async Task<BatchProgress> CompleteDecisionAsync( WidgetDialogCompletedAction action, CancellationToken token ) {
 		if ( !this.awaitingDecision ) return BatchProgress.Stopped;
-		CloseResolution resolution = await this.close.CompleteAsync( action, token );
+		CloseResolution resolution;
+		try { resolution = await this.close.CompleteAsync( action, token ); }
+		catch { this.Abort(); throw; }
 		if ( resolution == CloseResolution.Unrelated ) return BatchProgress.DecisionRequired;
 		this.awaitingDecision = false;
 		if ( resolution == CloseResolution.Kept ) { this.Abort(); return BatchProgress.Stopped; }
