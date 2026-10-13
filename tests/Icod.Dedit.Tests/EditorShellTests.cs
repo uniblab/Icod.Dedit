@@ -204,4 +204,42 @@ public sealed class EditorShellTests {
 
 		Assert.Equal( before, shell.Editor.View.Caret );
 	}
+
+	[Fact]
+	public void MillionUnitPasteSurvivesTinyResizeAndUndoesAsOneEdit() {
+		CursesScreen screen = new( 80, 24 );
+		using WidgetHost host = new( screen, WidgetTheme.Default );
+		using EditorShell shell = new( host );
+		string text = new( 'x', 1_000_000 );
+
+		shell.Process( WidgetInput.Paste( text ), TimeSpan.Zero );
+		screen.Resize( 4, 3 ); shell.Arrange(); host.Render();
+
+		Assert.Equal( text.Length, shell.Document.Length );
+		Assert.Equal( "x", host.Screen.StandardWindow.GetCell( 2, 0 ).Content );
+		shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'z' ) ),
+			TimeSpan.FromMilliseconds( 1 ) );
+		Assert.Equal( 0, shell.Document.Length );
+	}
+
+	[Fact]
+	public void RepeatedIndependentEditsUndoAndRedoWithoutLosingTheCheckpoint() {
+		using WidgetHost host = new( new CursesScreen( 40, 8 ), WidgetTheme.Default );
+		using EditorShell shell = new( host );
+		for ( int index = 0; index < 64; index++ )
+			shell.Process( WidgetInput.TextInput( new Rune( 'x' ) ), TimeSpan.FromSeconds( index + 1 ) );
+		Assert.Equal( 64, shell.Document.Length );
+
+		for ( int index = 0; index < 64; index++ )
+			shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'z' ) ),
+				TimeSpan.FromSeconds( 65 + index ) );
+		Assert.Equal( 0, shell.Document.Length );
+		Assert.False( shell.Document.IsModified );
+
+		for ( int index = 0; index < 64; index++ )
+			shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'y' ) ),
+				TimeSpan.FromSeconds( 129 + index ) );
+		Assert.Equal( 64, shell.Document.Length );
+		Assert.True( shell.Document.IsModified );
+	}
 }
