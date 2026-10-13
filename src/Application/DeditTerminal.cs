@@ -261,6 +261,19 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			}
 			else if ( action is WidgetDialogCompletedAction goToCompleted && this.goTo.Complete( goToCompleted ) ) { }
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToFile } ) this.host.Focus( this.tabs );
+			else if ( action is WidgetInvokedAction lineEndingAction &&
+			this.documents.Active is { } lineEndingEntry &&
+			lineEndingAction.CommandId is DeditMenu.LineEndingLf or DeditMenu.LineEndingCrLf or DeditMenu.LineEndingCr ) {
+			string ending = lineEndingAction.CommandId switch {
+				DeditMenu.LineEndingLf => "\n",
+				DeditMenu.LineEndingCrLf => "\r\n",
+				_ => "\r"
+			};
+			WidgetTextEditStatus status = DocumentFormatController.NormalizeLineEndings(
+				lineEndingEntry, ending, elapsed );
+			this.saveError = status is WidgetTextEditStatus.Applied or WidgetTextEditStatus.NoChange
+				? null : $"Line ending conversion was not applied ({status}).";
+			}
 			else if ( action is WidgetCheckedInvokedAction format &&
 			this.documents.Active is { } formatEntry &&
 			format.CommandId is DeditMenu.EncodingUtf8 or DeditMenu.EncodingUtf8Bom or
