@@ -275,7 +275,9 @@ BOM-marked UTF-16 LE/BE, preserves text including mixed line endings and the
 final terminator, and rejects invalid sequences or decoded NUL content as
 binary-looking input. Tests cover byte-identical unedited round trips, empty
 files and failures. The codec does not read paths or save documents; bounded
-file service, document identities, tab bindings and error handling remain.
+file loading now resolves against the initial directory, caps input at 32 MiB
+both before and during the read, and records a SHA-256 fingerprint. Document
+identities, tab bindings, UI error handling and saving remain.
 
 **Files:** `DocumentManager.cs`, `EditorDocument.cs`, `DocumentFileService.cs`,
 `TextFileCodec.cs`, tab bindings, filesystem/document tests.

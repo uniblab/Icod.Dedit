@@ -102,5 +102,10 @@ Terminal clipboard transfer and no-selection linewise behavior remain open.
 Strict UTF-8, UTF-8 BOM, UTF-16 LE BOM and UTF-16 BE BOM round-trip tests cover
 empty input, Unicode, mixed CRLF/LF/CR and final-newline differences. Invalid
 UTF-8, malformed UTF-16, BOM-less UTF-16-like bytes containing NUL and decoded
-NUL content are rejected rather than replaced. The codec is not wired to file
-opening yet; a bounded read service must enforce the size policy before decode.
+NUL content are rejected rather than replaced. The codec is not yet wired to
+the tabbed UI; a bounded read service enforces size before decode.
+The bounded service now resolves relative paths against the initial directory,
+enforces a 32 MiB limit before and during asynchronous reads, and records a
+SHA-256 fingerprint of the original bytes. Filesystem tests cover an actual
+UTF-16 BE file, missing/invalid/oversize input and cancellation. It is not yet
+connected to the tabbed UI.
