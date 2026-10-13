@@ -24,6 +24,8 @@ namespace Icod.Dedit.Tests;
 using System.Security.Cryptography;
 using System.Diagnostics;
 using Icod.Dedit.Documents;
+using Icod.DCurses;
+using Icod.Widgets;
 using Xunit;
 
 public sealed class DocumentFileServiceTests {
@@ -114,6 +116,11 @@ public sealed class DocumentFileServiceTests {
 			Assert.NotEqual( PathIdentity.Resolve( original ), PathIdentity.Resolve( alias ) );
 
 			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 40, 10 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry first = manager.Open( await files.OpenAsync( original, CancellationToken.None ) );
+			DocumentEntry second = manager.Open( await files.OpenAsync( alias, CancellationToken.None ) );
+			Assert.NotEqual( first.Key, second.Key );
 			LoadedTextFile opened = await files.OpenAsync( original, CancellationToken.None );
 			await files.SaveAsync( original, PathIdentity.Resolve( original ), opened.Fingerprint,
 				"after", TextFileEncoding.Utf8, CancellationToken.None );
