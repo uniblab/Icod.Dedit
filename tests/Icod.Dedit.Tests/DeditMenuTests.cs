@@ -295,4 +295,35 @@ public sealed class DeditMenuTests {
 				TimeSpan.Zero ).Actions ) );
 		Assert.Equal( DeditMenu.Save, save.CommandId );
 	}
+
+	[Theory]
+	[InlineData( 'f', 'f', DeditMenu.Find )]
+	[InlineData( 'l', 'r', DeditMenu.Replace )]
+	public void EditFindAndReplaceMenuAndShortcutsInvokeSameCommand( char mnemonicKey, char shortcutKey, string command ) {
+		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		using EditorShell shell = new( host, "draft" );
+		DeditMenu.UpdateState( menu, shell.Editor );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'e' ) ), TimeSpan.Zero );
+		WidgetInvokedAction mnemonic = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( mnemonicKey ) ), TimeSpan.Zero ).Actions ) );
+		WidgetInvokedAction shortcut = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( shortcutKey ) ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( command, mnemonic.CommandId );
+		Assert.Equal( mnemonic.CommandId, shortcut.CommandId );
+	}
+
+	[Theory]
+	[InlineData( false, DeditMenu.FindNext )]
+	[InlineData( true, DeditMenu.FindPrevious )]
+	public void FunctionThreeFindNavigationUsesDirection( bool previous, string command ) {
+		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		using EditorShell shell = new( host, "draft" );
+		DeditMenu.UpdateState( menu, shell.Editor );
+		WidgetInvokedAction action = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.FunctionKey( 3, previous ? WidgetInputModifiers.Shift : WidgetInputModifiers.None ),
+				TimeSpan.Zero ).Actions ) );
+		Assert.Equal( command, action.CommandId );
+	}
 }
