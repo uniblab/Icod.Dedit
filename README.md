@@ -25,10 +25,10 @@ View → Go to File, View → Word Wrap, Edit → Undo/Redo/Cut/Copy/Paste/Selec
 and Help → About. `Ctrl+P` focuses the tab strip;
 `Alt+Z` toggles wrap for the active editor. Where the terminal reports
 Alt+V distinctly, open View and press plain F for that same action. Changes
-are lost on exit. Supplying
-file paths shows placeholder tabs; those files are not loaded or editable yet.
-File operations and full multi-document behavior remain later milestones. Do
-not rely on this build to modify a file.
+are lost on exit. Supplied file paths now load into independent editable tabs;
+invalid, missing and oversized paths are reported in the status row while other
+files still open. Saving, close confirmation, and full file workflows remain
+later milestones. Do not rely on this build to modify a file on disk.
 
 Build with a .NET 10 SDK (which targets .NET 8, 9, and 10) and run in an
 interactive terminal with the selected runtime installed:
@@ -40,8 +40,11 @@ dotnet run --project Icod.Dedit.csproj -f net10.0 -- "first file.txt" "second.tx
 ```
 
 On Windows, use `build.cmd` and the same `dotnet run` commands. The shell
-shows one editable Untitled tab without paths and path captions in argument
+shows one editable Untitled tab without paths and loaded documents in argument
 order when paths are supplied. Use `--` before a path beginning with `-`.
+Ctrl+P focuses the tab strip; Left/Right select a document, and F6 returns to
+the editor. File loading accepts strict UTF-8 and BOM-marked UTF-16 LE/BE up to
+32 MiB, preserving mixed line endings and the original encoding in memory.
 Ctrl+Z/Ctrl+Y undo and redo in Untitled; Ctrl+X/C/V/A cut, copy, paste and
 select all using an in-process clipboard; Ctrl+Q exits. Copy and cut currently
 require a selection. Terminal clipboard transport and linewise operations are

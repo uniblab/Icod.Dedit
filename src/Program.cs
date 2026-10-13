@@ -44,7 +44,7 @@ internal static class Program {
 		}
 		try {
 			Stopwatch clock = Stopwatch.StartNew();
-			await DeditApplication.RunAsync( options, open ?? ( () => DeditTerminal.OpenAsync( options.Paths.Count == 0 ) ), () => clock.Elapsed );
+			await DeditApplication.RunAsync( options, open ?? ( () => DeditTerminal.OpenAsync( options ) ), () => clock.Elapsed );
 			return 0;
 		} catch ( Exception exception ) when ( exception is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException or AggregateException ) {
 			await error.WriteLineAsync( $"dedit: {exception.Message}" ); return 1;

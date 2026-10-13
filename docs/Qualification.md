@@ -14,7 +14,8 @@ cross-platform release certification.
   the Untitled shell; Ctrl+Q returned 0. The session emitted the matching
   disable/restore terminal protocol and alternate-screen sequences.
 - Windows `build.cmd`, macOS, and a hardware terminal remain to be checked
-  before a release claim. Supplied paths are not loaded or editable.
+  before a release claim. At this D1002 checkpoint, paths were placeholders;
+  D1005 below records the later file-loading work.
 
 ## D1003 in-memory editor slice
 
@@ -109,3 +110,12 @@ enforces a 32 MiB limit before and during asynchronous reads, and records a
 SHA-256 fingerprint of the original bytes. Filesystem tests cover an actual
 UTF-16 BE file, missing/invalid/oversize input and cancellation. It is not yet
 connected to the tabbed UI.
+The terminal shell now connects these snapshots to independent document/view
+instances and switches on stable keys. Headless tests retain caret, undo and
+dirty state across switching, deduplicate a normalized path, distinguish equal
+basenames and preserve tab-strip focus for repeated arrows. A sized xterm
+pseudo-terminal opened two real UTF-8 files, displayed the first, routed Ctrl+P
+to the strip and displayed the second with application-cursor Right (`ESC O C`).
+The shell restored its alternate screen on Ctrl+Q. An earlier probe used
+normal-cursor `ESC [ C` while this session had application-cursor mode enabled;
+that probe did not exercise the intended arrow input.

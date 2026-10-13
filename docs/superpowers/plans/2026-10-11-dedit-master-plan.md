@@ -276,8 +276,14 @@ final terminator, and rejects invalid sequences or decoded NUL content as
 binary-looking input. Tests cover byte-identical unedited round trips, empty
 files and failures. The codec does not read paths or save documents; bounded
 file loading now resolves against the initial directory, caps input at 32 MiB
-both before and during the read, and records a SHA-256 fingerprint. Document
-identities, tab bindings, UI error handling and saving remain.
+both before and during the read, and records a SHA-256 fingerprint. Alias
+edge cases, late asynchronous completion and saving remain.
+The terminal shell now loads file arguments into independent editor views with
+stable tab keys and per-document history/caret state. Duplicate normalized paths
+activate an existing tab, and equal basenames gain distinguishing parent
+suffixes. Failed opens leave successful tabs intact and show a status diagnostic;
+when all paths fail an editable Untitled tab remains. Direct file close and save
+are still withheld until the D1006 dirty-document workflow is implemented.
 
 **Files:** `DocumentManager.cs`, `EditorDocument.cs`, `DocumentFileService.cs`,
 `TextFileCodec.cs`, tab bindings, filesystem/document tests.

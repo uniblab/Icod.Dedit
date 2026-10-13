@@ -22,6 +22,8 @@
 namespace Icod.Dedit.Application;
 
 using Icod.DCurses;
+using Icod.Dedit.CommandLine;
+using Icod.Dedit.Documents;
 using Icod.Dedit.Presentation;
 using Icod.Widgets;
 
@@ -31,32 +33,45 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly WidgetMenuBar menu = DeditMenu.Create();
 	private readonly WidgetTabStrip tabs = new( "workspace-tabs" );
 	private readonly DeditClipboard clipboard;
-	private readonly EditorShell? editor;
+	private readonly DocumentManager documents;
+	private readonly List<string> openErrors = [];
 	private readonly List<CursesInputProtocolLease> leases = [];
-	private string? activeKey;
+	private EditorShell? Editor => this.documents.Active?.Shell;
 
-	private DeditTerminal( CursesSession session, bool newDocument ) {
+	private DeditTerminal( CursesSession session ) {
 		this.session = session;
 		this.host = new WidgetHost( session, WidgetTheme.Default );
 		this.clipboard = new DeditClipboard( this.host );
+		this.documents = new DocumentManager( this.host );
 		this.host.Attach( this.menu );
 		this.host.Attach( this.tabs );
-		if ( newDocument ) this.editor = new EditorShell( this.host );
-		else this.host.Focus( this.tabs );
 		session.StandardScreen.WrapMode = CursesWrapMode.Clip;
 	}
 
-	internal static async ValueTask<IDeditTerminal> OpenAsync( bool newDocument ) {
+	internal static async ValueTask<IDeditTerminal> OpenAsync( DeditOptions options ) {
+		ArgumentNullException.ThrowIfNull( options );
 		CursesSession session = await CursesSession.OpenAsync( new CursesSessionOptions { InputMode = CursesInputMode.Raw } );
 		DeditTerminal? terminal = null;
 		try {
-			terminal = new DeditTerminal( session, newDocument );
-			foreach ( CursesInputProtocolOptions options in new[] {
+			terminal = new DeditTerminal( session );
+			DocumentFileService files = new( Environment.CurrentDirectory );
+			string? firstKey = null;
+			foreach ( string path in options.Paths ) {
+				try {
+					DocumentEntry opened = terminal.documents.Open( await files.OpenAsync( path, CancellationToken.None ) );
+					firstKey ??= opened.Key;
+				} catch ( Exception exception ) when ( exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException ) {
+					terminal.openErrors.Add( DocumentManager.SanitizeDisplay( $"{path}: {exception.Message}" ) );
+				}
+			}
+			if ( firstKey is null ) terminal.documents.OpenUntitled();
+			else terminal.documents.Activate( firstKey );
+			foreach ( CursesInputProtocolOptions protocolOptions in new[] {
 				new CursesInputProtocolOptions { MouseTrackingMode = CursesMouseTrackingMode.ButtonEvents },
 				new CursesInputProtocolOptions { BracketedPaste = true },
 				new CursesInputProtocolOptions { KeyboardReportingMode = CursesKeyboardReportingMode.Disambiguated }
 			} ) {
-				var result = await session.AcquireInputProtocolsAsync( options );
+				var result = await session.AcquireInputProtocolsAsync( protocolOptions );
 				if ( result.IsAvailable ) terminal.leases.Add( result.GetRequiredValue() );
 			}
 			return terminal;
@@ -80,17 +95,15 @@ internal sealed class DeditTerminal : IDeditTerminal {
 
 	public async ValueTask DrawAsync( IReadOnlyList<string> captions, TimeSpan elapsed, CancellationToken cancellationToken ) {
 		CursesScreen screen = this.session.Screen;
-		WidgetTab[] items = captions.Select( ( name, index ) => new WidgetTab( index.ToString( System.Globalization.CultureInfo.InvariantCulture ), name,
-			IsModified: index == 0 && this.editor?.Document.IsModified == true, IsClosable: false ) ).ToArray();
-		this.tabs.SetTabs( items, this.activeKey );
-		DeditMenu.UpdateState( this.menu, this.editor?.Editor );
+		this.tabs.SetTabs( this.documents.Tabs, this.documents.Active?.Key );
+		DeditMenu.UpdateState( this.menu, this.Editor?.Editor );
 		this.menu.Arrange( screen.Bounds );
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
-		this.editor?.Arrange();
+		this.Editor?.Arrange();
 		this.session.StandardScreen.Clear();
-		if ( this.editor is null ) this.Write( 2, "Files are not loaded in this shell yet." );
-		this.Write( screen.Rows - 1, this.editor is null ? "Use arrows on tabs to preview paths. Ctrl+Q exits." :
-			"Untitled in memory; changes are lost on exit. Ctrl+Z/Y undo/redo. Ctrl+Q exits." );
+		this.Write( screen.Rows - 1, this.openErrors.Count > 0 ?
+			$"Open error ({this.openErrors.Count}): {this.openErrors[ 0 ]}" :
+			$"{DocumentManager.SanitizeDisplay( this.documents.Active?.Caption ?? "Untitled" )} in memory; changes are lost on exit. Ctrl+Z/Y undo/redo. Ctrl+Q exits." );
 		this.host.Render();
 		await this.session.RefreshAsync( cancellationToken );
 	}
@@ -98,13 +111,13 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	public bool Process( WidgetInput input, TimeSpan elapsed ) {
 		if ( IsQuitKey( input ) ) return CanQuitFromKey( this.host, this.menu, input, elapsed );
 		if ( TryCycleFocus( this.host, input ) ) return false;
-		IReadOnlyList<WidgetAction> actions = this.editor is null ? this.host.Process( input, elapsed ).Actions : this.editor.Process( input, elapsed );
+		IReadOnlyList<WidgetAction> actions = this.Editor is null ? this.host.Process( input, elapsed ).Actions : this.Editor.Process( input, elapsed );
 		foreach ( WidgetAction action in actions ) {
-			if ( action is WidgetTabActivationRequestedAction selection ) this.activeKey = selection.TabKey;
+			if ( action is WidgetTabActivationRequestedAction selection ) this.documents.Activate( selection.TabKey, focusEditor: false );
 			else if ( action is WidgetClipboardRequestedAction clipboard ) this.clipboard.Complete( clipboard.Request );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToFile } ) this.host.Focus( this.tabs );
-			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.Wrap } wrap && this.editor is not null )
-				DeditMenu.ApplyWrap( this.editor.Editor, wrap.IsChecked );
+			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.Wrap } wrap && this.Editor is not null )
+				DeditMenu.ApplyWrap( this.Editor.Editor, wrap.IsChecked );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.About } )
 				this.host.ShowModal( DeditMenu.CreateAboutDialog() );
 		}
@@ -133,7 +146,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	}
 
 	public void Resize() {
-		this.session.SynchronizeDimensions(); this.editor?.Arrange(); this.session.Invalidate();
+		this.session.SynchronizeDimensions(); this.Editor?.Arrange(); this.session.Invalidate();
 	}
 
 	private void Write( int row, string text ) {
@@ -150,7 +163,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 				for ( int index = this.leases.Count - 1; index >= 0; index-- ) await this.leases[ index ].DisposeAsync();
 			}
 		} finally {
-			try { this.editor?.Dispose(); }
+			try { this.documents.Dispose(); }
 			finally { await DisposeOwnedResourcesAsync( this.host, this.session ); }
 		}
 	}

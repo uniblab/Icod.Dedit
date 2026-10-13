@@ -29,19 +29,31 @@ internal sealed class EditorShell : IDisposable {
 	private readonly WidgetTextViewState view;
 	private bool disposed;
 
-	internal EditorShell( WidgetHost host ) {
+	internal EditorShell( WidgetHost host, string initialText = "", string editorId = "untitled-editor", bool activate = true ) {
 		this.host = host ?? throw new ArgumentNullException( nameof( host ) );
-		this.Document = new WidgetTextDocument( [ ReadOnlyMemory<char>.Empty ] );
+		ArgumentNullException.ThrowIfNull( initialText );
+		this.Document = new WidgetTextDocument( [ initialText.AsMemory() ] );
 		this.view = new WidgetTextViewState( this.Document );
-		this.Editor = new WidgetTextEditor( "untitled-editor", this.view, new WidgetEditorOptions {
+		this.Editor = new WidgetTextEditor( editorId, this.view, new WidgetEditorOptions {
 			Indentation = "    ", TabWidth = 4, MaximumProjectionSourceUnits = 4_096
 		} );
-		this.host.Attach( this.Editor );
-		this.Arrange(); this.host.Focus( this.Editor );
+		if ( activate ) this.Activate();
 	}
 
 	internal WidgetTextDocument Document { get; }
 	internal WidgetTextEditor Editor { get; }
+	internal bool IsActive { get; private set; }
+
+	internal void Activate( bool focus = true ) {
+		if ( this.disposed ) throw new ObjectDisposedException( nameof( EditorShell ) );
+		if ( !this.IsActive ) { this.host.Attach( this.Editor ); this.IsActive = true; }
+		this.Arrange(); if ( focus ) this.host.Focus( this.Editor );
+	}
+
+	internal void Deactivate() {
+		if ( !this.IsActive ) return;
+		this.host.Detach( this.Editor ); this.IsActive = false;
+	}
 
 	internal void Arrange() {
 		CursesScreen screen = this.host.Screen;
@@ -64,6 +76,6 @@ internal sealed class EditorShell : IDisposable {
 
 	public void Dispose() {
 		if ( this.disposed ) return;
-		this.host.Detach( this.Editor ); this.view.Dispose(); this.disposed = true;
+		this.Deactivate(); this.view.Dispose(); this.disposed = true;
 	}
 }
