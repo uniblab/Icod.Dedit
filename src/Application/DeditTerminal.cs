@@ -60,7 +60,9 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private DeditTerminal( CursesSession session ) {
 		this.session = session;
 		this.host = new WidgetHost( session, WidgetTheme.Default );
-		this.clipboard = new DeditClipboard( this.host );
+		this.clipboard = new DeditClipboard( this.host,
+			write: ( value, token ) => session.WriteClipboardAsync( CursesClipboardSelection.Clipboard, value, token ),
+			read: ( timeout, token ) => session.ReadClipboardAsync( CursesClipboardSelection.Clipboard, timeout, token ) );
 		this.documents = new DocumentManager( this.host );
 		this.files = new DocumentFileService( Environment.CurrentDirectory );
 		this.close = new CloseCoordinator( this.host, this.documents, this.files );
@@ -251,7 +253,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			}
 			else if ( action is WidgetTabActivationRequestedAction tabActivation && this.documents.Activate( tabActivation.TabKey, focusEditor: false ) &&
 				this.documents.Active is { } activated ) await this.OfferExternalChangeAsync( activated );
-			else if ( action is WidgetClipboardRequestedAction clipboard ) this.clipboard.Complete( clipboard.Request );
+			else if ( action is WidgetClipboardRequestedAction clipboard ) await this.clipboard.CompleteAsync( clipboard.Request );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToLine } && this.documents.Active is { } goToEntry )
 				this.goTo.Open( goToEntry );
 			else if ( action is WidgetDialogValidationRequestedAction goToValidation && this.goTo.Validate( goToValidation ) ) {
