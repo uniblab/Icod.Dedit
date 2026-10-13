@@ -56,4 +56,74 @@ public sealed class DocumentFileServiceTests {
 			await Assert.ThrowsAnyAsync<OperationCanceledException>( async () => await service.OpenAsync( "invalid", canceled.Token ) );
 		} finally { Directory.Delete( directory, true ); }
 	}
+
+	[Fact]
+	public async Task SavePreservesSelectedEncodingAndMixedTerminators() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			byte[] original = TextFileCodec.Encode( "old\r\n", TextFileEncoding.Utf16BigEndian );
+			await File.WriteAllBytesAsync( path, original );
+			DocumentFileService service = new( directory );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			string edited = "界\r\nnext\nend\r";
+			byte[] fingerprint = await service.SaveAsync( path, path, loaded.Fingerprint, edited,
+				TextFileEncoding.Utf16BigEndian, CancellationToken.None );
+			byte[] expected = TextFileCodec.Encode( edited, TextFileEncoding.Utf16BigEndian );
+			Assert.Equal( expected, await File.ReadAllBytesAsync( path ) );
+			Assert.Equal( SHA256.HashData( expected ), fingerprint );
+			Assert.Single( Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SaveRefusesExternalChangeAndKeepsBothVersions() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "original" );
+			DocumentFileService service = new( directory );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			await File.WriteAllTextAsync( path, "external" );
+			await Assert.ThrowsAsync<IOException>( () => service.SaveAsync( path, path, loaded.Fingerprint,
+				"editor", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Equal( "external", await File.ReadAllTextAsync( path ) );
+			Assert.Single( Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SaveRefusesReadOnlyTargetWithoutLeavingTemporaryFiles() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-save-" ).FullName;
+		string path = Path.Combine( directory, "sample.txt" );
+		try {
+			await File.WriteAllTextAsync( path, "original" );
+			DocumentFileService service = new( directory );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			File.SetAttributes( path, File.GetAttributes( path ) | FileAttributes.ReadOnly );
+			await Assert.ThrowsAnyAsync<Exception>( () => service.SaveAsync( path, path, loaded.Fingerprint,
+				"editor", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Equal( "original", await File.ReadAllTextAsync( path ) );
+			Assert.Single( Directory.GetFiles( directory ) );
+		} finally {
+			if ( File.Exists( path ) ) File.SetAttributes( path, FileAttributes.Normal );
+			Directory.Delete( directory, true );
+		}
+	}
+
+	[Fact]
+	public async Task CanceledSaveDoesNotTouchDestination() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "original" );
+			DocumentFileService service = new( directory );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			using CancellationTokenSource canceled = new(); canceled.Cancel();
+			await Assert.ThrowsAnyAsync<OperationCanceledException>( () => service.SaveAsync( path, path,
+				loaded.Fingerprint, "editor", TextFileEncoding.Utf8, canceled.Token ) );
+			Assert.Equal( "original", await File.ReadAllTextAsync( path ) );
+			Assert.Single( Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
 }
