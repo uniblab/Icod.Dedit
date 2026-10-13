@@ -183,7 +183,7 @@ public sealed class EditorShellTests {
 		Assert.Equal( exact, shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
 		for ( int row = 0; row < host.Screen.Rows; row++ )
 			for ( int column = 0; column < host.Screen.Columns; column++ )
-				Assert.False( host.Screen.StandardWindow.GetCell( row, column ).Content.Any( char.IsControl ) );
+					Assert.DoesNotContain( host.Screen.StandardWindow.GetCell( row, column ).Content, char.IsControl );
 	}
 
 	[Fact]
