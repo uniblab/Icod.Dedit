@@ -49,6 +49,16 @@ public sealed class SearchControllerTests {
 	}
 
 	[Fact]
+	public void ForwardNavigationAdvancesPastAZeroLengthMatchAtTheCaret() {
+		SearchResult result = SearchController.Search( "tab", 0, "a\u0301😀",
+			new SearchQuery( "(?=.)", IsRegex: true, MatchCase: true, WholeWord: false ), CancellationToken.None );
+
+		Assert.Equal( new SearchHit( 2, 0 ), result.Next( 0, previous: false ) );
+		Assert.Equal( new SearchHit( 0, 0 ), result.Next( 2, previous: false ) );
+		Assert.Equal( new SearchHit( 0, 0 ), result.Next( 2, previous: true ) );
+	}
+
+	[Fact]
 	public void InvalidPatternAndCancellationFailWithoutResults() {
 		Assert.ThrowsAny<ArgumentException>( () => SearchController.Search( "tab", 0, "text",
 			new SearchQuery( "[", IsRegex: true, MatchCase: true, WholeWord: false ), CancellationToken.None ) );
