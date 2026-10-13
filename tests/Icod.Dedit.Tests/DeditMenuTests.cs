@@ -32,6 +32,22 @@ public sealed class DeditMenuTests {
 
 
 
+
+	[Theory]
+	[InlineData( 'l', DeditMenu.SaveAll )]
+	[InlineData( 'o', DeditMenu.CloseAll )]
+	[InlineData( 'x', DeditMenu.Exit )]
+	public void FileBatchCommandsAreKeyboardAccessible( char mnemonic, string commandId ) {
+		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		using EditorShell shell = new( host, "draft" );
+		DeditMenu.UpdateState( menu, shell.Editor, canSave: true );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'f' ) ), TimeSpan.Zero );
+		WidgetInvokedAction action = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( mnemonic ) ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( commandId, action.CommandId );
+	}
+
 	[Fact]
 	public void FileCloseMenuAndShortcutInvokeSameCommand() {
 		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
