@@ -31,7 +31,12 @@ The entries under Unreleased describe implemented behavior. They are not a
   Unicode grapheme columns, F6 focus cycling, Word Wrap and About.
 - Added explicit UTF-8/UTF-8 BOM/UTF-16 LE/UTF-16 BE selection that contributes
   to unsaved state and checkpoints only the encoding written. LF/CRLF/CR
-  normalization preserves final terminators and is one undoable edit.
+  normalization preserves final terminators and is one undoable edit. Opening
+  a file uses its first line ending for future Enter keys; explicit conversion
+  updates that choice even in a document with no existing terminators.
+- Added per-tab 2-, 4- and 8-space indentation controls, backed by the
+  mutable editor policy in Icod.Widgets 1.4.0. Switching width affects future
+  indentation without rewriting text or marking a clean document dirty.
 
 ### Files and safety
 
@@ -62,6 +67,7 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Build and validation
 
+- Updated the application dependency from Icod.Widgets 1.3.1 to 1.4.0.
 - Added local cmd/sh/PowerShell build and package scripts, pull-request
   validation across Linux, Windows and macOS, and guarded tag-triggered
   package/archive release workflows. No release has been published.
