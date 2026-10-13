@@ -36,9 +36,10 @@ internal sealed class DeditSaveTargetProvider : IWidgetSaveTargetProvider {
 			if ( !Directory.Exists( parent ) )
 				return ValueTask.FromResult( new WidgetSaveTargetObservation( "", false, false, "The selected directory does not exist." ) );
 			string path = Path.Combine( parent, fileName );
-			bool exists = File.Exists( path ) || Directory.Exists( path );
-			return ValueTask.FromResult( new WidgetSaveTargetObservation( path, exists, !exists,
-				exists ? "The target already exists; choose another name." : null ) );
+			bool directoryTarget = Directory.Exists( path );
+			bool exists = directoryTarget || File.Exists( path );
+			return ValueTask.FromResult( new WidgetSaveTargetObservation( path, exists, !directoryTarget,
+				directoryTarget ? "Choose a file name, not a directory." : null ) );
 		} catch ( Exception exception ) when ( exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException ) {
 			return ValueTask.FromResult( new WidgetSaveTargetObservation( "", false, false, exception.Message ) );
 		}

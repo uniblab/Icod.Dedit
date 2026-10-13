@@ -44,7 +44,7 @@ internal static class DeditMenu {
 			WidgetMenuItem.Command( "file.save-all", "Save All", SaveAll, 'l' ),
 			WidgetMenuItem.Command( "file.close", "Close", Close, 'c',
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'w' ) ),
-			WidgetMenuItem.Command( "file.close-all", "Close All", CloseAll, 'o' ),
+			WidgetMenuItem.Command( "file.close-all", "Close All", CloseAll, 'd' ),
 			WidgetMenuItem.Command( "file.exit", "Exit", Exit, 'x' )
 		], 'f' ),
 		WidgetMenuItem.Submenu( "edit", "Edit", [

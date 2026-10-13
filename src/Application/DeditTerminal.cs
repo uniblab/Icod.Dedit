@@ -29,6 +29,7 @@ using Icod.Widgets;
 
 internal sealed class DeditTerminal : IDeditTerminal {
 	private const string SaveAsDialogId = "dedit-save-as";
+	private const string OverwriteDialogId = "dedit-confirm-overwrite";
 	private readonly CursesSession session;
 	private readonly WidgetHost host;
 	private readonly WidgetMenuBar menu = DeditMenu.Create();
@@ -42,11 +43,14 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly LocalWidgetFileSystemProvider browserProvider = new();
 	private readonly DeditSaveTargetProvider saveTargetProvider = new();
 	private WidgetSaveTargetPicker? savePicker;
+	private PendingOverwrite? pendingOverwrite;
 	private DocumentEntry? saveEntry;
 	private string? saveError;
 	private readonly List<string> openErrors = [];
 	private readonly List<CursesInputProtocolLease> leases = [];
 	private EditorShell? Editor => this.documents.Active?.Shell;
+	private sealed record PendingOverwrite( string DialogId, DocumentEntry Entry, ExistingSaveTarget Target,
+		bool CloseAfterSave, bool BatchPicker );
 
 	private DeditTerminal( CursesSession session ) {
 		this.session = session;
@@ -157,25 +161,33 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			else if ( action is WidgetDialogCompletedAction completed && this.savePicker is { } finishedPicker && completed.WidgetId == finishedPicker.Id ) {
 				DocumentEntry? entry = this.saveEntry;
 				this.savePicker = null; this.saveEntry = null;
-				string? closeKey = this.closeAfterSaveKey;
+				bool closeAfterSave = this.closeAfterSaveKey == entry?.Key;
 				this.closeAfterSaveKey = null;
 				bool batchPicker = entry is not null && this.batch.SaveAsKey == entry.Key;
-				bool saved = false;
-				if ( completed.Result is { Outcome: WidgetDialogOutcome.Accepted, Value: WidgetSaveTargetSelection selectedTarget } && entry is not null ) {
+				if ( entry is null ) { if ( batchPicker ) this.batch.Abort(); continue; }
+				WidgetSaveTargetSelection? selection = completed.Result is
+					{ Outcome: WidgetDialogOutcome.Accepted, Value: WidgetSaveTargetSelection selected } ? selected : null;
+				if ( selection?.ExistedAtInspection == true ) {
 					try {
-						await this.documents.SaveAsNewAsync( entry, this.files, selectedTarget.TargetPath, CancellationToken.None );
-						this.saveError = null;
-						saved = true;
-						if ( closeKey == entry.Key && !entry.Shell.Document.IsModified ) this.documents.Close( entry.Key );
+						ExistingSaveTarget target = await this.files.CaptureExistingAsync( selection.TargetPath, CancellationToken.None );
+						string dialogId = OverwriteDialogId + "-" + Guid.NewGuid().ToString( "N" );
+						this.host.ShowModal( WidgetMessageDialog.YesNo( dialogId, "Overwrite file?",
+							$"Replace {DocumentManager.SanitizeDisplay( Path.GetFileName( target.FullPath ) )}?" ) );
+						this.pendingOverwrite = new( dialogId, entry, target, closeAfterSave, batchPicker );
 					}
-					catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
-				}
-				if ( batchPicker ) {
-					try {
-						if ( await this.HandleBatchProgressAsync( await this.batch.CompleteSaveAsAsync( saved, CancellationToken.None ) ) ) return true;
+					catch ( Exception exception ) when ( IsSaveError( exception ) ) {
+						this.SetSaveError( exception );
+						if ( await this.CompleteSaveAsSelectionAsync( entry, null, null, closeAfterSave, batchPicker ) ) return true;
 					}
-					catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.batch.Abort(); this.SetSaveError( exception ); }
-				}
+				} else if ( await this.CompleteSaveAsSelectionAsync( entry, selection?.TargetPath, null, closeAfterSave, batchPicker ) ) return true;
+			}
+			else if ( action is WidgetDialogCompletedAction overwrite && this.pendingOverwrite is { } pendingOverwrite &&
+				overwrite.WidgetId == pendingOverwrite.DialogId ) {
+				this.pendingOverwrite = null;
+				bool confirmed = overwrite.Result.Outcome == WidgetDialogOutcome.Yes;
+				if ( await this.CompleteSaveAsSelectionAsync( pendingOverwrite.Entry,
+					confirmed ? pendingOverwrite.Target.FullPath : null, confirmed ? pendingOverwrite.Target : null,
+					pendingOverwrite.CloseAfterSave, pendingOverwrite.BatchPicker ) ) return true;
 			}
 			else if ( action is WidgetTabActivationRequestedAction tabActivation ) this.documents.Activate( tabActivation.TabKey, focusEditor: false );
 			else if ( action is WidgetClipboardRequestedAction clipboard ) this.clipboard.Complete( clipboard.Request );
@@ -198,6 +210,25 @@ internal sealed class DeditTerminal : IDeditTerminal {
 						this.documents.Find( key ) is { } entry ) await this.StartSaveAsAsync( entry, closeAfterSave: true );
 				}
 			}
+		}
+		return false;
+	}
+
+	private async Task<bool> CompleteSaveAsSelectionAsync( DocumentEntry entry, string? path, ExistingSaveTarget? overwrite,
+		bool closeAfterSave, bool batchPicker ) {
+		bool saved = false;
+		if ( path is not null ) {
+			try {
+				if ( overwrite is null ) await this.documents.SaveAsNewAsync( entry, this.files, path, CancellationToken.None );
+				else await this.documents.SaveAsExistingAsync( entry, this.files, overwrite, CancellationToken.None );
+				this.saveError = null;
+				saved = true;
+				if ( closeAfterSave && !entry.Shell.Document.IsModified ) this.documents.Close( entry.Key );
+			} catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
+		}
+		if ( batchPicker ) {
+			try { return await this.HandleBatchProgressAsync( await this.batch.CompleteSaveAsAsync( saved, CancellationToken.None ) ); }
+			catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.batch.Abort(); this.SetSaveError( exception ); }
 		}
 		return false;
 	}

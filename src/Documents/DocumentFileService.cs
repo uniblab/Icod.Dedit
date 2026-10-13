@@ -24,6 +24,7 @@ namespace Icod.Dedit.Documents;
 using System.Security.Cryptography;
 
 internal sealed record LoadedTextFile( string FullPath, DecodedText Content, byte[] Fingerprint );
+internal sealed record ExistingSaveTarget( string FullPath, string Identity, byte[] Fingerprint );
 
 internal sealed class DocumentFileService {
 	internal const int DefaultMaximumBytes = 32 * 1024 * 1024;
@@ -57,6 +58,21 @@ internal sealed class DocumentFileService {
 		byte[] bytes = buffer.ToArray();
 		return new LoadedTextFile( fullPath, TextFileCodec.Decode( bytes ), SHA256.HashData( bytes ) );
 	}
+	internal async Task<ExistingSaveTarget> CaptureExistingAsync( string path, CancellationToken cancellationToken ) {
+		ArgumentException.ThrowIfNullOrWhiteSpace( path );
+		cancellationToken.ThrowIfCancellationRequested();
+		string fullPath = this.ResolvePath( path );
+		string identity = ResolveTarget( fullPath );
+		if ( ( File.GetAttributes( identity ) & FileAttributes.Directory ) != 0 )
+			throw new IOException( "The save target is a directory." );
+		await using FileStream stream = new( identity, new FileStreamOptions {
+			Mode = FileMode.Open, Access = FileAccess.Read, Share = FileShare.ReadWrite | FileShare.Delete,
+			Options = FileOptions.Asynchronous | FileOptions.SequentialScan
+		} );
+		if ( stream.Length > this.maximumBytes ) throw new InvalidDataException( $"File exceeds the {this.maximumBytes} byte overwrite limit." );
+		return new ExistingSaveTarget( fullPath, identity, SHA256.HashData( await this.ReadBoundedAsync( stream, cancellationToken ) ) );
+	}
+
 	internal string ResolvePath( string path ) => Path.GetFullPath( path, this.initialDirectory );
 
 	internal async Task<byte[]> SaveNewAsync( string path, string text, TextFileEncoding encoding,

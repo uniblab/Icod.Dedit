@@ -83,6 +83,30 @@ internal sealed class DocumentManager : IDisposable {
 		entry.Shell.Document.MarkSaved( snapshot );
 	}
 
+	internal async Task SaveAsExistingAsync( DocumentEntry entry, DocumentFileService files, ExistingSaveTarget target,
+		CancellationToken cancellationToken ) {
+		ArgumentNullException.ThrowIfNull( entry );
+		ArgumentNullException.ThrowIfNull( files );
+		ArgumentNullException.ThrowIfNull( target );
+		this.ThrowIfDisposed();
+		if ( !this.documents.Contains( entry ) ) throw new ArgumentException( "Document is not open.", nameof( entry ) );
+		string fullPath = files.ResolvePath( target.FullPath );
+		string identity = ResolveIdentity( fullPath );
+		if ( !this.pathComparer.Equals( identity, target.Identity ) )
+			throw new IOException( "The save target changed during confirmation." );
+		if ( this.documents.Any( other => !ReferenceEquals( other, entry ) &&
+			other.Identity is not null && this.pathComparer.Equals( other.Identity, identity ) ) )
+			throw new IOException( "The save target belongs to another open tab." );
+		byte[] baseline = entry.Identity is not null && this.pathComparer.Equals( entry.Identity, identity )
+			? entry.Fingerprint : target.Fingerprint;
+		using WidgetTextSnapshot snapshot = entry.Shell.Document.CreateSnapshot();
+		string text = snapshot.Read( 0, checked( (int)snapshot.Length ) );
+		byte[] fingerprint = await files.SaveAsync( fullPath, target.Identity, baseline, text, entry.Encoding, cancellationToken );
+		entry.FullPath = fullPath; entry.Identity = identity; entry.Fingerprint = fingerprint;
+		this.UpdateCaptions();
+		entry.Shell.Document.MarkSaved( snapshot );
+	}
+
 	internal async Task SaveAsync( DocumentEntry entry, DocumentFileService files, CancellationToken cancellationToken ) {
 		ArgumentNullException.ThrowIfNull( entry );
 		ArgumentNullException.ThrowIfNull( files );
