@@ -223,7 +223,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		string name = entry.FullPath is null ? entry.Caption + ".txt" : Path.GetFileName( entry.FullPath );
 		this.saveEntry = entry;
 		this.closeAfterSaveKey = closeAfterSave ? entry.Key : null;
-		WidgetSaveTargetPicker picker = new( SaveAsDialogId, this.browserProvider, this.saveTargetProvider, directory, name );
+		WidgetSaveTargetPicker picker = new( SaveAsDialogId + "-" + Guid.NewGuid().ToString( "N" ), this.browserProvider, this.saveTargetProvider, directory, name );
 		this.savePicker = picker;
 		this.host.ShowModal( picker );
 		picker.ApplyLoadResult( await WidgetBrowserLoader.LoadAsync( this.browserProvider,

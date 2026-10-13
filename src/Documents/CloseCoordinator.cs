@@ -31,6 +31,7 @@ internal sealed class CloseCoordinator {
 	private readonly DocumentManager documents;
 	private readonly DocumentFileService files;
 	private string? pendingKey;
+	private string? pendingDialogId;
 	internal string? SaveAsKey { get; private set; }
 
 	internal CloseCoordinator( WidgetHost host, DocumentManager documents, DocumentFileService files ) {
@@ -46,16 +47,18 @@ internal sealed class CloseCoordinator {
 		if ( entry is null ) return false;
 		if ( !entry.Shell.Document.IsModified ) return this.documents.Close( key );
 		this.pendingKey = key;
-		this.host.ShowModal( WidgetFormDialog.SaveDontSaveCancel( DialogId, "Unsaved changes",
+		this.pendingDialogId = DialogId + "-" + Guid.NewGuid().ToString( "N" );
+		this.host.ShowModal( WidgetFormDialog.SaveDontSaveCancel( this.pendingDialogId, "Unsaved changes",
 			$"Save changes in {DocumentManager.SanitizeDisplay( entry.Caption )} before closing?" ) );
 		return false;
 	}
 
 	internal async Task<CloseResolution> CompleteAsync( WidgetDialogCompletedAction action, CancellationToken token ) {
 		ArgumentNullException.ThrowIfNull( action );
-		if ( action.WidgetId != DialogId || this.pendingKey is null ) return CloseResolution.Unrelated;
+		if ( action.WidgetId != this.pendingDialogId || this.pendingKey is null ) return CloseResolution.Unrelated;
 		string key = this.pendingKey;
 		this.pendingKey = null;
+		this.pendingDialogId = null;
 		this.SaveAsKey = null;
 		DocumentEntry? entry = this.documents.Find( key );
 		if ( entry is null ) return CloseResolution.Kept;
