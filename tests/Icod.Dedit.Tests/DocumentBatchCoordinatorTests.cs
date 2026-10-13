@@ -1,0 +1,102 @@
+/*
+	Icod.Dedit.Tests
+	Checks ordered save and close operations across documents.
+	Copyright (C) 2026  Timothy J. Bruce <uniblab@hotmail.com>
+*/
+
+/*
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+namespace Icod.Dedit.Tests;
+
+using Icod.DCurses;
+using Icod.Dedit.Documents;
+using Icod.Widgets;
+using Xunit;
+
+public sealed class DocumentBatchCoordinatorTests {
+	[Fact]
+	public async Task SaveAllCancellationAtUntitledKeepsPriorSaveAndDoesNotTouchLaterTab() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-batch-" ).FullName;
+		try {
+			DocumentFileService files = new( directory );
+			string firstPath = Path.Combine( directory, "first.txt" );
+			string lastPath = Path.Combine( directory, "last.txt" );
+			await File.WriteAllTextAsync( firstPath, "first" );
+			await File.WriteAllTextAsync( lastPath, "last" );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry first = manager.Open( await files.OpenAsync( firstPath, CancellationToken.None ) );
+			first.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.Zero );
+			DocumentEntry middle = manager.OpenUntitled();
+			middle.Shell.Process( WidgetInput.Paste( "draft" ), TimeSpan.Zero );
+			DocumentEntry last = manager.Open( await files.OpenAsync( lastPath, CancellationToken.None ) );
+			last.Shell.Process( WidgetInput.Paste( "?" ), TimeSpan.Zero );
+			DocumentBatchCoordinator batch = new( manager, files, new CloseCoordinator( host, manager, files ) );
+			Assert.Equal( BatchProgress.SaveAsRequired, await batch.StartAsync( BatchOperation.SaveAll, CancellationToken.None ) );
+			Assert.Equal( middle.Key, batch.SaveAsKey );
+			Assert.Equal( "!first", await File.ReadAllTextAsync( firstPath ) );
+			Assert.False( first.Shell.Document.IsModified );
+			Assert.Equal( BatchProgress.Stopped, await batch.CompleteSaveAsAsync( false, CancellationToken.None ) );
+			Assert.Equal( "last", await File.ReadAllTextAsync( lastPath ) );
+			Assert.True( last.Shell.Document.IsModified );
+			Assert.Equal( 3, manager.Tabs.Count );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task CloseAllCancellationAtSecondDirtyTabLeavesItAndLaterTabsOpen() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry first = manager.OpenUntitled();
+		DocumentEntry middle = manager.OpenUntitled();
+		middle.Shell.Process( WidgetInput.Paste( "keep" ), TimeSpan.Zero );
+		DocumentEntry last = manager.OpenUntitled();
+		CloseCoordinator close = new( host, manager, new DocumentFileService( Path.GetTempPath() ) );
+		DocumentBatchCoordinator batch = new( manager, new DocumentFileService( Path.GetTempPath() ), close );
+		Assert.Equal( BatchProgress.DecisionRequired, await batch.StartAsync( BatchOperation.CloseAll, CancellationToken.None ) );
+		Assert.Null( manager.Find( first.Key ) );
+		WidgetDialogCompletedAction cancel = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( BatchProgress.Stopped, await batch.CompleteDecisionAsync( cancel, CancellationToken.None ) );
+		Assert.Same( middle, manager.Find( middle.Key ) );
+		Assert.Same( last, manager.Find( last.Key ) );
+		Assert.True( middle.Shell.Document.IsModified );
+	}
+
+	[Fact]
+	public async Task ExitWaitsForSavedDocumentAndStopsOnConflict() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-batch-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "first.txt" );
+			await File.WriteAllTextAsync( path, "before" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry first = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			first.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.Zero );
+			CloseCoordinator close = new( host, manager, files );
+			DocumentBatchCoordinator batch = new( manager, files, close );
+			Assert.Equal( BatchProgress.DecisionRequired, await batch.StartAsync( BatchOperation.Exit, CancellationToken.None ) );
+			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.Zero );
+			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.Zero );
+			WidgetDialogCompletedAction save = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+				host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.Zero ).Actions ) );
+			Assert.Equal( BatchProgress.ExitReady, await batch.CompleteDecisionAsync( save, CancellationToken.None ) );
+			Assert.Equal( "!before", await File.ReadAllTextAsync( path ) );
+			Assert.Null( manager.Find( first.Key ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+}
