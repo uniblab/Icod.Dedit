@@ -27,6 +27,9 @@ The entries under Unreleased describe implemented behavior. They are not a
   regex and overall work limits.
 - Added Go to File/tab, a validated one-based Go to Line:Column prompt using
   Unicode grapheme columns, F6 focus cycling, Word Wrap and About.
+- Added explicit UTF-8/UTF-8 BOM/UTF-16 LE/UTF-16 BE selection that contributes
+  to unsaved state and checkpoints only the encoding written. LF/CRLF/CR
+  normalization preserves final terminators and is one undoable edit.
 
 ### Files and safety
 

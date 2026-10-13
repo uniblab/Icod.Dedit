@@ -363,9 +363,12 @@ Crash recovery remains deferred; robust saving is not a claim of crash-proof edi
 options, forward/backward wrap, revision-bound Find/Replace forms, F3 repeats,
 and one-transaction Replace All are implemented. New/Open and Ctrl+S on an
 Untitled tab are also wired. Go to Line:Column validates one-based grapheme
-coordinates and the bound revision. The 150-test-per-target matrix is green
-on Linux, Windows and macOS. Responsiveness, format controls, preferences,
-and keyboard-only live-terminal qualification remain open.
+coordinates and the bound revision. Encoding selection now contributes to dirty state and saves the selected
+format; LF/CRLF/CR normalization is an undoable transaction. The
+159-test-per-target matrix passed on Linux, Windows and macOS (one test
+nullable warning corrected immediately afterward). Responsiveness, further
+format controls, preferences and keyboard-only live-terminal qualification
+remain open.
 
 **Files:** `SearchController.cs`, shell forms, codec/settings tests.
 

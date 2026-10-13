@@ -38,8 +38,9 @@ Externally changed files offer an explicit Reload or Keep decision when a tab
 is activated or an active save finds a conflict. The default Keep choice
 preserves the buffer; saving to the original path remains blocked until the
 conflict is resolved. Reload discards unsaved changes only after confirmation.
-Search and coordinate navigation are available; format controls and release
-qualification remain under development.
+Search, coordinate navigation, encoding selection and explicit line-ending
+conversion are available. Other format controls and release qualification
+remain under development.
 Build with a .NET 10 SDK (which targets .NET 8, 9, and 10) and run in an
 interactive terminal with the selected runtime installed:
 
@@ -71,7 +72,11 @@ A failed save leaves the buffer dirty and shows an error in the status row.
 If another process changed the file, a Reload/Keep prompt lets you load the
 disk copy or retain the editor copy. Keep the latter with Save As under a
 different path; No is the default, and Escape cancels the prompt.
-File → Save All visits dirty documents in tab order.
+File → Save All visits dirty documents in tab order. File → Encoding selects
+strict UTF-8, UTF-8 BOM, UTF-16 LE or UTF-16 BE for the next save; a format
+change marks the tab dirty. File → Line Endings explicitly converts mixed
+terminators to LF, CRLF or CR as one undoable edit and preserves whether the
+file ends in a terminator.
 
 Ctrl+W closes the active tab after Save / Don't Save / Cancel when it is dirty.
 The close control on each tab uses the same decision, with Cancel selected by
