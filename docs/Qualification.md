@@ -8,19 +8,16 @@ current head or certify a 1.0 release.
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
-| [Dedit `d3f3d3a` / 38451965076](https://github.com/uniblab/Icod.Dedit/actions/runs/38451965076) | Staging restore/build/test/pack/local tool installation on Linux, Windows and macOS | 159 tests per .NET 8/9/10 target and OS passed; zero warnings/errors. |
-| [Dedit `e432cb7` / 38453283144](https://github.com/uniblab/Icod.Dedit/actions/runs/38453283144) | Adds bounded startup preferences and pathological-regex timeout regression | Linux and Windows passed 162 tests per target with zero warnings/errors. The macOS job was queued when this entry was recorded and may be canceled by later commits. |
-| [Widgets `f756d77` / 38453011475](https://github.com/uniblab/Icod.Widgets/actions/runs/38453011475) | Proposed per-editor newline/indentation API | 301 tests per target passed on Linux, Windows and macOS with zero warnings/errors; [Widgets PR #9](https://github.com/uniblab/Icod.Widgets/pull/9) is ready for review and has not been released. |
+| [Dedit `a68de78` / 38480327720](https://github.com/uniblab/Icod.Dedit/actions/runs/38480327720) | Staging restore/build/test/pack/local tool installation on Linux, Windows and macOS, using the released Icod.Widgets 1.4.0 package | All jobs passed. Linux logged 191 tests per .NET 8/9/10 target, zero failures and zero build warnings/errors. |
+| [Widgets 1.4.0](https://github.com/uniblab/Icod.Widgets/pull/9) | Per-editor newline and indentation API | Merged to main and available to the Dedit CI NuGet restore. |
 
-PR validation restores published Widgets 1.3.1, packs the .NET tool, installs
-the exact local package and checks `--version` and `--help`. These are headless
-checks. The historical xterm pseudo-terminal tests below were performed at
-earlier revisions and do not qualify the current head.
+The current integration uses the first loaded line terminator for future Enter,
+updates the policy after explicit conversion, and offers per-tab indentation
+widths. Reload retains the tab's chosen indentation width. The headless CI
+package checks do not replace a current-head live-terminal exercise.
 
 ### Remaining release gates
 
-- The Widgets newline/indentation API needs owner review, merge and a NuGet
-  release before Dedit can adopt it. Dedit remains pinned to Widgets 1.3.1.
 - No-selection linewise clipboard policy and its Widgets implementation remain.
 - Hard-link identity and the last cross-process replacement race need an
   explicit support policy. Fingerprint/target rechecks narrow the window but
@@ -29,8 +26,8 @@ earlier revisions and do not qualify the current head.
   copy/find/replace/tabs/format/save/conflict/cancel/quit and restoration.
   Hardware terminals and Windows `build.cmd` remain unverified here.
 - Finish package contents/source/license/version review, clean installation,
-  upgrade/removal and exact candidate matrix before a 1.0.0 tag. No tag or
-  publication has occurred.
+  cross-version upgrade/removal and exact candidate matrix before a 1.0.0
+  tag. No Dedit tag or publication has occurred.
 
 ## D1002 executable foundation
 
