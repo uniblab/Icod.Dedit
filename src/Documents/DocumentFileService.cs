@@ -113,7 +113,7 @@ internal sealed class DocumentFileService {
 				await stream.WriteAsync( bytes, cancellationToken );
 				await stream.FlushAsync( cancellationToken );
 			}
-			if ( mode is { } preservedMode ) File.SetUnixFileMode( temporary, preservedMode );
+			if ( !OperatingSystem.IsWindows() && mode is { } preservedMode ) File.SetUnixFileMode( temporary, preservedMode );
 			cancellationToken.ThrowIfCancellationRequested();
 			if ( !PathComparer.Equals( ResolveTarget( path ), target ) )
 				throw new IOException( "The file target changed during the save." );
