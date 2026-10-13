@@ -326,4 +326,19 @@ public sealed class DeditMenuTests {
 				TimeSpan.Zero ).Actions ) );
 		Assert.Equal( command, action.CommandId );
 	}
+	[Theory]
+	[InlineData( 'm', DeditMenu.SearchCase )]
+	[InlineData( 'w', DeditMenu.SearchWholeWord )]
+	[InlineData( 'g', DeditMenu.SearchRegex )]
+	public void EditSearchOptionsToggleThroughVisibleMenu( char mnemonic, string command ) {
+		using WidgetHost host = new( new CursesScreen( 50, 14 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		using EditorShell shell = new( host, "text" );
+		DeditMenu.UpdateState( menu, shell.Editor );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'e' ) ), TimeSpan.Zero );
+		WidgetCheckedInvokedAction toggled = Assert.IsType<WidgetCheckedInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( mnemonic ) ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( command, toggled.CommandId );
+		Assert.True( toggled.IsChecked );
+	}
 }

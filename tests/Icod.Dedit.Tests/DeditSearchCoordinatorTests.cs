@@ -96,4 +96,15 @@ public sealed class DeditSearchCoordinatorTests {
 		DocumentEntry other = manager.OpenUntitled();
 		Assert.Null( search.Repeat( other, previous: false, CancellationToken.None ) );
 	}
+	[Fact]
+	public void SearchOptionsChosenBeforeOpeningAreAppliedToWidgetsForm() {
+		using WidgetHost host = new( new CursesScreen( 60, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry entry = manager.OpenUntitled();
+		DeditSearchCoordinator search = new( host, manager );
+		WidgetSearchOptions options = new( MatchCase: true, WholeWord: true, UseRegularExpression: true );
+		search.SetOptions( options );
+		WidgetSearchForm form = search.Open( entry, allowReplace: false );
+		Assert.Equal( options, form.Options );
+	}
 }
