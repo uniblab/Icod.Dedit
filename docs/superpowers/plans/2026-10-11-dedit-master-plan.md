@@ -3,7 +3,9 @@
 > **For agentic workers:** Use `superpowers:executing-plans` for approved
 > implementation tasks. Do not begin implementation from this master roadmap:
 > first review it with the owner and complete the DCurses/Widgets capability
-> designs. Work sequentially unless the owner requests another execution method.
+> designs. The libraries have since shipped the relevant contracts; D1001's
+> behavior decisions still need owner review before D1002. Work sequentially
+> unless the owner requests another execution method.
 > Checkboxes record future work, not completed features.
 
 **Goal:** Deliver `dedit`, a GPL-3.0-or-later console executable with Microsoft
@@ -19,6 +21,10 @@ library internals into the application.
 Icod.Terminal integration; xUnit tests.
 
 **Spec:** [Product and architecture design](../../DESIGN.md).
+
+**Current progress:** The [D1001 behavior matrix](../../Behavior-Matrix.md),
+[decision records](../../decisions/) and [released library contracts](../../Library-Contracts.md)
+are a review draft. D1002 and later milestones have not begun.
 
 ## Global constraints
 
@@ -105,23 +111,24 @@ milestone. Do not ship temporary application copies of reusable widget code.
 **Files:** `docs/Behavior-Matrix.md`, `docs/decisions/`, updates to this plan.
 **Output:** reviewed acceptance matrix and links to separate library plans.
 
-- [ ] Inventory the pinned Edit 1.2.1 menus, navigation, selection, indentation,
+- [x] Inventory the pinned Edit 1.2.1 menus, navigation, selection, indentation,
   overwrite, search, clipboard and CLI behavior. Mark each as adopt, deliberately
   differ, or defer; do not silently follow newer Edit versions.
-- [ ] Record default shortcuts and menu mnemonics separately. Baseline: Ctrl+N/O/S/W/Q,
+- [x] Record default shortcuts and menu mnemonics separately. Baseline: Ctrl+N/O/S/W/Q,
   Ctrl+Z/Y/X/C/V/A, Ctrl+F, Ctrl+R, Ctrl+P, Ctrl+G, Alt+Z, F10. Propose Ctrl+Tab /
   Ctrl+Shift+Tab for tab switching and F6 / Shift+F6 for focus cycling, with visible
   menu alternatives when terminals cannot distinguish those chords.
-- [ ] Specify selection extension, word movement, Home/End, preferred vertical column,
+- [x] Specify selection extension, word movement, Home/End, preferred vertical column,
   click counts, drag/autoscroll, insert/overwrite, linewise copy without selection,
   tab width and indentation defaults. Make deliberate differences explicit.
-- [ ] Define path identity, supported encodings, default newline/encoding, display
+- [x] Define path identity, supported encodings, default newline/encoding, display
   column semantics, regex semantics, and close-after-last-tab behavior in small
   decision records. Require an empty untitled editing surface after the last
   ordinary tab closes; Exit remains a separate command.
-- [ ] Create a separate DCurses capability design followed by a Widgets design
-  using the backlog below. Agree exact APIs and release dependencies there,
-  not in this application roadmap.
+- [x] Review the separately delivered DCurses and Widgets capability designs
+  against published 2.5.0 and 1.3.0 contracts. The application integration
+  map is in [Library Contracts](../../Library-Contracts.md); future gaps remain
+  in their owning libraries.
 - [ ] Review the behavior matrix and boundary decisions with the owner before
   implementation. Commit the accepted baseline independently of runtime code.
 
@@ -373,7 +380,8 @@ passing targeted/full tests → a small reviewable commit.
 
 ## Immediate next step
 
-Review this master plan, then design the DCurses changes and the Widgets changes
-as separate, focused library plans with exact APIs and regression tests. Return
-here to implement Dedit against those agreed capabilities. This planning PR
-neither changes those libraries nor authorizes an application implementation yet.
+Review the D1001 behavior matrix and decision records, especially literal CLI
+paths, cross-platform LF defaults, supported encodings, file identity and
+grapheme columns. Once those policies are accepted, implement D1002's runnable
+EXE foundation against released Widgets 1.3.0 and DCurses 2.5.0. This PR does
+not change either library or authorize merge, tag or publication.

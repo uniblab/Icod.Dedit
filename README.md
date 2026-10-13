@@ -18,15 +18,18 @@ editor policy belong here.
 
 ## STATUS
 
-This repository currently contains the design and implementation roadmap, not a
-working editor. The executable project, installation commands, and release
-artifacts will be added during implementation.
+This repository contains the design and D1001 behavior/contract review draft,
+not a working editor. The executable project, installation commands, and
+release artifacts will be added during implementation.
 
 - [Product and architecture design](docs/DESIGN.md)
 - [Master implementation plan](docs/superpowers/plans/2026-10-11-dedit-master-plan.md)
+- [First-release behavior matrix](docs/Behavior-Matrix.md)
+- [Released library contracts](docs/Library-Contracts.md)
+- [Path, text-format, and coordinate decisions](docs/decisions/)
 
-The next design work is to agree the required DCurses and Widgets extensions.
-The master plan records their required behaviors without freezing their public APIs.
+The relevant DCurses and Widgets capabilities have been released. The D1001
+decisions are proposed for owner review; the runnable EXE foundation is D1002.
 
 ## PROJECT CONTRACT
 
