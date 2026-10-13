@@ -37,6 +37,8 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly DeditClipboard clipboard;
 	private readonly DocumentManager documents;
 	private readonly DocumentFileService files;
+	private readonly CloseCoordinator close;
+	private string? closeAfterSaveKey;
 	private readonly LocalWidgetFileSystemProvider browserProvider = new();
 	private readonly DeditSaveTargetProvider saveTargetProvider = new();
 	private WidgetSaveTargetPicker? savePicker;
@@ -52,6 +54,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.clipboard = new DeditClipboard( this.host );
 		this.documents = new DocumentManager( this.host );
 		this.files = new DocumentFileService( Environment.CurrentDirectory );
+		this.close = new CloseCoordinator( this.host, this.documents, this.files );
 		this.host.Attach( this.menu );
 		this.host.Attach( this.tabs );
 		session.StandardScreen.WrapMode = CursesWrapMode.Clip;
@@ -126,17 +129,12 @@ internal sealed class DeditTerminal : IDeditTerminal {
 				try { await this.documents.SaveAsync( saving, this.files, CancellationToken.None ); this.saveError = null; }
 				catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
 			}
-			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.SaveAs } && this.documents.Active is { } savingAs ) {
-				string directory = savingAs.FullPath is null ? Environment.CurrentDirectory :
-					Path.GetDirectoryName( savingAs.FullPath ) ?? Environment.CurrentDirectory;
-				string name = savingAs.FullPath is null ? savingAs.Caption + ".txt" : Path.GetFileName( savingAs.FullPath );
-				this.saveEntry = savingAs;
-				WidgetSaveTargetPicker createdPicker = new( SaveAsDialogId, this.browserProvider, this.saveTargetProvider, directory, name );
-				this.savePicker = createdPicker;
-				this.host.ShowModal( createdPicker );
-				createdPicker.ApplyLoadResult( await WidgetBrowserLoader.LoadAsync( this.browserProvider,
-					createdPicker.RequestDirectory( directory ), CancellationToken.None ) );
-			}
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.SaveAs } && this.documents.Active is { } savingAs )
+				await this.StartSaveAsAsync( savingAs, closeAfterSave: false );
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.Close } && this.documents.Active is { } closing )
+				this.close.Request( closing.Key );
+			else if ( action is WidgetTabCloseRequestedAction tabClose )
+				this.close.Request( tabClose.TabKey );
 			else if ( action is WidgetBrowserLoadRequestedAction load && this.savePicker is { } browsing && load.WidgetId == browsing.Id )
 				browsing.ApplyLoadResult( await WidgetBrowserLoader.LoadAsync( this.browserProvider, load.Request, CancellationToken.None ) );
 			else if ( action is WidgetSaveTargetInspectionRequestedAction inspect && this.savePicker is { } inspecting && inspect.WidgetId == inspecting.Id ) {
@@ -148,8 +146,14 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			else if ( action is WidgetDialogCompletedAction completed && this.savePicker is { } finishedPicker && completed.WidgetId == finishedPicker.Id ) {
 				DocumentEntry? entry = this.saveEntry;
 				this.savePicker = null; this.saveEntry = null;
+				string? closeKey = this.closeAfterSaveKey;
+				this.closeAfterSaveKey = null;
 				if ( completed.Result is { Outcome: WidgetDialogOutcome.Accepted, Value: WidgetSaveTargetSelection selectedTarget } && entry is not null ) {
-					try { await this.documents.SaveAsNewAsync( entry, this.files, selectedTarget.TargetPath, CancellationToken.None ); this.saveError = null; }
+					try {
+						await this.documents.SaveAsNewAsync( entry, this.files, selectedTarget.TargetPath, CancellationToken.None );
+						this.saveError = null;
+						if ( closeKey == entry.Key && !entry.Shell.Document.IsModified ) this.documents.Close( entry.Key );
+					}
 					catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
 				}
 			}
@@ -160,9 +164,30 @@ internal sealed class DeditTerminal : IDeditTerminal {
 				DeditMenu.ApplyWrap( this.Editor.Editor, wrap.IsChecked );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.About } )
 				this.host.ShowModal( DeditMenu.CreateAboutDialog() );
-			else if ( action is WidgetDialogCompletedAction confirmed && ConfirmedDiscard( confirmed ) ) return true;
+			else if ( action is WidgetDialogCompletedAction decision ) {
+				CloseResolution resolution;
+				try { resolution = await this.close.CompleteAsync( decision, CancellationToken.None ); }
+				catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); continue; }
+				if ( resolution == CloseResolution.SaveAsRequired && this.close.SaveAsKey is { } key &&
+					this.documents.Find( key ) is { } entry ) await this.StartSaveAsAsync( entry, closeAfterSave: true );
+				else if ( resolution == CloseResolution.Unrelated && ConfirmedDiscard( decision ) ) return true;
+			}
 		}
 		return false;
+	}
+
+
+	private async Task StartSaveAsAsync( DocumentEntry entry, bool closeAfterSave ) {
+		string directory = entry.FullPath is null ? Environment.CurrentDirectory :
+			Path.GetDirectoryName( entry.FullPath ) ?? Environment.CurrentDirectory;
+		string name = entry.FullPath is null ? entry.Caption + ".txt" : Path.GetFileName( entry.FullPath );
+		this.saveEntry = entry;
+		this.closeAfterSaveKey = closeAfterSave ? entry.Key : null;
+		WidgetSaveTargetPicker picker = new( SaveAsDialogId, this.browserProvider, this.saveTargetProvider, directory, name );
+		this.savePicker = picker;
+		this.host.ShowModal( picker );
+		picker.ApplyLoadResult( await WidgetBrowserLoader.LoadAsync( this.browserProvider,
+			picker.RequestDirectory( directory ), CancellationToken.None ) );
 	}
 
 	private static bool IsSaveError( Exception exception ) => exception is IOException or UnauthorizedAccessException

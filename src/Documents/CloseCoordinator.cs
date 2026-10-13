@@ -31,6 +31,7 @@ internal sealed class CloseCoordinator {
 	private readonly DocumentManager documents;
 	private readonly DocumentFileService files;
 	private string? pendingKey;
+	internal string? SaveAsKey { get; private set; }
 
 	internal CloseCoordinator( WidgetHost host, DocumentManager documents, DocumentFileService files ) {
 		this.host = host ?? throw new ArgumentNullException( nameof( host ) );
@@ -40,6 +41,7 @@ internal sealed class CloseCoordinator {
 
 	internal bool Request( string key ) {
 		if ( this.pendingKey is not null ) return false;
+		this.SaveAsKey = null;
 		DocumentEntry? entry = this.documents.Find( key );
 		if ( entry is null ) return false;
 		if ( !entry.Shell.Document.IsModified ) return this.documents.Close( key );
@@ -54,13 +56,14 @@ internal sealed class CloseCoordinator {
 		if ( action.WidgetId != DialogId || this.pendingKey is null ) return CloseResolution.Unrelated;
 		string key = this.pendingKey;
 		this.pendingKey = null;
+		this.SaveAsKey = null;
 		DocumentEntry? entry = this.documents.Find( key );
 		if ( entry is null ) return CloseResolution.Kept;
 		switch ( action.Result.Outcome ) {
 			case WidgetDialogOutcome.DontSave:
 				return this.documents.Close( key, discardModified: true ) ? CloseResolution.Closed : CloseResolution.Kept;
 			case WidgetDialogOutcome.Save:
-				if ( entry.FullPath is null ) return CloseResolution.SaveAsRequired;
+				if ( entry.FullPath is null ) { this.SaveAsKey = key; return CloseResolution.SaveAsRequired; }
 				await this.documents.SaveAsync( entry, this.files, token );
 				return !entry.Shell.Document.IsModified && this.documents.Close( key )
 					? CloseResolution.Closed : CloseResolution.Kept;
