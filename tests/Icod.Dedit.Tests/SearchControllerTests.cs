@@ -22,6 +22,7 @@
 namespace Icod.Dedit.Tests;
 
 using Icod.Dedit.Interaction;
+using System.Text.RegularExpressions;
 using Icod.Dedit.Documents;
 using Icod.DCurses;
 using Icod.Widgets;
@@ -106,6 +107,13 @@ public sealed class SearchControllerTests {
 		Assert.Equal( "one one", entry.Shell.Document.Read( 0, 7 ) );
 		entry.Shell.Document.Undo();
 		Assert.Equal( 0, entry.Shell.Document.Length );
+	}
+
+	[Fact]
+	public void PathologicalRegexStopsAtFiniteTimeout() {
+		string text = new string( 'a', 20_000 ) + "!";
+		Assert.Throws<RegexMatchTimeoutException>( () => SearchController.Search( "tab", 0, text,
+			new SearchQuery( "^(a+)+$", true, true, false ), CancellationToken.None ) );
 	}
 
 }
