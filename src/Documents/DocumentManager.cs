@@ -45,7 +45,7 @@ internal sealed class DocumentManager : IDisposable {
 	internal DocumentManager( WidgetHost host ) => this.host = host ?? throw new ArgumentNullException( nameof( host ) );
 	internal DocumentEntry? Active { get; private set; }
 	internal IReadOnlyList<WidgetTab> Tabs => this.documents.Select( document => new WidgetTab( document.Key, SanitizeDisplay( document.Caption ),
-		IsModified: document.Shell.Document.IsModified, IsClosable: false ) ).ToArray();
+		IsModified: document.Shell.Document.IsModified, IsClosable: true ) ).ToArray();
 	internal static string SanitizeDisplay( string text ) => new( text.Select( character => char.IsControl( character ) ? '�' : character ).ToArray() );
 
 	internal DocumentEntry OpenUntitled() => this.Add( $"Untitled{( ++this.nextUntitled == 1 ? "" : $" {this.nextUntitled}" )}", null, null,
@@ -96,7 +96,23 @@ internal sealed class DocumentManager : IDisposable {
 		entry.Shell.Document.MarkSaved( snapshot );
 	}
 
-	internal bool Close( string key, bool discardModified = false ) => throw new NotImplementedException();
+	internal bool Close( string key, bool discardModified = false ) {
+		this.ThrowIfDisposed();
+		int index = this.documents.FindIndex( document => document.Key == key );
+		if ( index < 0 ) return false;
+		DocumentEntry closing = this.documents[ index ];
+		if ( closing.Shell.Document.IsModified && !discardModified ) return false;
+		bool wasActive = ReferenceEquals( closing, this.Active );
+		if ( wasActive ) { closing.Shell.Deactivate(); this.Active = null; }
+		this.documents.RemoveAt( index );
+		closing.Shell.Dispose();
+		if ( wasActive ) {
+			if ( this.documents.Count == 0 ) this.OpenUntitled();
+			else this.Activate( this.documents[ Math.Min( index, this.documents.Count - 1 ) ].Key );
+		}
+		this.UpdateCaptions();
+		return true;
+	}
 
 	internal bool Activate( string key, bool focusEditor = true ) {
 		this.ThrowIfDisposed();
