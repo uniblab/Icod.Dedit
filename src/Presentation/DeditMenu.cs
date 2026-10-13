@@ -76,6 +76,12 @@ internal static class DeditMenu {
 	internal static WidgetMessageDialog CreateAboutDialog() => WidgetMessageDialog.Ok(
 		"dedit-about", "About dedit", $"dedit {typeof( DeditMenu ).Assembly.GetName().Version?.ToString( 3 ) ?? "0.1.0"} — GPL-3.0-or-later" );
 
+	internal static WidgetMessageDialog CreateExternalChangeDialog( string id, string caption, bool hasUnsavedChanges ) =>
+		WidgetMessageDialog.YesNo( id, "External file changed",
+			$"Reload {Icod.Dedit.Documents.DocumentManager.SanitizeDisplay( caption )} from disk? " +
+			( hasUnsavedChanges ? "Yes discards unsaved edits. " : "" ) +
+			"No keeps the editor copy; Save As can preserve it separately." );
+
 	internal static void UpdateState( WidgetMenuBar menu, WidgetTextEditor? editor, bool canSave = false ) {
 		ArgumentNullException.ThrowIfNull( menu );
 		bool undo = editor?.CanExecuteEditCommand( WidgetEditCommand.Undo ) == true;

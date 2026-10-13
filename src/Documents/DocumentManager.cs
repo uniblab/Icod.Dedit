@@ -24,15 +24,18 @@ namespace Icod.Dedit.Documents;
 using Icod.Dedit.Presentation;
 using Icod.Widgets;
 
+internal enum ExternalChangeKind { Modified, Missing, Retargeted }
+internal sealed record ExternalFileObservation( ExternalChangeKind Kind, byte[]? Fingerprint );
+
 internal sealed class DocumentEntry( string key, string caption, string? fullPath, string? identity, TextFileEncoding encoding,
 	byte[] fingerprint, EditorShell shell ) {
 	internal string Key { get; } = key;
 	internal string Caption { get; set; } = caption;
 	internal string? FullPath { get; set; } = fullPath;
 	internal string? Identity { get; set; } = identity;
-	internal TextFileEncoding Encoding { get; } = encoding;
+	internal TextFileEncoding Encoding { get; set; } = encoding;
 	internal byte[] Fingerprint { get; set; } = fingerprint;
-	internal EditorShell Shell { get; } = shell;
+	internal EditorShell Shell { get; set; } = shell;
 }
 
 internal sealed class DocumentManager : IDisposable {
@@ -118,6 +121,63 @@ internal sealed class DocumentManager : IDisposable {
 		byte[] fingerprint = await files.SaveAsync( entry.FullPath, entry.Identity, entry.Fingerprint, text, entry.Encoding, cancellationToken );
 		entry.Fingerprint = fingerprint;
 		entry.Shell.Document.MarkSaved( snapshot );
+	}
+
+	internal async Task<ExternalFileObservation?> CheckExternalChangeAsync( DocumentEntry entry, DocumentFileService files,
+		CancellationToken cancellationToken ) {
+		ArgumentNullException.ThrowIfNull( entry );
+		ArgumentNullException.ThrowIfNull( files );
+		this.ThrowIfDisposed();
+		if ( !this.documents.Contains( entry ) ) throw new ArgumentException( "Document is not open.", nameof( entry ) );
+		if ( entry.FullPath is null || entry.Identity is null ) return null;
+		ExistingSaveTarget target;
+		try { target = await files.CaptureExistingAsync( entry.FullPath, cancellationToken ); }
+		catch ( FileNotFoundException ) { return new ExternalFileObservation( ExternalChangeKind.Missing, null ); }
+		catch ( DirectoryNotFoundException ) { return new ExternalFileObservation( ExternalChangeKind.Missing, null ); }
+		if ( !this.pathComparer.Equals( target.Identity, entry.Identity ) )
+			return new ExternalFileObservation( ExternalChangeKind.Retargeted, target.Fingerprint );
+		if ( target.Fingerprint.AsSpan().SequenceEqual( entry.Fingerprint ) ) return null;
+		return new ExternalFileObservation( ExternalChangeKind.Modified, target.Fingerprint );
+	}
+
+	internal async Task ReloadAsync( DocumentEntry entry, DocumentFileService files, bool discardModified,
+		CancellationToken cancellationToken ) {
+		ArgumentNullException.ThrowIfNull( entry );
+		ArgumentNullException.ThrowIfNull( files );
+		this.ThrowIfDisposed();
+		if ( !this.documents.Contains( entry ) ) throw new ArgumentException( "Document is not open.", nameof( entry ) );
+		if ( entry.FullPath is null || entry.Identity is null ) throw new InvalidOperationException( "Untitled documents cannot reload." );
+		EditorShell previous = entry.Shell;
+		if ( previous.Document.IsModified && !discardModified )
+			throw new InvalidOperationException( "Reloading would discard unsaved changes." );
+		long revision = previous.Document.Revision;
+		string path = entry.FullPath;
+		string identity = entry.Identity;
+		LoadedTextFile loaded = await files.OpenAsync( path, cancellationToken );
+		this.ThrowIfDisposed();
+		if ( !this.documents.Contains( entry ) || !ReferenceEquals( entry.Shell, previous ) ||
+			previous.Document.Revision != revision || ( previous.Document.IsModified && !discardModified ) ||
+			!this.pathComparer.Equals( entry.FullPath, path ) || !this.pathComparer.Equals( entry.Identity, identity ) )
+			throw new IOException( "The document changed during reload." );
+		if ( !this.pathComparer.Equals( ResolveIdentity( path ), identity ) )
+			throw new IOException( "The file target changed during reload." );
+		EditorShell replacement = new( this.host, loaded.Content.Text, "editor-" + entry.Key, activate: false );
+		bool wasActive = ReferenceEquals( this.Active, entry );
+		bool wasFocused = wasActive && ReferenceEquals( this.host.FocusedWidget, previous.Editor );
+		try {
+			if ( wasActive ) {
+				previous.Deactivate();
+				replacement.Activate( wasFocused );
+			}
+			entry.Shell = replacement;
+			entry.Encoding = loaded.Content.Encoding;
+			entry.Fingerprint = loaded.Fingerprint;
+			previous.Dispose();
+		} catch {
+			replacement.Dispose();
+			if ( wasActive ) previous.Activate( wasFocused );
+			throw;
+		}
 	}
 
 	internal DocumentEntry? Find( string key ) {
