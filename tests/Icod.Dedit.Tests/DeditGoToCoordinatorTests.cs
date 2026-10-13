@@ -61,8 +61,8 @@ public sealed class DeditGoToCoordinatorTests {
 		host.Process( WidgetInput.Paste( "2:2" ), TimeSpan.Zero );
 		WidgetDialogValidationRequestedAction validation = Assert.IsType<WidgetDialogValidationRequestedAction>(
 			Assert.Single( host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.Zero ).Actions ) );
-		long originalCaret = entry.Shell.Editor.View.Caret;
 		entry.Shell.Document.Undo();
+		long originalCaret = entry.Shell.Editor.View.Caret;
 		Assert.True( goTo.Validate( validation ) );
 		Assert.Empty( host.DrainActions() );
 		Assert.Equal( originalCaret, entry.Shell.Editor.View.Caret );
