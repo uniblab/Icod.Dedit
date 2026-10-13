@@ -31,6 +31,10 @@ internal static class DeditMenu {
 	internal const string About = "help.about";
 
 	internal static WidgetMenuBar Create() => new( "dedit-menu", [
+		WidgetMenuItem.Submenu( "file", "File", [
+			WidgetMenuItem.Command( "file.save", "Save", Save, 's',
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 's' ) )
+		], 'f' ),
 		WidgetMenuItem.Submenu( "edit", "Edit", [
 			WidgetMenuItem.Command( "edit.undo", "Undo", "edit.undo", 'u', WidgetEditCommand.Undo,
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'z' ) ),
@@ -69,6 +73,8 @@ internal static class DeditMenu {
 		bool paste = editor?.CanExecuteEditCommand( WidgetEditCommand.Paste ) == true;
 		bool selectAll = editor?.CanExecuteEditCommand( WidgetEditCommand.SelectAll ) == true;
 		menu.SetPresentation( [
+			new WidgetMenuItemPresentation( "file", "File", canSave ),
+			new WidgetMenuItemPresentation( "file.save", "Save", canSave ),
 			new WidgetMenuItemPresentation( "edit", "Edit", undo || redo || cut || copy || paste || selectAll ),
 			new WidgetMenuItemPresentation( "edit.undo", "Undo", undo ),
 			new WidgetMenuItemPresentation( "edit.redo", "Redo", redo ),

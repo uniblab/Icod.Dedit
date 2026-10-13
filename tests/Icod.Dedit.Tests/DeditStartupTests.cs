@@ -130,10 +130,10 @@ public sealed class DeditStartupTests {
 			if ( this.ThrowOnDraw ) throw new IOException( "Simulated refresh failure" );
 			return ValueTask.CompletedTask;
 		}
-		public bool Process( WidgetInput input, TimeSpan elapsed ) {
+		public ValueTask<bool> ProcessAsync( WidgetInput input, TimeSpan elapsed ) {
 			this.ProcessCount++;
-			return input.Kind == WidgetInputKind.Key && input.Modifiers.HasFlag( WidgetInputModifiers.Control )
-				&& input.Character?.Value is 'q' or 'Q';
+			return ValueTask.FromResult( input.Kind == WidgetInputKind.Key && input.Modifiers.HasFlag( WidgetInputModifiers.Control )
+				&& input.Character?.Value is 'q' or 'Q' );
 		}
 		public void Resize() => this.ResizeCount++;
 		public ValueTask DisposeAsync() { this.Disposed = true; return ValueTask.CompletedTask; }

@@ -30,7 +30,7 @@ internal readonly record struct DeditEvent( DeditEventKind Kind, WidgetInput? In
 internal interface IDeditTerminal : IAsyncDisposable {
 	ValueTask<DeditEvent> ReadAsync( CancellationToken cancellationToken );
 	ValueTask DrawAsync( IReadOnlyList<string> captions, TimeSpan elapsed, CancellationToken cancellationToken );
-	bool Process( WidgetInput input, TimeSpan elapsed );
+	ValueTask<bool> ProcessAsync( WidgetInput input, TimeSpan elapsed );
 	void Resize();
 }
 
@@ -50,7 +50,7 @@ internal static class DeditApplication {
 				case DeditEventKind.Resize: terminal.Resize(); redraw = true; break;
 				case DeditEventKind.Input when current.Input is { } input:
 					if ( input.Kind == WidgetInputKind.EndOfInput ) return;
-					if ( terminal.Process( input, clock() ) ) return;
+					if ( await terminal.ProcessAsync( input, clock() ) ) return;
 					redraw = true; break;
 			}
 		}

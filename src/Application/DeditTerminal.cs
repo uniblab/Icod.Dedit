@@ -35,6 +35,8 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly WidgetTabStrip tabs = new( "workspace-tabs" );
 	private readonly DeditClipboard clipboard;
 	private readonly DocumentManager documents;
+	private readonly DocumentFileService files;
+	private string? saveError;
 	private readonly List<string> openErrors = [];
 	private readonly List<CursesInputProtocolLease> leases = [];
 	private EditorShell? Editor => this.documents.Active?.Shell;
@@ -44,6 +46,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.host = new WidgetHost( session, WidgetTheme.Default );
 		this.clipboard = new DeditClipboard( this.host );
 		this.documents = new DocumentManager( this.host );
+		this.files = new DocumentFileService( Environment.CurrentDirectory );
 		this.host.Attach( this.menu );
 		this.host.Attach( this.tabs );
 		session.StandardScreen.WrapMode = CursesWrapMode.Clip;
@@ -55,11 +58,10 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		DeditTerminal? terminal = null;
 		try {
 			terminal = new DeditTerminal( session );
-			DocumentFileService files = new( Environment.CurrentDirectory );
 			string? firstKey = null;
 			foreach ( string path in options.Paths ) {
 				try {
-					DocumentEntry opened = terminal.documents.Open( await files.OpenAsync( path, CancellationToken.None ) );
+					DocumentEntry opened = terminal.documents.Open( await terminal.files.OpenAsync( path, CancellationToken.None ) );
 					firstKey ??= opened.Key;
 				} catch ( Exception exception ) when ( exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException ) {
 					terminal.openErrors.Add( DocumentManager.SanitizeDisplay( $"{path}: {exception.Message}" ) );
@@ -97,24 +99,30 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	public async ValueTask DrawAsync( IReadOnlyList<string> captions, TimeSpan elapsed, CancellationToken cancellationToken ) {
 		CursesScreen screen = this.session.Screen;
 		this.tabs.SetTabs( this.documents.Tabs, this.documents.Active?.Key );
-		DeditMenu.UpdateState( this.menu, this.Editor?.Editor );
+		DeditMenu.UpdateState( this.menu, this.Editor?.Editor, this.documents.Active?.FullPath is not null );
 		this.menu.Arrange( screen.Bounds );
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.Editor?.Arrange();
 		this.session.StandardScreen.Clear();
-		this.Write( screen.Rows - 1, this.openErrors.Count > 0 ?
+				this.Write( screen.Rows - 1, this.saveError is not null ? this.saveError : this.openErrors.Count > 0 ?
 			$"Open error ({this.openErrors.Count}): {this.openErrors[ 0 ]}" :
-			$"{DocumentManager.SanitizeDisplay( this.documents.Active?.Caption ?? "Untitled" )} in memory; changes are lost on exit. Ctrl+Z/Y undo/redo. Ctrl+Q exits." );
+			$"{DocumentManager.SanitizeDisplay( this.documents.Active?.Caption ?? "Untitled" )}; Ctrl+S saves existing files. Ctrl+Q exits." );
 		this.host.Render();
 		await this.session.RefreshAsync( cancellationToken );
 	}
 
-	public bool Process( WidgetInput input, TimeSpan elapsed ) {
+	public async ValueTask<bool> ProcessAsync( WidgetInput input, TimeSpan elapsed ) {
 		if ( IsQuitKey( input ) ) return RequestQuit( this.host, this.menu, this.documents, input, elapsed );
 		if ( TryCycleFocus( this.host, input ) ) return false;
 		IReadOnlyList<WidgetAction> actions = this.Editor is null ? this.host.Process( input, elapsed ).Actions : this.Editor.Process( input, elapsed );
 		foreach ( WidgetAction action in actions ) {
-			if ( action is WidgetTabActivationRequestedAction selection ) this.documents.Activate( selection.TabKey, focusEditor: false );
+			if ( action is WidgetInvokedAction { CommandId: DeditMenu.Save } && this.documents.Active is { } saving ) {
+				try { await this.documents.SaveAsync( saving, this.files, CancellationToken.None ); this.saveError = null; }
+				catch ( Exception exception ) when ( exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or InvalidOperationException ) {
+					this.saveError = DocumentManager.SanitizeDisplay( $"Save error: {exception.Message}" );
+				}
+			}
+			else if ( action is WidgetTabActivationRequestedAction selection ) this.documents.Activate( selection.TabKey, focusEditor: false );
 			else if ( action is WidgetClipboardRequestedAction clipboard ) this.clipboard.Complete( clipboard.Request );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToFile } ) this.host.Focus( this.tabs );
 			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.Wrap } wrap && this.Editor is not null )
