@@ -266,4 +266,21 @@ public sealed class DeditMenuTests {
 			host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.Zero ).Actions ) );
 		Assert.Equal( WidgetDialogOutcome.Cancel, canceled.Result.Outcome );
 	}
+
+	[Theory]
+	[InlineData( 'n', 'n', DeditMenu.New )]
+	[InlineData( 'o', 'o', DeditMenu.Open )]
+	public void FileNewAndOpenMenuAndShortcutsUseSameCommand( char mnemonicKey, char shortcutKey, string command ) {
+		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		using EditorShell shell = new( host );
+		DeditMenu.UpdateState( menu, shell.Editor );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'f' ) ), TimeSpan.Zero );
+		WidgetInvokedAction mnemonic = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( mnemonicKey ) ), TimeSpan.Zero ).Actions ) );
+		WidgetInvokedAction shortcut = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( shortcutKey ) ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( command, mnemonic.CommandId );
+		Assert.Equal( mnemonic.CommandId, shortcut.CommandId );
+	}
 }
