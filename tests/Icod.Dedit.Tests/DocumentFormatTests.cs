@@ -22,6 +22,7 @@ namespace Icod.Dedit.Tests;
 using Icod.DCurses;
 using Icod.Dedit.Documents;
 using Icod.Dedit.Presentation;
+using Icod.Dedit.Interaction;
 using System.Text;
 using Icod.Widgets;
 using Xunit;
@@ -88,6 +89,24 @@ public sealed class DocumentFormatTests {
 		manager.SetEncoding( entry, TextFileEncoding.Utf8Bom );
 		DeditMenu.UpdateState( menu, entry.Shell.Editor, encoding: entry.Encoding );
 		Assert.True( entry.HasUnsavedChanges );
+	}
+
+	[Fact]
+	public void NormalizeMixedLineEndingsPreservesFinalTerminatorAndIsOneUndoStep() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry entry = manager.OpenUntitled();
+		entry.Shell.Process( WidgetInput.Paste( "one\r\ntwo\nthree\rfour\r" ), TimeSpan.Zero );
+		entry.Shell.Editor.View.SetSelection( 5, 13 );
+		Assert.Equal( WidgetTextEditStatus.Applied,
+			DocumentFormatController.NormalizeLineEndings( entry, "\n", TimeSpan.FromMilliseconds( 1 ) ) );
+		Assert.Equal( "one\ntwo\nthree\nfour\n",
+			entry.Shell.Document.Read( 0, checked( (int)entry.Shell.Document.Length ) ) );
+		Assert.Equal( 4, entry.Shell.Editor.View.SelectionStart );
+		Assert.Equal( 12, entry.Shell.Editor.View.SelectionEnd );
+		entry.Shell.Document.Undo();
+		Assert.Equal( "one\r\ntwo\nthree\rfour\r",
+			entry.Shell.Document.Read( 0, checked( (int)entry.Shell.Document.Length ) ) );
 	}
 
 }
