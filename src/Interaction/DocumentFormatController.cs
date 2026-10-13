@@ -41,14 +41,19 @@ internal static class DocumentFormatController {
 				edits.Add( new WidgetTextEdit( index, length, ending ) );
 			index += length - 1;
 		}
-		if ( edits.Count == 0 ) return WidgetTextEditStatus.NoChange;
+		if ( edits.Count == 0 ) {
+			entry.Shell.Editor.NewLine = ending;
+			return WidgetTextEditStatus.NoChange;
+		}
 		WidgetTextViewState view = entry.Shell.Editor.View;
 		long anchor = Transform( view.Anchor, edits );
 		long caret = Transform( view.Caret, edits );
 		token.ThrowIfCancellationRequested();
 		WidgetTextEditContext context = new( view.Id, view.Anchor, view.Caret, anchor, caret,
 			WidgetTextEditKind.Programmatic, timestamp );
-		return document.Apply( edits, snapshot.Revision, context ).Status;
+		WidgetTextEditStatus status = document.Apply( edits, snapshot.Revision, context ).Status;
+		if ( status == WidgetTextEditStatus.Applied ) entry.Shell.Editor.NewLine = ending;
+		return status;
 	}
 
 	private static long Transform( long position, IReadOnlyList<WidgetTextEdit> edits ) {
