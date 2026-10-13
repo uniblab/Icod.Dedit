@@ -27,6 +27,38 @@ using Icod.Widgets;
 using Xunit;
 
 public sealed class SaveAsPickerTests {
+
+	[Fact]
+	public async Task ExistingSelectionNeedsASeparateDefaultNoOverwriteDecision() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-picker-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "existing.txt" );
+			await File.WriteAllTextAsync( path, "original" );
+			using WidgetHost host = new( new CursesScreen( 60, 18 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry entry = manager.OpenUntitled();
+			entry.Shell.Process( WidgetInput.Paste( "draft" ), TimeSpan.Zero );
+			DeditSaveTargetProvider provider = new();
+			WidgetSaveTargetPicker picker = new( "save-existing", new LocalWidgetFileSystemProvider(), provider, directory, "existing.txt" );
+			host.ShowModal( picker );
+			WidgetSaveTargetRequest request = picker.RequestAccept();
+			WidgetSaveTargetObservation observation = await provider.InspectTargetAsync( request.Directory, request.FileName, CancellationToken.None );
+			Assert.True( picker.ApplyInspectionResult( new( request, observation ) ) );
+			WidgetDialogCompletedAction selected = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single( host.DrainActions() ) );
+			WidgetSaveTargetSelection target = Assert.IsType<WidgetSaveTargetSelection>( selected.Result.Value );
+			Assert.True( target.ExistedAtInspection );
+			Assert.Equal( path, target.TargetPath );
+			Assert.Equal( "original", await File.ReadAllTextAsync( path ) );
+			host.ShowModal( WidgetMessageDialog.YesNo( "confirm-overwrite", "Overwrite file?", "Replace existing.txt?" ) );
+			WidgetDialogCompletedAction declined = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+				host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.Zero ).Actions ) );
+			Assert.Equal( WidgetDialogOutcome.No, declined.Result.Outcome );
+			Assert.Null( entry.FullPath );
+			Assert.True( entry.Shell.Document.IsModified );
+			Assert.Equal( "original", await File.ReadAllTextAsync( path ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
 	[Fact]
 	public async Task AcceptedNewTargetSavesUntitledButEscapeLeavesItDirty() {
 		string directory = Directory.CreateTempSubdirectory( "dedit-picker-" ).FullName;

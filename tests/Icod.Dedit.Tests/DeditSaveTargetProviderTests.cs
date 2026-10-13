@@ -26,7 +26,7 @@ using Xunit;
 
 public sealed class DeditSaveTargetProviderTests {
 	[Fact]
-	public async Task NewTargetIsValidAndExistingTargetRequiresAnotherName() {
+	public async Task NewAndExistingFileTargetsAreValidButDirectoryIsRejected() {
 		string directory = Directory.CreateTempSubdirectory( "dedit-target-" ).FullName;
 		try {
 			DeditSaveTargetProvider provider = new();
@@ -37,7 +37,10 @@ public sealed class DeditSaveTargetProviderTests {
 			string existing = Path.Combine( directory, "existing.txt" );
 			await File.WriteAllTextAsync( existing, "keep" );
 			var observed = await provider.InspectTargetAsync( directory, "existing.txt", CancellationToken.None );
-			Assert.False( observed.IsValid ); Assert.True( observed.Exists );
+			Assert.True( observed.IsValid ); Assert.True( observed.Exists );
+			Directory.CreateDirectory( Path.Combine( directory, "subfolder" ) );
+			var folder = await provider.InspectTargetAsync( directory, "subfolder", CancellationToken.None );
+			Assert.False( folder.IsValid ); Assert.True( folder.Exists );
 			Assert.Equal( "keep", await File.ReadAllTextAsync( existing ) );
 		} finally { Directory.Delete( directory, true ); }
 	}

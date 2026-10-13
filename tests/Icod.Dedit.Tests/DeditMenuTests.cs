@@ -35,7 +35,7 @@ public sealed class DeditMenuTests {
 
 	[Theory]
 	[InlineData( 'l', DeditMenu.SaveAll )]
-	[InlineData( 'o', DeditMenu.CloseAll )]
+	[InlineData( 'd', DeditMenu.CloseAll )]
 	[InlineData( 'x', DeditMenu.Exit )]
 	public void FileBatchCommandsAreKeyboardAccessible( char mnemonic, string commandId ) {
 		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );

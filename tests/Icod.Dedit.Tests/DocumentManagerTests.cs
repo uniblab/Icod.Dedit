@@ -180,6 +180,91 @@ public sealed class DocumentManagerTests {
 	}
 
 
+
+	[Fact]
+	public async Task SaveAsExistingUpdatesIdentityOnlyAfterReplacingApprovedTarget() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-overwrite-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "existing.txt" );
+			await File.WriteAllTextAsync( path, "before" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry draft = manager.OpenUntitled();
+			draft.Shell.Process( WidgetInput.Paste( "draft" ), TimeSpan.Zero );
+			var observed = await files.CaptureExistingAsync( path, CancellationToken.None );
+			await manager.SaveAsExistingAsync( draft, files, observed, CancellationToken.None );
+			Assert.Equal( "draft", await File.ReadAllTextAsync( path ) );
+			Assert.Equal( path, draft.FullPath );
+			Assert.Equal( observed.Identity, draft.Identity );
+			Assert.Equal( "existing.txt", draft.Caption );
+			Assert.False( draft.Shell.Document.IsModified );
+			Assert.Single( Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SaveAsExistingRejectsTargetChangedDuringConfirmation() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-overwrite-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "existing.txt" );
+			await File.WriteAllTextAsync( path, "before" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry draft = manager.OpenUntitled();
+			draft.Shell.Process( WidgetInput.Paste( "draft" ), TimeSpan.Zero );
+			var observed = await files.CaptureExistingAsync( path, CancellationToken.None );
+			await File.WriteAllTextAsync( path, "external" );
+			await Assert.ThrowsAsync<IOException>( () => manager.SaveAsExistingAsync( draft, files, observed, CancellationToken.None ) );
+			Assert.Null( draft.FullPath );
+			Assert.True( draft.Shell.Document.IsModified );
+			Assert.Equal( "external", await File.ReadAllTextAsync( path ) );
+			Assert.Single( Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SaveAsExistingRefusesAnotherOpenTabAndItsAliases() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-overwrite-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "owned.txt" );
+			await File.WriteAllTextAsync( path, "owned" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry owner = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			DocumentEntry draft = manager.OpenUntitled();
+			draft.Shell.Process( WidgetInput.Paste( "draft" ), TimeSpan.Zero );
+			var observed = await files.CaptureExistingAsync( path, CancellationToken.None );
+			await Assert.ThrowsAsync<IOException>( () => manager.SaveAsExistingAsync( draft, files, observed, CancellationToken.None ) );
+			Assert.Same( owner, manager.Find( owner.Key ) );
+			Assert.Null( draft.FullPath );
+			Assert.True( draft.Shell.Document.IsModified );
+			Assert.Equal( "owned", await File.ReadAllTextAsync( path ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SaveAsToOwnPathDoesNotApproveAnExternalChange() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-overwrite-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "opened.txt" );
+			await File.WriteAllTextAsync( path, "before" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry opened = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			opened.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.Zero );
+			await File.WriteAllTextAsync( path, "external" );
+			var observed = await files.CaptureExistingAsync( path, CancellationToken.None );
+			await Assert.ThrowsAsync<IOException>( () => manager.SaveAsExistingAsync( opened, files, observed, CancellationToken.None ) );
+			Assert.Equal( path, opened.FullPath );
+			Assert.True( opened.Shell.Document.IsModified );
+			Assert.Equal( "external", await File.ReadAllTextAsync( path ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
 	[Fact]
 	public void CloseRefusesDirtyTabUntilDiscardAndKeepsOtherTabsIntact() {
 		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
