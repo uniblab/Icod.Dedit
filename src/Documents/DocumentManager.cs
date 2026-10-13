@@ -31,7 +31,7 @@ internal sealed class DocumentEntry( string key, string caption, string? fullPat
 	internal string? FullPath { get; } = fullPath;
 	internal string? Identity { get; } = identity;
 	internal TextFileEncoding Encoding { get; } = encoding;
-	internal byte[] Fingerprint { get; } = fingerprint;
+	internal byte[] Fingerprint { get; set; } = fingerprint;
 	internal EditorShell Shell { get; } = shell;
 }
 
@@ -63,7 +63,18 @@ internal sealed class DocumentManager : IDisposable {
 		this.UpdateCaptions(); return entry;
 	}
 
-	internal Task SaveAsync( DocumentEntry entry, DocumentFileService files, CancellationToken cancellationToken ) => throw new NotImplementedException();
+	internal async Task SaveAsync( DocumentEntry entry, DocumentFileService files, CancellationToken cancellationToken ) {
+		ArgumentNullException.ThrowIfNull( entry );
+		ArgumentNullException.ThrowIfNull( files );
+		this.ThrowIfDisposed();
+		if ( !this.documents.Contains( entry ) ) throw new ArgumentException( "Document is not open.", nameof( entry ) );
+		if ( entry.FullPath is null || entry.Identity is null ) throw new InvalidOperationException( "Untitled documents require Save As." );
+		using WidgetTextSnapshot snapshot = entry.Shell.Document.CreateSnapshot();
+		string text = snapshot.Read( 0, checked( (int)snapshot.Length ) );
+		byte[] fingerprint = await files.SaveAsync( entry.FullPath, entry.Identity, entry.Fingerprint, text, entry.Encoding, cancellationToken );
+		entry.Fingerprint = fingerprint;
+		entry.Shell.Document.MarkSaved( snapshot );
+	}
 
 	internal bool Activate( string key, bool focusEditor = true ) {
 		this.ThrowIfDisposed();
