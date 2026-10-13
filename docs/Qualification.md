@@ -90,3 +90,9 @@ confirmation, which remains D1006 work.
 F6 and Shift+F6 now cycle focus without taking Tab away from indentation.
 Tests cover forward/backward cycling, ignored function-key release, and focus
 remaining inside an active modal scope.
+Edit → Cut/Copy/Paste/Select All and Ctrl+X/C/V/A now target the focused editor.
+Clipboard completions use a 64 KiB process-local fallback and Widgets' guarded
+request identity. Tests cover a menu copy followed by direct cut/paste and undo,
+an empty clipboard, a stale completion after focus changes, literal tab/newline/
+control characters as one paste edit, ignored key release, and modal isolation.
+Terminal clipboard transfer and no-selection linewise behavior remain open.

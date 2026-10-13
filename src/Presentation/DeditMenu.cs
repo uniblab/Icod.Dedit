@@ -34,7 +34,16 @@ internal static class DeditMenu {
 			WidgetMenuItem.Command( "edit.undo", "Undo", "edit.undo", 'u', WidgetEditCommand.Undo,
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'z' ) ),
 			WidgetMenuItem.Command( "edit.redo", "Redo", "edit.redo", 'r', WidgetEditCommand.Redo,
-				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'y' ) )
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'y' ) ),
+			WidgetMenuItem.Separator( "edit.clipboard-separator" ),
+			WidgetMenuItem.Command( "edit.cut", "Cut", "edit.cut", 't', WidgetEditCommand.Cut,
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'x' ) ),
+			WidgetMenuItem.Command( "edit.copy", "Copy", "edit.copy", 'c', WidgetEditCommand.Copy,
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'c' ) ),
+			WidgetMenuItem.Command( "edit.paste", "Paste", "edit.paste", 'p', WidgetEditCommand.Paste,
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'v' ) ),
+			WidgetMenuItem.Command( "edit.select-all", "Select All", "edit.select-all", 'a', WidgetEditCommand.SelectAll,
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'a' ) )
 		], 'e' ),
 		WidgetMenuItem.Submenu( "view", "View", [
 			WidgetMenuItem.Command( "view.go-file", "Go to File...", GoToFile, 'f',
@@ -54,10 +63,18 @@ internal static class DeditMenu {
 		ArgumentNullException.ThrowIfNull( menu );
 		bool undo = editor?.CanExecuteEditCommand( WidgetEditCommand.Undo ) == true;
 		bool redo = editor?.CanExecuteEditCommand( WidgetEditCommand.Redo ) == true;
+		bool cut = editor?.CanExecuteEditCommand( WidgetEditCommand.Cut ) == true;
+		bool copy = editor?.CanExecuteEditCommand( WidgetEditCommand.Copy ) == true;
+		bool paste = editor?.CanExecuteEditCommand( WidgetEditCommand.Paste ) == true;
+		bool selectAll = editor?.CanExecuteEditCommand( WidgetEditCommand.SelectAll ) == true;
 		menu.SetPresentation( [
-			new WidgetMenuItemPresentation( "edit", "Edit", undo || redo ),
+			new WidgetMenuItemPresentation( "edit", "Edit", undo || redo || cut || copy || paste || selectAll ),
 			new WidgetMenuItemPresentation( "edit.undo", "Undo", undo ),
 			new WidgetMenuItemPresentation( "edit.redo", "Redo", redo ),
+			new WidgetMenuItemPresentation( "edit.cut", "Cut", cut ),
+			new WidgetMenuItemPresentation( "edit.copy", "Copy", copy ),
+			new WidgetMenuItemPresentation( "edit.paste", "Paste", paste ),
+			new WidgetMenuItemPresentation( "edit.select-all", "Select All", selectAll ),
 			new WidgetMenuItemPresentation( "view.wrap", "Word Wrap", editor is not null,
 				editor is not null && editor.View.WrapMode != CursesTextWrapMode.NoWrap )
 		] );

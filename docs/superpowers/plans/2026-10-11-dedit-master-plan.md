@@ -242,6 +242,11 @@ modal dialog can block that background shortcut. Dirty-document quit
 coordination remains in D1006.
 F6/Shift+F6 cycle host focus while editor Tab remains indentation; key release
 does not cycle and an active modal scope keeps focus inside the dialog.
+Edit → Cut/Copy/Paste/Select All and their direct Ctrl shortcuts now use the
+Widgets focused edit commands. A 64 KiB process-local clipboard completes
+guarded requests; empty/stale completions leave text unchanged. Selected text
+is supported; linewise no-selection behavior and terminal clipboard transport
+are still pending. Literal control-like paste content is one undoable edit.
 The rest of this milestone's menus and forms are still open.
 
 **Files:** `CommandRouter.cs`, `EditorShell.cs`, interaction tests.

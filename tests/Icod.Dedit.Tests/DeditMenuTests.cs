@@ -85,12 +85,16 @@ public sealed class DeditMenuTests {
 	}
 
 	[Fact]
-	public void EditMenuIsDisabledUntilThereIsHistory() {
+	public void UndoRemainsDisabledUntilThereIsHistory() {
 		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
 		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
 		using EditorShell shell = new( host ); DeditMenu.UpdateState( menu, shell.Editor );
 		Assert.Empty( shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'e' ) ), TimeSpan.FromMilliseconds( 1 ) ) );
-		Assert.False( menu.IsOpen );
+		Assert.True( menu.IsOpen );
+		Assert.Empty( shell.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'u' ) ), TimeSpan.FromMilliseconds( 2 ) ) );
+		Assert.Equal( 0, shell.Document.Length );
+		shell.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.FromMilliseconds( 2 ) );
+		shell.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.FromMilliseconds( 2 ) );
 		shell.Process( WidgetInput.TextInput( new Rune( 'x' ) ), TimeSpan.FromMilliseconds( 2 ) );
 		DeditMenu.UpdateState( menu, shell.Editor );
 		shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'e' ) ), TimeSpan.FromMilliseconds( 3 ) );

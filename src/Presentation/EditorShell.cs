@@ -52,7 +52,11 @@ internal sealed class EditorShell : IDisposable {
 	internal IReadOnlyList<WidgetAction> Process( WidgetInput input, TimeSpan elapsed ) {
 		if ( input.Kind == WidgetInputKind.Key && input.KeyPhase is not CursesKeyEventPhase.Release &&
 			( input.Modifiers & WidgetInputModifiers.Control ) != 0 && ReferenceEquals( this.host.FocusedWidget, this.Editor ) ) {
-			WidgetEditCommand? command = input.Character?.Value switch { 'z' or 'Z' => WidgetEditCommand.Undo, 'y' or 'Y' => WidgetEditCommand.Redo, _ => null };
+			WidgetEditCommand? command = input.Character?.Value switch {
+				'z' or 'Z' => WidgetEditCommand.Undo, 'y' or 'Y' => WidgetEditCommand.Redo,
+				'x' or 'X' => WidgetEditCommand.Cut, 'c' or 'C' => WidgetEditCommand.Copy,
+				'v' or 'V' => WidgetEditCommand.Paste, 'a' or 'A' => WidgetEditCommand.SelectAll, _ => null
+			};
 			if ( command is not null ) { this.host.ExecuteEditCommand( command.Value, elapsed ); return this.host.DrainActions(); }
 		}
 		return this.host.Process( input, elapsed ).Actions;

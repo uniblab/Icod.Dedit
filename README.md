@@ -21,7 +21,8 @@ editor policy belong here.
 The D1001 behavior decisions are accepted. D1002 provides a runnable terminal
 shell and CLI. D1003 has begun: with no file arguments, the Untitled tab is an
 editable in-memory document with undo/redo. The current D1004 menu slice exposes
-View → Go to File, View → Word Wrap, and Edit → Undo/Redo. `Ctrl+P` focuses the tab strip;
+View → Go to File, View → Word Wrap, Edit → Undo/Redo/Cut/Copy/Paste/Select All,
+and Help → About. `Ctrl+P` focuses the tab strip;
 `Alt+Z` toggles wrap for the active editor. Where the terminal reports
 Alt+V distinctly, open View and press plain F for that same action. Changes
 are lost on exit. Supplying
@@ -41,11 +42,14 @@ dotnet run --project Icod.Dedit.csproj -f net10.0 -- "first file.txt" "second.tx
 On Windows, use `build.cmd` and the same `dotnet run` commands. The shell
 shows one editable Untitled tab without paths and path captions in argument
 order when paths are supplied. Use `--` before a path beginning with `-`.
-Ctrl+Z/Ctrl+Y undo and redo in Untitled; Ctrl+Q exits. No document is saved.
+Ctrl+Z/Ctrl+Y undo and redo in Untitled; Ctrl+X/C/V/A cut, copy, paste and
+select all using an in-process clipboard; Ctrl+Q exits. Copy and cut currently
+require a selection. Terminal clipboard transport and linewise operations are
+planned. No document is saved.
 F6 and Shift+F6 cycle focus among the visible controls; Tab still indents in
 the editor.
 Help → About opens a captioned OK dialog; Escape cancels it. File and the
-remaining Edit commands are still scheduled for D1004.
+remaining Find and Replace commands are still scheduled for D1004/D1007.
 
 - [Product and architecture design](docs/DESIGN.md)
 - [Master implementation plan](docs/superpowers/plans/2026-10-11-dedit-master-plan.md)

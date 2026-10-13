@@ -30,6 +30,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly WidgetHost host;
 	private readonly WidgetMenuBar menu = DeditMenu.Create();
 	private readonly WidgetTabStrip tabs = new( "workspace-tabs" );
+	private readonly DeditClipboard clipboard;
 	private readonly EditorShell? editor;
 	private readonly List<CursesInputProtocolLease> leases = [];
 	private string? activeKey;
@@ -37,6 +38,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private DeditTerminal( CursesSession session, bool newDocument ) {
 		this.session = session;
 		this.host = new WidgetHost( session, WidgetTheme.Default );
+		this.clipboard = new DeditClipboard( this.host );
 		this.host.Attach( this.menu );
 		this.host.Attach( this.tabs );
 		if ( newDocument ) this.editor = new EditorShell( this.host );
@@ -99,6 +101,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		IReadOnlyList<WidgetAction> actions = this.editor is null ? this.host.Process( input, elapsed ).Actions : this.editor.Process( input, elapsed );
 		foreach ( WidgetAction action in actions ) {
 			if ( action is WidgetTabActivationRequestedAction selection ) this.activeKey = selection.TabKey;
+			else if ( action is WidgetClipboardRequestedAction clipboard ) this.clipboard.Complete( clipboard.Request );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToFile } ) this.host.Focus( this.tabs );
 			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.Wrap } wrap && this.editor is not null )
 				DeditMenu.ApplyWrap( this.editor.Editor, wrap.IsChecked );
