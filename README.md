@@ -20,8 +20,9 @@ editor policy belong here.
 
 The D1001 behavior decisions are accepted. The current development build has
 editable in-memory and file-backed tabs with independent undo history. File,
-Edit, View, and Help menus expose Save, Save As, Save All, Close, Close All,
-Exit, Undo/Redo, Cut/Copy/Paste/Select All, Go to File, Word Wrap, and About.
+Edit, View, and Help menus expose New, Open, Save, Save As, Save All, Close,
+Close All, Exit, Undo/Redo, Cut/Copy/Paste/Select All, Find, Replace,
+Go to File, Go to Line:Column, Word Wrap, and About.
 `Ctrl+P` focuses the tab strip and `Alt+Z` toggles wrap for the active
 editor. Where the terminal reports Alt+V distinctly, open View and press plain
 F to focus the tab strip.
@@ -37,7 +38,8 @@ Externally changed files offer an explicit Reload or Keep decision when a tab
 is activated or an active save finds a conflict. The default Keep choice
 preserves the buffer; saving to the original path remains blocked until the
 conflict is resolved. Reload discards unsaved changes only after confirmation.
-Search, format controls, and release qualification remain under development.
+Search and coordinate navigation are available; format controls and release
+qualification remain under development.
 Build with a .NET 10 SDK (which targets .NET 8, 9, and 10) and run in an
 interactive terminal with the selected runtime installed:
 
@@ -50,14 +52,16 @@ dotnet run --project Icod.Dedit.csproj -f net10.0 -- "first file.txt" "second.tx
 On Windows, use `build.cmd` and the same `dotnet run` commands. The shell
 shows one editable Untitled tab without paths and loaded documents in argument
 order when paths are supplied. Use `--` before a path beginning with `-`.
-Ctrl+P focuses the tab strip; Left/Right select a document, and F6 returns to
-the editor. File loading accepts strict UTF-8 and BOM-marked UTF-16 LE/BE up to
+Ctrl+N opens another Untitled tab. Ctrl+O opens a file picker that accepts
+multiple files. Ctrl+P focuses the tab strip; Left/Right select a document,
+and F6 returns to the editor. File loading accepts strict UTF-8 and BOM-marked UTF-16 LE/BE up to
 32 MiB, preserving mixed line endings and the original encoding in memory.
 Ctrl+Z/Ctrl+Y undo and redo; Ctrl+X/C/V/A cut, copy, paste, and select
 all using an in-process clipboard. Copy and cut currently require a
 selection. Terminal clipboard transport and linewise operations are planned.
-File → Save or Ctrl+S writes an opened file using its original encoding and
-exact line endings, after checking for external changes. File → Save As or
+File → Save or Ctrl+S opens Save As for Untitled, or writes an opened file
+using its original encoding and exact line endings after checking for external
+changes. File → Save As or
 Ctrl+Shift+S opens a directory and name picker. An existing file triggers an
 additional No-default overwrite confirmation; Escape or No leaves it untouched.
 The destination's identity and contents are checked again before replacement.
@@ -74,8 +78,14 @@ same per-tab decisions and exits only when the sequence completes. Closing the
 last ordinary tab creates a fresh Untitled tab.
 F6 and Shift+F6 cycle focus among the visible controls; Tab still indents in
 the editor.
-Help → About opens a captioned OK dialog; Escape cancels it. Find and Replace
-commands are still scheduled for D1007.
+Ctrl+F opens Find and Ctrl+R opens Replace. F3 and Shift+F3 repeat the last
+search in the current tab, wrapping once. The Edit menu toggles case matching,
+whole-word matching, and .NET regular expressions. Replace All is one undoable
+edit. Invalid patterns and stale results leave the document unchanged.
+Ctrl+G opens Go to Line:Column. Enter two one-based numbers separated by a
+colon, such as `2:5`; columns count Unicode graphemes, including tabs and
+emoji as one position each. Invalid or out-of-range positions stay in the
+form. Help → About opens a captioned OK dialog; Escape cancels it.
 
 - [Product and architecture design](docs/DESIGN.md)
 - [Master implementation plan](docs/superpowers/plans/2026-10-11-dedit-master-plan.md)
@@ -109,7 +119,7 @@ The NuGet publication job requires a GitHub `Release` environment, an Actions se
 - Baseline: C# 13, .NET 8/9/10, managed cross-platform code.
 - Implemented in this development branch: independent editable tabs and the listed file/menu commands.
 - No printing, print preview, or printer dependencies.
-- Saving and document lifecycle remain under development; this is not a qualified 1.0 file editor release.
+- The current build has not completed 1.0 qualification, format controls, or all filesystem edge-case checks.
 
 ## LICENSE
 

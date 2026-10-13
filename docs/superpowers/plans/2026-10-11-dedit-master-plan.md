@@ -321,7 +321,7 @@ the operation. Unique dialog/picker IDs reject delayed completions from
 earlier requests. Save As to an existing file requires a separate No-default
 confirmation. It captures the destination's identity and byte fingerprint,
 then checks them again before replacement; a target owned by another tab
-and an external change to the current file are refused. The 96-test-per-target
+and an external change to the current file are refused. The cross-platform automated
 matrix covers cancellation, partial saves, conflicts, overwrite decisions,
 and late close results. Activation and active-save conflicts now offer a No-default Reload/Keep
 choice; missing/retargeted files retain the buffer and direct the user to
@@ -329,7 +329,7 @@ Save As. Reload requires explicit discard, decodes before replacing a tab,
 and preserves its key. Acknowledged Keep suppresses repeated prompts for
 the same external bytes but does not bypass the save conflict. Injected
 write/replacement failures leave destination bytes intact and remove the
-temporary file. The latest CI run passed 107 tests per target on Linux,
+temporary file. The current search/navigation build passed 150 tests per target on Linux,
 Windows and macOS. Remaining D1006 qualification includes physical aliases,
 late completion races and a live-terminal conflict exercise.
 
@@ -357,6 +357,14 @@ late completion races and a live-terminal conflict exercise.
 Crash recovery remains deferred; robust saving is not a claim of crash-proof editing.
 
 ## D1007 — Search, navigation and file-format commands
+
+**Current slice:** Literal and .NET regex search with case and whole-word
+options, forward/backward wrap, revision-bound Find/Replace forms, F3 repeats,
+and one-transaction Replace All are implemented. New/Open and Ctrl+S on an
+Untitled tab are also wired. Go to Line:Column validates one-based grapheme
+coordinates and the bound revision. The 150-test-per-target matrix is green
+on Linux, Windows and macOS. Responsiveness, format controls, preferences,
+and keyboard-only live-terminal qualification remain open.
 
 **Files:** `SearchController.cs`, shell forms, codec/settings tests.
 
