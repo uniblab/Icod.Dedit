@@ -171,4 +171,37 @@ public sealed class EditorShellTests {
 		Assert.Equal( 0, shell.Editor.View.Caret );
 		Assert.Equal( "界z", shell.Document.Read( 0, 2 ) );
 	}
+
+	[Fact]
+	public void TerminalControlCharactersStayExactInTheDocumentButNeverReachRenderedCells() {
+		using WidgetHost host = new( new CursesScreen( 36, 7 ), WidgetTheme.Default );
+		using EditorShell shell = new( host );
+		string exact = "left\u001b]52;c;payload\u0007\u009bright\tend";
+		shell.Process( WidgetInput.Paste( exact ), TimeSpan.Zero );
+		host.Render();
+
+		Assert.Equal( exact, shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+		for ( int row = 0; row < host.Screen.Rows; row++ )
+			for ( int column = 0; column < host.Screen.Columns; column++ )
+				Assert.False( host.Screen.StandardWindow.GetCell( row, column ).Content.Any( char.IsControl ) );
+	}
+
+	[Fact]
+	public void OpeningAModalDuringPointerSelectionPreventsFurtherEditorSelection() {
+		using WidgetHost host = new( new CursesScreen( 36, 8 ), WidgetTheme.Default );
+		using EditorShell shell = new( host );
+		shell.Process( WidgetInput.Paste( "first line\nsecond line" ), TimeSpan.Zero );
+		host.Render();
+		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( CursesMouseAction.Press,
+			CursesMouseButton.Primary, 1, 2 ) ), TimeSpan.FromMilliseconds( 1 ) );
+		long before = shell.Editor.View.Caret;
+		host.ShowModal( WidgetMessageDialog.Ok( "pointer-modal", "Modal", "Selection is suspended." ) );
+
+		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( CursesMouseAction.Move,
+			CursesMouseButton.Primary, 30, 7 ) ), TimeSpan.FromMilliseconds( 2 ) );
+		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( CursesMouseAction.Release,
+			CursesMouseButton.Primary, 30, 7 ) ), TimeSpan.FromMilliseconds( 3 ) );
+
+		Assert.Equal( before, shell.Editor.View.Caret );
+	}
 }

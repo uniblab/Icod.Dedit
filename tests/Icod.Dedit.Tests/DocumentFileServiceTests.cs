@@ -144,6 +144,20 @@ public sealed class DocumentFileServiceTests {
 	}
 
 	[Fact]
+	public async Task SavePreservesTerminalControlCharactersAsFileData() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-control-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "control.txt" );
+			string exact = "a\u001b]52;c;payload\u0007\u009bb\r\n";
+			DocumentFileService service = new( directory );
+
+			await service.SaveNewAsync( path, exact, TextFileEncoding.Utf8, CancellationToken.None );
+
+			Assert.Equal( TextFileCodec.Encode( exact, TextFileEncoding.Utf8 ), await File.ReadAllBytesAsync( path ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
 	public async Task InjectedWriteFailureLeavesOriginalBytesAndRemovesTemporaryFile() {
 		string directory = Directory.CreateTempSubdirectory( "dedit-failed-save-" ).FullName;
 		try {

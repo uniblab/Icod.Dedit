@@ -84,6 +84,21 @@ public sealed class DeditClipboardTests {
 	}
 
 	[Fact]
+	public void CopyPreservesControlCharactersThatRenderingSanitizes() {
+		using WidgetHost host = new( new CursesScreen( 40, 10 ), WidgetTheme.Default );
+		using EditorShell shell = new( host );
+		string exact = "a\u001b]52;c;payload\u0007\u009bb";
+		shell.Process( WidgetInput.Paste( exact ), TimeSpan.Zero );
+		shell.Process( Ctrl( 'a' ), TimeSpan.FromMilliseconds( 1 ) );
+
+		WidgetClipboardRequestedAction copy = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+			shell.Process( Ctrl( 'c' ), TimeSpan.FromMilliseconds( 2 ) ) ) );
+
+		Assert.Equal( WidgetClipboardOperation.Copy, copy.Request.Operation );
+		Assert.Equal( exact, copy.Request.Text );
+	}
+
+	[Fact]
 	public void ModalBlocksClipboardShortcutAndPreservesClipboard() {
 		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
 		using EditorShell shell = new( host ); DeditClipboard clipboard = new( host ); clipboard.SetText( "kept" );
