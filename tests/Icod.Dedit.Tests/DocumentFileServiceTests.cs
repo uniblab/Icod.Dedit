@@ -142,4 +142,51 @@ public sealed class DocumentFileServiceTests {
 			Assert.Single( Directory.GetFiles( directory ) );
 		} finally { Directory.Delete( directory, true ); }
 	}
+
+	[Fact]
+	public async Task InjectedWriteFailureLeavesOriginalBytesAndRemovesTemporaryFile() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-failed-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "original" );
+			DocumentFileService service = new( directory, beforeSaveStage: stage => {
+				if ( stage == DocumentSaveStage.BeforeWrite ) throw new IOException( "Injected write failure." );
+			} );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			await Assert.ThrowsAsync<IOException>( () => service.SaveAsync( path, path, loaded.Fingerprint,
+				"edited", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Equal( "original", await File.ReadAllTextAsync( path ) );
+			Assert.Equal( [ path ], Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task InjectedReplacementFailureLeavesOriginalBytesAndRemovesTemporaryFile() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-failed-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "original" );
+			DocumentFileService service = new( directory, beforeSaveStage: stage => {
+				if ( stage == DocumentSaveStage.BeforeReplacement ) throw new IOException( "Injected replacement failure." );
+			} );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			await Assert.ThrowsAsync<IOException>( () => service.SaveAsync( path, path, loaded.Fingerprint,
+				"edited", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Equal( "original", await File.ReadAllTextAsync( path ) );
+			Assert.Equal( [ path ], Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task InjectedNewFileReplacementFailureLeavesTargetAbsentAndRemovesTemporaryFile() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-failed-new-save-" ).FullName;
+		try {
+			DocumentFileService service = new( directory, beforeSaveStage: stage => {
+				if ( stage == DocumentSaveStage.BeforeReplacement ) throw new IOException( "Injected replacement failure." );
+			} );
+			await Assert.ThrowsAsync<IOException>( () => service.SaveNewAsync( "draft.txt", "draft",
+				TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Empty( Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
 }
