@@ -41,6 +41,7 @@ internal static class DeditMenu {
 	internal const string SearchWholeWord = "edit.search-whole-word";
 	internal const string SearchRegex = "edit.search-regex";
 	internal const string GoToFile = "view.go-file";
+	internal const string GoToLine = "view.go-line";
 	internal const string Wrap = "view.wrap";
 	internal const string About = "help.about";
 
@@ -89,6 +90,8 @@ internal static class DeditMenu {
 			WidgetMenuItem.Checkable( "edit.search-regex", "Regular Expression", SearchRegex, 'g' )
 		], 'e' ),
 		WidgetMenuItem.Submenu( "view", "View", [
+			WidgetMenuItem.Command( "view.go-line", "Go to Line:Column...", GoToLine, 'l',
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'g' ) ),
 			WidgetMenuItem.Command( "view.go-file", "Go to File...", GoToFile, 'f',
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'p' ) ),
 			WidgetMenuItem.Checkable( "view.wrap", "Word Wrap", Wrap, 'w',
@@ -140,6 +143,7 @@ internal static class DeditMenu {
 			new WidgetMenuItemPresentation( "edit.search-case", "Match Case", editor is not null, searchOptions?.MatchCase == true ),
 			new WidgetMenuItemPresentation( "edit.search-whole-word", "Whole Word", editor is not null, searchOptions?.WholeWord == true ),
 			new WidgetMenuItemPresentation( "edit.search-regex", "Regular Expression", editor is not null, searchOptions?.UseRegularExpression == true ),
+			new WidgetMenuItemPresentation( "view.go-line", "Go to Line:Column...", editor is not null ),
 			new WidgetMenuItemPresentation( "view.wrap", "Word Wrap", editor is not null,
 				editor is not null && editor.View.WrapMode != CursesTextWrapMode.NoWrap )
 		] );
