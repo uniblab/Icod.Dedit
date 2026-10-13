@@ -60,8 +60,9 @@ internal sealed class DeditGoToCoordinator( WidgetHost host, DocumentManager doc
 		DocumentEntry? target = this.entry;
 		bool current = target is not null && documents.Find( target.Key ) == target &&
 			target.Shell.Document.Revision == this.revision;
+		long offset = 0;
 		bool valid = current && this.Input is not null &&
-			GoToCoordinate.TryResolve( target!.Shell.Document, this.Input.Value, out long offset );
+			GoToCoordinate.TryResolve( target!.Shell.Document, this.Input.Value, out offset );
 		this.pendingOffset = valid ? offset : null;
 		active.ApplyValidationResult( new WidgetDialogValidationResult( action.Request, valid,
 			current ? "Enter an existing line:column (both start at 1)." : "Document changed; reopen Go to Line." ) );
