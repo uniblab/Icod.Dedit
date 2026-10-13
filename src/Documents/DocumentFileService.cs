@@ -143,6 +143,11 @@ internal sealed class DocumentFileService {
 			await VerifyUnchangedAsync( target, expectedFingerprint, cancellationToken );
 			cancellationToken.ThrowIfCancellationRequested();
 			this.beforeSaveStage?.Invoke( DocumentSaveStage.BeforeReplacement );
+			cancellationToken.ThrowIfCancellationRequested();
+			if ( !PathComparer.Equals( ResolveTarget( path ), target ) )
+				throw new IOException( "The file target changed during the save." );
+			await VerifyUnchangedAsync( target, expectedFingerprint, cancellationToken );
+			cancellationToken.ThrowIfCancellationRequested();
 			File.Move( temporary, target, overwrite: true );
 			return SHA256.HashData( bytes );
 		} finally {
