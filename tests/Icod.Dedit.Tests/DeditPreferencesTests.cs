@@ -21,6 +21,8 @@ namespace Icod.Dedit.Tests;
 
 using Icod.Dedit.Configuration;
 using Icod.Dedit.Documents;
+using Icod.DCurses;
+using Icod.Widgets;
 using Xunit;
 
 public sealed class DeditPreferencesTests {
@@ -44,4 +46,16 @@ public sealed class DeditPreferencesTests {
 			Assert.Equal( DeditPreferences.Default, await DeditPreferences.LoadAsync( path, CancellationToken.None ) );
 		} finally { Directory.Delete( directory, true ); }
 	}
+	[Fact]
+	public void PreferencesApplyToNewTabEditorAndDefaultEncoding() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host, new DeditPreferences( 8, 2, true, TextFileEncoding.Utf8Bom ) );
+		DocumentEntry entry = manager.OpenUntitled();
+		Assert.Equal( TextFileEncoding.Utf8Bom, entry.Encoding );
+		Assert.Equal( 8, entry.Shell.Editor.View.TabWidth );
+		Assert.Equal( CursesTextWrapMode.Word, entry.Shell.Editor.View.WrapMode );
+		entry.Shell.Process( WidgetInput.Key( WidgetKey.Tab ), TimeSpan.Zero );
+		Assert.Equal( "  ", entry.Shell.Document.Read( 0, 2 ) );
+	}
+
 }
