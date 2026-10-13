@@ -366,9 +366,9 @@ Untitled tab are also wired. Go to Line:Column validates one-based grapheme
 coordinates and the bound revision. Encoding selection now contributes to dirty state and saves the selected
 format; LF/CRLF/CR normalization is an undoable transaction. The
 159-test-per-target matrix passed on Linux, Windows and macOS (one test
-nullable warning corrected immediately afterward). Responsiveness, further
-format controls, preferences and keyboard-only live-terminal qualification
-remain open.
+nullable warning corrected immediately afterward). Versioned bounded startup preferences now apply new-tab defaults; invalid
+files use safe defaults. Responsiveness, additional format controls, preference
+editing and keyboard-only live-terminal qualification remain open.
 
 **Files:** `SearchController.cs`, shell forms, codec/settings tests.
 

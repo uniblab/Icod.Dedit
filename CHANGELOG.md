@@ -49,6 +49,10 @@ The entries under Unreleased describe implemented behavior. They are not a
   discarding dirty edits; Keep retains the buffer and the original-path
   save conflict remains in force.
 
+- Added an optional versioned, bounded startup preferences file for tab width,
+  indentation width, wrap and new-document encoding. Invalid settings use safe
+  defaults without altering document saves.
+
 ### Build and validation
 
 - Added local cmd/sh/PowerShell build and package scripts, pull-request

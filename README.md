@@ -105,6 +105,24 @@ The development branch references Icod.Widgets 1.3.1 and its Icod.DCurses
 2.5.0 dependency. Widgets 1.3.1 is published on NuGet. Pull-request validation restores that
 package from NuGet on Linux, Windows and macOS.
 
+## PREFERENCES
+
+At startup, dedit reads `Icod.Dedit/preferences.json` under the operating
+system's application-data directory when it exists. This optional version 1
+file sets defaults for newly opened tabs:
+
+```json
+{"version":1,"tabWidth":4,"indentWidth":4,"wrap":false,"defaultEncoding":"utf-8"}
+```
+
+`tabWidth` and `indentWidth` accept 1–16. `defaultEncoding` accepts
+`utf-8`, `utf-8-bom`, `utf-16-le`, or `utf-16-be`; it applies to new
+Untitled tabs only. Existing files retain their detected encoding. A malformed,
+unknown-version, inaccessible, or oversized preferences file uses the defaults
+shown above. Preferences are read only at startup and are kept separate from
+document saves. The File → Encoding and View → Word Wrap commands affect the
+active document/view in this development build.
+
 ## BUILD AND DISTRIBUTION
 
 Run `build.cmd` on Windows or `./build.sh` on Unix-like systems with a .NET 10 SDK. Both run clean, restore, build, test, pack and a local install smoke check in Debug. On Unix-like systems, PowerShell 7 runs the shared packaging scripts; the shell script also supports the same sequence without PowerShell. An optional argument selects a stage: `clean`, `restore`, `build`, `test`, `pack` or `validate`.
