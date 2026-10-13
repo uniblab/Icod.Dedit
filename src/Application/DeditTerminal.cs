@@ -122,7 +122,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	public async ValueTask DrawAsync( IReadOnlyList<string> captions, TimeSpan elapsed, CancellationToken cancellationToken ) {
 		CursesScreen screen = this.session.Screen;
 		this.tabs.SetTabs( this.documents.Tabs, this.documents.Active?.Key );
-		DeditMenu.UpdateState( this.menu, this.Editor?.Editor, this.documents.Active?.FullPath is not null, this.search.Options );
+		DeditMenu.UpdateState( this.menu, this.Editor?.Editor, this.documents.Active?.FullPath is not null, this.search.Options, this.documents.Active?.Encoding );
 		this.menu.Arrange( screen.Bounds );
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.Editor?.Arrange();
@@ -261,6 +261,18 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			}
 			else if ( action is WidgetDialogCompletedAction goToCompleted && this.goTo.Complete( goToCompleted ) ) { }
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToFile } ) this.host.Focus( this.tabs );
+			else if ( action is WidgetCheckedInvokedAction format &&
+			this.documents.Active is { } formatEntry &&
+			format.CommandId is DeditMenu.EncodingUtf8 or DeditMenu.EncodingUtf8Bom or
+				DeditMenu.EncodingUtf16Le or DeditMenu.EncodingUtf16Be ) {
+			this.documents.SetEncoding( formatEntry, format.CommandId switch {
+				DeditMenu.EncodingUtf8 => TextFileEncoding.Utf8,
+				DeditMenu.EncodingUtf8Bom => TextFileEncoding.Utf8Bom,
+				DeditMenu.EncodingUtf16Le => TextFileEncoding.Utf16LittleEndian,
+				_ => TextFileEncoding.Utf16BigEndian
+			} );
+			this.saveError = null;
+			}
 			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.SearchCase } matchCase )
 				this.search.SetOptions( this.search.Options with { MatchCase = matchCase.IsChecked } );
 			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.SearchWholeWord } wholeWord )
