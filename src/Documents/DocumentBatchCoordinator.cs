@@ -45,12 +45,13 @@ internal sealed class DocumentBatchCoordinator {
 	internal bool IsActive => this.operation is not null;
 	internal string? SaveAsKey => this.awaitingSaveAs && this.index < this.keys.Length ? this.keys[ this.index ] : null;
 
-	internal Task<BatchProgress> StartAsync( BatchOperation operation, CancellationToken token ) {
+	internal async Task<BatchProgress> StartAsync( BatchOperation operation, CancellationToken token ) {
 		if ( this.IsActive ) throw new InvalidOperationException( "A document operation is already active." );
 		this.keys = this.documents.Tabs.Select( tab => tab.Key ).ToArray();
 		this.index = 0;
 		this.operation = operation;
-		return this.AdvanceAsync( token );
+		try { return await this.AdvanceAsync( token ); }
+		catch { this.Abort(); throw; }
 	}
 
 	internal async Task<BatchProgress> CompleteDecisionAsync( WidgetDialogCompletedAction action, CancellationToken token ) {
