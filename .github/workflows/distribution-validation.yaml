@@ -20,8 +20,6 @@ concurrency:
 permissions:
   contents: read
 
-env:
-
 jobs:
   metadata:
     runs-on: ubuntu-latest
