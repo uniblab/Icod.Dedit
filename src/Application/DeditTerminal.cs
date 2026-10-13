@@ -100,6 +100,8 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToFile } ) this.host.Focus( this.tabs );
 			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.Wrap } wrap && this.editor is not null )
 				DeditMenu.ApplyWrap( this.editor.Editor, wrap.IsChecked );
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.About } )
+				this.host.ShowModal( DeditMenu.CreateAboutDialog() );
 		}
 	}
 

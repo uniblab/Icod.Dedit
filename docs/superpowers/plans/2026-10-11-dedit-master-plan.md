@@ -236,6 +236,7 @@ strip. Nested Escape and modal shortcut isolation have integration coverage;
 Edit → Undo/Redo now use the focused edit target and dynamic history state.
 View → Word Wrap and Alt+Z change only the active view and reflect its checked
 state without editing stored text.
+Help → About uses a captioned OK dialog and preserves Escape = Cancel.
 The rest of this milestone's menus and forms are still open.
 
 **Files:** `CommandRouter.cs`, `EditorShell.cs`, interaction tests.

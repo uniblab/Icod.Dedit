@@ -117,4 +117,20 @@ public sealed class DeditMenuTests {
 		Assert.Equal( "first line\nsecond line", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
 		Assert.True( shell.Document.IsModified );
 	}
+
+	[Fact]
+	public void AboutMenuOpensCaptionedOkDialogAndEscapeCancels() {
+		using WidgetHost host = new( new CursesScreen( 50, 14 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'h' ) ), TimeSpan.FromMilliseconds( 1 ) );
+		WidgetInvokedAction about = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'a' ) ), TimeSpan.FromMilliseconds( 2 ) ).Actions ) );
+		Assert.Equal( DeditMenu.About, about.CommandId );
+		WidgetMessageDialog dialog = DeditMenu.CreateAboutDialog(); host.ShowModal( dialog ); host.Render();
+		Assert.Contains( "dedit", dialog.Title, StringComparison.OrdinalIgnoreCase );
+		Assert.Contains( "GPL-3.0-or-later", dialog.Message );
+		WidgetDialogCompletedAction completed = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.FromMilliseconds( 3 ) ).Actions ) );
+		Assert.Equal( WidgetDialogOutcome.Cancel, completed.Result.Outcome );
+	}
 }

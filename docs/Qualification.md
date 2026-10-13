@@ -79,3 +79,6 @@ Redo and the disabled state of an empty history.
 View → Word Wrap and Alt+Z share one checked action. An integration test toggles
 the editor between word wrap and no wrap, confirms the menu's checked state,
 and verifies the stored document text is unchanged.
+Help → About now opens a captioned OK dialog with the executable version and
+GPL identity. A menu integration test confirms Escape returns Cancel and the
+dialog closes. Live About interaction remains to be exercised on a terminal.

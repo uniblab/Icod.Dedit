@@ -27,6 +27,7 @@ using Icod.Widgets;
 internal static class DeditMenu {
 	internal const string GoToFile = "view.go-file";
 	internal const string Wrap = "view.wrap";
+	internal const string About = "help.about";
 
 	internal static WidgetMenuBar Create() => new( "dedit-menu", [
 		WidgetMenuItem.Submenu( "edit", "Edit", [
@@ -40,8 +41,14 @@ internal static class DeditMenu {
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'p' ) ),
 			WidgetMenuItem.Checkable( "view.wrap", "Word Wrap", Wrap, 'w',
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Alt, 'z' ) )
-		], 'v' )
+		], 'v' ),
+		WidgetMenuItem.Submenu( "help", "Help", [
+			WidgetMenuItem.Command( "help.about", "About dedit", About, 'a' )
+		], 'h' )
 	] );
+
+	internal static WidgetMessageDialog CreateAboutDialog() => WidgetMessageDialog.Ok(
+		"dedit-about", "About dedit", $"dedit {typeof( DeditMenu ).Assembly.GetName().Version?.ToString( 3 ) ?? "0.1.0"} — GPL-3.0-or-later" );
 
 	internal static void UpdateState( WidgetMenuBar menu, WidgetTextEditor? editor ) {
 		ArgumentNullException.ThrowIfNull( menu );

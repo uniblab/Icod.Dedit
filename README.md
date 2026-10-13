@@ -42,7 +42,8 @@ On Windows, use `build.cmd` and the same `dotnet run` commands. The shell
 shows one editable Untitled tab without paths and path captions in argument
 order when paths are supplied. Use `--` before a path beginning with `-`.
 Ctrl+Z/Ctrl+Y undo and redo in Untitled; Ctrl+Q exits. No document is saved.
-File, additional Edit commands, and Help are still scheduled for D1004.
+Help → About opens a captioned OK dialog; Escape cancels it. File and the
+remaining Edit commands are still scheduled for D1004.
 
 - [Product and architecture design](docs/DESIGN.md)
 - [Master implementation plan](docs/superpowers/plans/2026-10-11-dedit-master-plan.md)
