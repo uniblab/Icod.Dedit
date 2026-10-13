@@ -23,6 +23,7 @@ namespace Icod.Dedit.Application;
 
 using Icod.DCurses;
 using Icod.Dedit.CommandLine;
+using Icod.Dedit.Configuration;
 using Icod.Dedit.Documents;
 using Icod.Dedit.Interaction;
 using Icod.Dedit.Presentation;
@@ -57,13 +58,13 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private sealed record PendingOverwrite( string DialogId, DocumentEntry Entry, ExistingSaveTarget Target,
 		bool CloseAfterSave, bool BatchPicker );
 
-	private DeditTerminal( CursesSession session ) {
+	private DeditTerminal( CursesSession session, DeditPreferences preferences ) {
 		this.session = session;
 		this.host = new WidgetHost( session, WidgetTheme.Default );
 		this.clipboard = new DeditClipboard( this.host,
 			write: ( value, token ) => session.WriteClipboardAsync( CursesClipboardSelection.Clipboard, value, token ),
 			read: ( timeout, token ) => session.ReadClipboardAsync( CursesClipboardSelection.Clipboard, timeout, token ) );
-		this.documents = new DocumentManager( this.host );
+		this.documents = new DocumentManager( this.host, preferences );
 		this.files = new DocumentFileService( Environment.CurrentDirectory );
 		this.close = new CloseCoordinator( this.host, this.documents, this.files );
 		this.batch = new DocumentBatchCoordinator( this.documents, this.files, this.close );
@@ -77,10 +78,13 @@ internal sealed class DeditTerminal : IDeditTerminal {
 
 	internal static async ValueTask<IDeditTerminal> OpenAsync( DeditOptions options ) {
 		ArgumentNullException.ThrowIfNull( options );
+		string? preferencePath = DeditPreferences.DefaultPath();
+		DeditPreferences preferences = preferencePath is null ? DeditPreferences.Default :
+			await DeditPreferences.LoadAsync( preferencePath, CancellationToken.None );
 		CursesSession session = await CursesSession.OpenAsync( new CursesSessionOptions { InputMode = CursesInputMode.Raw } );
 		DeditTerminal? terminal = null;
 		try {
-			terminal = new DeditTerminal( session );
+			terminal = new DeditTerminal( session, preferences );
 			string? firstKey = null;
 			foreach ( string path in options.Paths ) {
 				try {

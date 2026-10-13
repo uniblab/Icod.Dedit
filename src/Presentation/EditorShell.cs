@@ -22,6 +22,7 @@
 namespace Icod.Dedit.Presentation;
 
 using Icod.DCurses;
+using Icod.Dedit.Configuration;
 using Icod.Widgets;
 
 internal sealed class EditorShell : IDisposable {
@@ -29,13 +30,16 @@ internal sealed class EditorShell : IDisposable {
 	private readonly WidgetTextViewState view;
 	private bool disposed;
 
-	internal EditorShell( WidgetHost host, string initialText = "", string editorId = "untitled-editor", bool activate = true ) {
+	internal EditorShell( WidgetHost host, string initialText = "", string editorId = "untitled-editor", bool activate = true, DeditPreferences? preferences = null ) {
 		this.host = host ?? throw new ArgumentNullException( nameof( host ) );
 		ArgumentNullException.ThrowIfNull( initialText );
 		this.Document = new WidgetTextDocument( [ initialText.AsMemory() ] );
 		this.view = new WidgetTextViewState( this.Document );
+		DeditPreferences defaults = preferences ?? DeditPreferences.Default;
 		this.Editor = new WidgetTextEditor( editorId, this.view, new WidgetEditorOptions {
-			Indentation = "    ", TabWidth = 4, MaximumProjectionSourceUnits = 4_096
+			Indentation = new string( ' ', defaults.IndentWidth ), TabWidth = defaults.TabWidth,
+			WrapMode = defaults.Wrap ? CursesTextWrapMode.Word : CursesTextWrapMode.NoWrap,
+			MaximumProjectionSourceUnits = 4_096
 		} );
 		if ( activate ) this.Activate();
 	}

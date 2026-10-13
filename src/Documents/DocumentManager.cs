@@ -22,6 +22,7 @@
 namespace Icod.Dedit.Documents;
 
 using Icod.Dedit.Presentation;
+using Icod.Dedit.Configuration;
 using Icod.Widgets;
 
 internal enum ExternalChangeKind { Modified, Missing, Retargeted }
@@ -42,19 +43,23 @@ internal sealed class DocumentEntry( string key, string caption, string? fullPat
 
 internal sealed class DocumentManager : IDisposable {
 	private readonly WidgetHost host;
+	private readonly DeditPreferences preferences;
 	private readonly List<DocumentEntry> documents = [];
 	private readonly StringComparer pathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 	private int nextUntitled;
 	private bool disposed;
 
-	internal DocumentManager( WidgetHost host ) => this.host = host ?? throw new ArgumentNullException( nameof( host ) );
+	internal DocumentManager( WidgetHost host, DeditPreferences? preferences = null ) {
+		this.host = host ?? throw new ArgumentNullException( nameof( host ) );
+		this.preferences = preferences ?? DeditPreferences.Default;
+	}
 	internal DocumentEntry? Active { get; private set; }
 	internal IReadOnlyList<WidgetTab> Tabs => this.documents.Select( document => new WidgetTab( document.Key, SanitizeDisplay( document.Caption ),
 		IsModified: document.HasUnsavedChanges, IsClosable: true ) ).ToArray();
 	internal static string SanitizeDisplay( string text ) => new( text.Select( character => char.IsControl( character ) ? '�' : character ).ToArray() );
 
 	internal DocumentEntry OpenUntitled() => this.Add( $"Untitled{( ++this.nextUntitled == 1 ? "" : $" {this.nextUntitled}" )}", null, null,
-		TextFileEncoding.Utf8, [], "" );
+		this.preferences.DefaultEncoding, [], "" );
 
 	internal DocumentEntry Open( LoadedTextFile loaded ) {
 		ArgumentNullException.ThrowIfNull( loaded );
@@ -177,7 +182,9 @@ internal sealed class DocumentManager : IDisposable {
 			throw new IOException( "The document changed during reload." );
 		if ( !this.pathComparer.Equals( ResolveIdentity( path ), identity ) )
 			throw new IOException( "The file target changed during reload." );
-		EditorShell replacement = new( this.host, loaded.Content.Text, "editor-" + entry.Key, activate: false );
+		EditorShell replacement = new( this.host, loaded.Content.Text, "editor-" + entry.Key, activate: false, this.preferences );
+		replacement.Editor.View.WrapMode = previous.Editor.View.WrapMode;
+		replacement.Editor.View.TabWidth = previous.Editor.View.TabWidth;
 		bool wasActive = ReferenceEquals( this.Active, entry );
 		bool wasFocused = wasActive && ReferenceEquals( this.host.FocusedWidget, previous.Editor );
 		try {
@@ -231,7 +238,7 @@ internal sealed class DocumentManager : IDisposable {
 	private DocumentEntry Add( string caption, string? fullPath, string? identity, TextFileEncoding encoding, byte[] fingerprint, string text ) {
 		this.ThrowIfDisposed();
 		string key = Guid.NewGuid().ToString( "N", System.Globalization.CultureInfo.InvariantCulture );
-		EditorShell shell = new( this.host, text, "editor-" + key, activate: false );
+		EditorShell shell = new( this.host, text, "editor-" + key, activate: false, this.preferences );
 		DocumentEntry document = new( key, caption, fullPath, identity, encoding, fingerprint, shell );
 		this.documents.Add( document ); this.Activate( key ); return document;
 	}
