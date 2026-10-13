@@ -33,6 +33,10 @@ internal static class DeditMenu {
 	internal const string CloseAll = "file.close-all";
 	internal const string Exit = "file.exit";
 	internal const string Close = "file.close";
+	internal const string Find = "edit.find";
+	internal const string Replace = "edit.replace";
+	internal const string FindNext = "edit.find-next";
+	internal const string FindPrevious = "edit.find-previous";
 	internal const string GoToFile = "view.go-file";
 	internal const string Wrap = "view.wrap";
 	internal const string About = "help.about";
@@ -66,7 +70,16 @@ internal static class DeditMenu {
 			WidgetMenuItem.Command( "edit.paste", "Paste", "edit.paste", 'p', WidgetEditCommand.Paste,
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'v' ) ),
 			WidgetMenuItem.Command( "edit.select-all", "Select All", "edit.select-all", 'a', WidgetEditCommand.SelectAll,
-				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'a' ) )
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'a' ) ),
+			WidgetMenuItem.Separator( "edit.search-separator" ),
+			WidgetMenuItem.Command( "edit.find", "Find...", Find, 'f',
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'f' ) ),
+			WidgetMenuItem.Command( "edit.replace", "Replace...", Replace, 'l',
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'r' ) ),
+			WidgetMenuItem.Command( "edit.find-next", "Find Next", FindNext, 'n',
+				shortcut: new WidgetMenuShortcut( WidgetKey.Function ) { FunctionKeyNumber = 3 } ),
+			WidgetMenuItem.Command( "edit.find-previous", "Find Previous", FindPrevious, 'v',
+				shortcut: new WidgetMenuShortcut( WidgetKey.Function, WidgetInputModifiers.Shift ) { FunctionKeyNumber = 3 } )
 		], 'e' ),
 		WidgetMenuItem.Submenu( "view", "View", [
 			WidgetMenuItem.Command( "view.go-file", "Go to File...", GoToFile, 'f',
@@ -106,13 +119,17 @@ internal static class DeditMenu {
 			new WidgetMenuItemPresentation( "file.close", "Close", editor is not null ),
 			new WidgetMenuItemPresentation( "file.close-all", "Close All", editor is not null ),
 			new WidgetMenuItemPresentation( "file.exit", "Exit", true ),
-			new WidgetMenuItemPresentation( "edit", "Edit", undo || redo || cut || copy || paste || selectAll ),
+			new WidgetMenuItemPresentation( "edit", "Edit", editor is not null || undo || redo || cut || copy || paste || selectAll ),
 			new WidgetMenuItemPresentation( "edit.undo", "Undo", undo ),
 			new WidgetMenuItemPresentation( "edit.redo", "Redo", redo ),
 			new WidgetMenuItemPresentation( "edit.cut", "Cut", cut ),
 			new WidgetMenuItemPresentation( "edit.copy", "Copy", copy ),
 			new WidgetMenuItemPresentation( "edit.paste", "Paste", paste ),
 			new WidgetMenuItemPresentation( "edit.select-all", "Select All", selectAll ),
+			new WidgetMenuItemPresentation( "edit.find", "Find...", editor is not null ),
+			new WidgetMenuItemPresentation( "edit.replace", "Replace...", editor is not null ),
+			new WidgetMenuItemPresentation( "edit.find-next", "Find Next", editor is not null ),
+			new WidgetMenuItemPresentation( "edit.find-previous", "Find Previous", editor is not null ),
 			new WidgetMenuItemPresentation( "view.wrap", "Word Wrap", editor is not null,
 				editor is not null && editor.View.WrapMode != CursesTextWrapMode.NoWrap )
 		] );

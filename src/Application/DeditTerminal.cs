@@ -24,6 +24,7 @@ namespace Icod.Dedit.Application;
 using Icod.DCurses;
 using Icod.Dedit.CommandLine;
 using Icod.Dedit.Documents;
+using Icod.Dedit.Interaction;
 using Icod.Dedit.Presentation;
 using Icod.Widgets;
 
@@ -40,6 +41,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly CloseCoordinator close;
 	private readonly DocumentBatchCoordinator batch;
 	private readonly ExternalChangeCoordinator external;
+	private readonly DeditSearchCoordinator search;
 	private string? closeAfterSaveKey;
 	private readonly LocalWidgetFileSystemProvider browserProvider = new();
 	private readonly DeditSaveTargetProvider saveTargetProvider = new();
@@ -63,6 +65,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.close = new CloseCoordinator( this.host, this.documents, this.files );
 		this.batch = new DocumentBatchCoordinator( this.documents, this.files, this.close );
 		this.external = new ExternalChangeCoordinator( this.host, this.documents, this.files );
+		this.search = new DeditSearchCoordinator( this.host, this.documents );
 		this.host.Attach( this.menu );
 		this.host.Attach( this.tabs );
 		session.StandardScreen.WrapMode = CursesWrapMode.Clip;
@@ -152,6 +155,17 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.Exit } ) {
 				if ( await this.StartBatchAsync( BatchOperation.Exit ) ) return true;
 			}
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.Find } && this.documents.Active is { } finding )
+				this.search.Open( finding, allowReplace: false );
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.Replace } && this.documents.Active is { } replacing )
+				this.search.Open( replacing, allowReplace: true );
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.FindNext or DeditMenu.FindPrevious } &&
+				this.documents.Active is { } navigating ) this.search.Open( navigating, allowReplace: false );
+			else if ( action is WidgetSearchRequestedAction searchRequest && this.search.Matches( searchRequest ) ) {
+				WidgetSearchResult result = this.search.CompleteRequest( searchRequest, elapsed, CancellationToken.None );
+				this.saveError = result.Error is not null ? DocumentManager.SanitizeDisplay( result.Error ) :
+					result.Found ? null : "Not found.";
+			}
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.SaveAs } && this.documents.Active is { } savingAs )
 				await this.StartSaveAsAsync( savingAs, closeAfterSave: false );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.Close } && this.documents.Active is { } closing )
@@ -230,6 +244,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 				DeditMenu.ApplyWrap( this.Editor.Editor, wrap.IsChecked );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.About } )
 				this.host.ShowModal( DeditMenu.CreateAboutDialog() );
+			else if ( action is WidgetDialogCompletedAction searchClosed && this.search.Close( searchClosed ) ) { }
 			else if ( action is WidgetDialogCompletedAction decision ) {
 				if ( this.batch.IsActive ) {
 					try {
