@@ -45,8 +45,10 @@ Ctrl+Z/Ctrl+Y undo and redo in Untitled; Ctrl+Q exits. No document is saved.
 - [Released library contracts](docs/Library-Contracts.md)
 - [Path, text-format, and coordinate decisions](docs/decisions/)
 
-The released package references are Icod.Widgets 1.3.0 and its
-Icod.DCurses 2.5.0 dependency.
+The development branch references Icod.Widgets 1.3.1 and its Icod.DCurses
+2.5.0 dependency. Widgets 1.3.1 is under review in
+[PR #7](https://github.com/uniblab/Icod.Widgets/pull/7); a clean external
+restore of this branch requires that package to be published.
 
 ## PROJECT CONTRACT
 

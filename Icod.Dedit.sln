@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Icod.Dedit", "Icod.Dedit.cs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Icod.Dedit.Tests", "tests\Icod.Dedit.Tests\Icod.Dedit.Tests.csproj", "{44CA4743-353A-4E75-BB42-06C6A98A4ADC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Icod.Dedit.Measurements", "benchmarks\Icod.Dedit.Measurements\Icod.Dedit.Measurements.csproj", "{35D4AB4F-A2C8-4D96-AE27-1180615125E5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,5 +22,9 @@ Global
 		{44CA4743-353A-4E75-BB42-06C6A98A4ADC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44CA4743-353A-4E75-BB42-06C6A98A4ADC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44CA4743-353A-4E75-BB42-06C6A98A4ADC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{35D4AB4F-A2C8-4D96-AE27-1180615125E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{35D4AB4F-A2C8-4D96-AE27-1180615125E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{35D4AB4F-A2C8-4D96-AE27-1180615125E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{35D4AB4F-A2C8-4D96-AE27-1180615125E5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

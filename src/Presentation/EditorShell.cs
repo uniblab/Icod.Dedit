@@ -33,7 +33,9 @@ internal sealed class EditorShell : IDisposable {
 		this.host = host ?? throw new ArgumentNullException( nameof( host ) );
 		this.Document = new WidgetTextDocument( [ ReadOnlyMemory<char>.Empty ] );
 		this.view = new WidgetTextViewState( this.Document );
-		this.Editor = new WidgetTextEditor( "untitled-editor", this.view );
+		this.Editor = new WidgetTextEditor( "untitled-editor", this.view, new WidgetEditorOptions {
+			Indentation = "    ", TabWidth = 4, MaximumProjectionSourceUnits = 4_096
+		} );
 		this.host.Attach( this.Editor );
 		this.Arrange(); this.host.Focus( this.Editor );
 	}

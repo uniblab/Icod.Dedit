@@ -203,6 +203,11 @@ then Ctrl+Q exited with code 0 and restored the alternate screen/input modes.
 supports typed Unicode and paste input with undo/redo, and renders in a bounded
 viewport. Integration tests exercise checkpoint identity and a tiny viewport.
 The remaining checklist below still gates the full D1003 milestone.
+The second tranche adds Unicode/mixed-EOL movement, four-space indentation,
+column persistence, long-line resize/wrap, a repeatable benchmark, and a
+million-unit allocation check. It depends on the Widgets 1.3.1 cache fix in
+[Widgets PR #7](https://github.com/uniblab/Icod.Widgets/pull/7); local package
+tests are green, but an independent CI restore awaits its publication.
 
 **Files:** document/view-state types, `EditorShell.cs`, document/interaction tests;
 reusable editor implementation remains in Widgets.
