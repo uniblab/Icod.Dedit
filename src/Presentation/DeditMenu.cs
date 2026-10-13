@@ -41,6 +41,9 @@ internal static class DeditMenu {
 	internal const string SearchCase = "edit.search-case";
 	internal const string SearchWholeWord = "edit.search-whole-word";
 	internal const string SearchRegex = "edit.search-regex";
+	internal const string IndentTwo = "file.indentation.two";
+	internal const string IndentFour = "file.indentation.four";
+	internal const string IndentEight = "file.indentation.eight";
 	internal const string LineEndingLf = "file.line-endings.lf";
 	internal const string LineEndingCrLf = "file.line-endings.crlf";
 	internal const string LineEndingCr = "file.line-endings.cr";
@@ -75,6 +78,11 @@ internal static class DeditMenu {
 				WidgetMenuItem.Command( "file.line-endings.crlf", "Windows CRLF", LineEndingCrLf, 'w' ),
 				WidgetMenuItem.Command( "file.line-endings.cr", "Classic Mac CR", LineEndingCr, 'c' )
 			], 't' ),
+			WidgetMenuItem.Submenu( "file.indentation", "Indentation", [
+				WidgetMenuItem.Checkable( "file.indentation.two", "2 Spaces", IndentTwo, '2' ),
+				WidgetMenuItem.Checkable( "file.indentation.four", "4 Spaces", IndentFour, '4' ),
+				WidgetMenuItem.Checkable( "file.indentation.eight", "8 Spaces", IndentEight, '8' )
+			], 'i' ),
 			WidgetMenuItem.Command( "file.close", "Close", Close, 'c',
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'w' ) ),
 			WidgetMenuItem.Command( "file.close-all", "Close All", CloseAll, 'd' ),
@@ -130,7 +138,7 @@ internal static class DeditMenu {
 			( hasUnsavedChanges ? "Yes discards unsaved edits. " : "" ) +
 			"No keeps the editor copy; Save As can preserve it separately." );
 
-	internal static void UpdateState( WidgetMenuBar menu, WidgetTextEditor? editor, bool canSave = false, WidgetSearchOptions? searchOptions = null, TextFileEncoding? encoding = null ) {
+	internal static void UpdateState( WidgetMenuBar menu, WidgetTextEditor? editor, bool canSave = false, WidgetSearchOptions? searchOptions = null, TextFileEncoding? encoding = null, int? indentationWidth = null ) {
 		ArgumentNullException.ThrowIfNull( menu );
 		bool undo = editor?.CanExecuteEditCommand( WidgetEditCommand.Undo ) == true;
 		bool redo = editor?.CanExecuteEditCommand( WidgetEditCommand.Redo ) == true;
@@ -146,6 +154,10 @@ internal static class DeditMenu {
 			new WidgetMenuItemPresentation( "file.save-as", "Save As...", editor is not null ),
 			new WidgetMenuItemPresentation( "file.save-all", "Save All", editor is not null ),
 			new WidgetMenuItemPresentation( "file.encoding", "Encoding", editor is not null ),
+			new WidgetMenuItemPresentation( "file.indentation", "Indentation", editor is not null ),
+			new WidgetMenuItemPresentation( "file.indentation.two", "2 Spaces", editor is not null, indentationWidth == 2 ),
+			new WidgetMenuItemPresentation( "file.indentation.four", "4 Spaces", editor is not null, indentationWidth == 4 ),
+			new WidgetMenuItemPresentation( "file.indentation.eight", "8 Spaces", editor is not null, indentationWidth == 8 ),
 			new WidgetMenuItemPresentation( "file.line-endings", "Line Endings", editor is not null ),
 			new WidgetMenuItemPresentation( "file.line-endings.lf", "Unix LF", editor is not null ),
 			new WidgetMenuItemPresentation( "file.line-endings.crlf", "Windows CRLF", editor is not null ),
