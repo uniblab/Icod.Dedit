@@ -25,5 +25,22 @@ using Icod.Widgets;
 
 internal sealed class DeditSaveTargetProvider : IWidgetSaveTargetProvider {
 	public ValueTask<WidgetSaveTargetObservation> InspectTargetAsync( string directory, string fileName,
-		CancellationToken token ) => throw new NotImplementedException();
+		CancellationToken token ) {
+		token.ThrowIfCancellationRequested();
+		if ( string.IsNullOrWhiteSpace( fileName ) || fileName is "." or ".." ||
+			fileName.IndexOfAny( [ Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar ] ) >= 0 ||
+			fileName.IndexOfAny( Path.GetInvalidFileNameChars() ) >= 0 || Path.IsPathRooted( fileName ) )
+			return ValueTask.FromResult( new WidgetSaveTargetObservation( "", false, false, "Enter a file name without path separators." ) );
+		try {
+			string parent = Path.GetFullPath( directory );
+			if ( !Directory.Exists( parent ) )
+				return ValueTask.FromResult( new WidgetSaveTargetObservation( "", false, false, "The selected directory does not exist." ) );
+			string path = Path.Combine( parent, fileName );
+			bool exists = File.Exists( path ) || Directory.Exists( path );
+			return ValueTask.FromResult( new WidgetSaveTargetObservation( path, exists, !exists,
+				exists ? "The target already exists; choose another name." : null ) );
+		} catch ( Exception exception ) when ( exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException ) {
+			return ValueTask.FromResult( new WidgetSaveTargetObservation( "", false, false, exception.Message ) );
+		}
+	}
 }
