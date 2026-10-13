@@ -25,6 +25,8 @@ using Icod.DCurses;
 using Icod.Widgets;
 
 internal static class DeditMenu {
+	internal const string New = "file.new";
+	internal const string Open = "file.open";
 	internal const string Save = "file.save";
 	internal const string SaveAs = "file.save-as";
 	internal const string SaveAll = "file.save-all";
@@ -37,6 +39,10 @@ internal static class DeditMenu {
 
 	internal static WidgetMenuBar Create() => new( "dedit-menu", [
 		WidgetMenuItem.Submenu( "file", "File", [
+			WidgetMenuItem.Command( "file.new", "New", New, 'n',
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'n' ) ),
+			WidgetMenuItem.Command( "file.open", "Open...", Open, 'o',
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'o' ) ),
 			WidgetMenuItem.Command( "file.save", "Save", Save, 's',
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 's' ) ),
 			WidgetMenuItem.Command( "file.save-as", "Save As...", SaveAs, 'a',
@@ -91,7 +97,9 @@ internal static class DeditMenu {
 		bool paste = editor?.CanExecuteEditCommand( WidgetEditCommand.Paste ) == true;
 		bool selectAll = editor?.CanExecuteEditCommand( WidgetEditCommand.SelectAll ) == true;
 		menu.SetPresentation( [
-			new WidgetMenuItemPresentation( "file", "File", editor is not null ),
+			new WidgetMenuItemPresentation( "file", "File", true ),
+			new WidgetMenuItemPresentation( "file.new", "New", true ),
+			new WidgetMenuItemPresentation( "file.open", "Open...", true ),
 			new WidgetMenuItemPresentation( "file.save", "Save", canSave ),
 			new WidgetMenuItemPresentation( "file.save-as", "Save As...", editor is not null ),
 			new WidgetMenuItemPresentation( "file.save-all", "Save All", editor is not null ),

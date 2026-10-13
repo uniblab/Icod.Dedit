@@ -44,6 +44,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly LocalWidgetFileSystemProvider browserProvider = new();
 	private readonly DeditSaveTargetProvider saveTargetProvider = new();
 	private WidgetSaveTargetPicker? savePicker;
+	private WidgetFilePicker? openPicker;
 	private PendingOverwrite? pendingOverwrite;
 	private DocumentEntry? saveEntry;
 	private string? saveError;
@@ -133,7 +134,9 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		IReadOnlyList<WidgetAction> actions = this.Editor is null ? this.host.Process( input, elapsed ).Actions : this.Editor.Process( input, elapsed );
 		Queue<WidgetAction> pending = new( actions );
 		while ( pending.TryDequeue( out WidgetAction? action ) ) {
-			if ( action is WidgetInvokedAction { CommandId: DeditMenu.Save } && this.documents.Active is { } saving ) {
+			if ( action is WidgetInvokedAction { CommandId: DeditMenu.New } ) this.documents.OpenUntitled();
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.Open } ) await this.StartOpenAsync();
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.Save } && this.documents.Active is { } saving ) {
 				try { await this.documents.SaveAsync( saving, this.files, CancellationToken.None ); this.saveError = null; }
 				catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); await this.OfferExternalChangeAsync( saving ); }
 			}
@@ -152,6 +155,26 @@ internal sealed class DeditTerminal : IDeditTerminal {
 				this.close.Request( closing.Key );
 			else if ( action is WidgetTabCloseRequestedAction tabClose )
 				this.close.Request( tabClose.TabKey );
+			else if ( action is WidgetBrowserLoadRequestedAction openLoad && this.openPicker is { } openBrowser && openLoad.WidgetId == openBrowser.Id )
+				openBrowser.ApplyLoadResult( await WidgetBrowserLoader.LoadAsync( this.browserProvider, openLoad.Request, CancellationToken.None ) );
+			else if ( action is WidgetPickerValidationRequestedAction validate && this.openPicker is { } validating && validate.WidgetId == validating.Id ) {
+				validating.ApplyValidationResult( await WidgetPickerValidationLoader.ValidateAsync(
+					this.browserProvider, validate.Request, CancellationToken.None ) );
+				foreach ( WidgetAction emitted in this.host.DrainActions() ) pending.Enqueue( emitted );
+			}
+			else if ( action is WidgetDialogCompletedAction opened && this.openPicker is { } finishedOpen &&
+				opened.WidgetId == finishedOpen.Id ) {
+				this.openPicker = null;
+				if ( opened.Result is { Outcome: WidgetDialogOutcome.Accepted, Value: IReadOnlyList<string> paths } ) {
+					this.openErrors.Clear();
+					foreach ( string path in paths ) {
+						try { this.documents.Open( await this.files.OpenAsync( path, CancellationToken.None ) ); }
+						catch ( Exception exception ) when ( IsSaveError( exception ) ) {
+							this.openErrors.Add( DocumentManager.SanitizeDisplay( $"{path}: {exception.Message}" ) );
+						}
+					}
+				}
+			}
 			else if ( action is WidgetBrowserLoadRequestedAction load && this.savePicker is { } browsing && load.WidgetId == browsing.Id )
 				browsing.ApplyLoadResult( await WidgetBrowserLoader.LoadAsync( this.browserProvider, load.Request, CancellationToken.None ) );
 			else if ( action is WidgetSaveTargetInspectionRequestedAction inspect && this.savePicker is { } inspecting && inspect.WidgetId == inspecting.Id ) {
@@ -253,6 +276,17 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		if ( progress == BatchProgress.SaveAsRequired && this.batch.SaveAsKey is { } key &&
 			this.documents.Find( key ) is { } entry ) await this.StartSaveAsAsync( entry, closeAfterSave: false );
 		return false;
+	}
+
+	private async Task StartOpenAsync() {
+		string directory = this.documents.Active?.FullPath is { } path
+			? Path.GetDirectoryName( path ) ?? Environment.CurrentDirectory : Environment.CurrentDirectory;
+		WidgetFilePicker picker = new( "dedit-open-" + Guid.NewGuid().ToString( "N" ),
+			this.browserProvider, directory, allowMultiple: true, [ WidgetFileFilter.AllFiles ] );
+		this.openPicker = picker;
+		this.host.ShowModal( picker );
+		picker.ApplyLoadResult( await WidgetBrowserLoader.LoadAsync( this.browserProvider,
+			picker.RequestDirectory( directory ), CancellationToken.None ) );
 	}
 
 	private async Task StartSaveAsAsync( DocumentEntry entry, bool closeAfterSave ) {
