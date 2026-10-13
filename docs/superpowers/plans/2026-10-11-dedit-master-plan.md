@@ -310,6 +310,17 @@ views over one shared text buffer.
 
 ## D1006 — Safe saves and lifecycle
 
+**Current slice:** Save All visits the tab snapshot in order, saving dirty named
+documents and pausing for each dirty Untitled tab's Save As picker. Close All
+and Exit visit those same stable keys and use Save / Don't Save / Cancel for
+each dirty tab; Ctrl+Q and File → Exit share the exit path. Cancellation
+stops before later tabs, while earlier successful saves remain on disk.
+Save failures and external-file conflicts retain the affected tab and reset
+the operation. Unique dialog/picker IDs reject delayed completions from
+earlier requests. The 93-test-per-target matrix covers cancellation at a
+later tab, partial saves, save conflicts and late close results. Existing
+target overwrite and explicit external-change reload choices are still open.
+
 **Files:** file service, `CloseCoordinator.cs`, document manager, failure-injection tests.
 
 - [ ] Write failing tests for dirty Save/Save As, overwrite rejection, read-only
