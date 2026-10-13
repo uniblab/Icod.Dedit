@@ -31,6 +31,22 @@ using Xunit;
 public sealed class DeditMenuTests {
 
 
+
+	[Fact]
+	public void FileCloseMenuAndShortcutInvokeSameCommand() {
+		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		using EditorShell shell = new( host, "draft" );
+		DeditMenu.UpdateState( menu, shell.Editor, canSave: false );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'f' ) ), TimeSpan.FromMilliseconds( 1 ) );
+		WidgetInvokedAction mnemonic = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'c' ) ), TimeSpan.FromMilliseconds( 2 ) ).Actions ) );
+		WidgetInvokedAction shortcut = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'w' ) ), TimeSpan.FromMilliseconds( 3 ) ).Actions ) );
+		Assert.Equal( DeditMenu.Close, mnemonic.CommandId );
+		Assert.Equal( mnemonic.CommandId, shortcut.CommandId );
+	}
+
 	[Fact]
 	public void FileSaveAsMenuAndShortcutInvokeSameCommandForUntitled() {
 		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
