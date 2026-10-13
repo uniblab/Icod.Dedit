@@ -37,6 +37,9 @@ internal static class DeditMenu {
 	internal const string Replace = "edit.replace";
 	internal const string FindNext = "edit.find-next";
 	internal const string FindPrevious = "edit.find-previous";
+	internal const string SearchCase = "edit.search-case";
+	internal const string SearchWholeWord = "edit.search-whole-word";
+	internal const string SearchRegex = "edit.search-regex";
 	internal const string GoToFile = "view.go-file";
 	internal const string Wrap = "view.wrap";
 	internal const string About = "help.about";
@@ -79,7 +82,11 @@ internal static class DeditMenu {
 			WidgetMenuItem.Command( "edit.find-next", "Find Next", FindNext, 'n',
 				shortcut: new WidgetMenuShortcut( WidgetKey.Function ) { FunctionKeyNumber = 3 } ),
 			WidgetMenuItem.Command( "edit.find-previous", "Find Previous", FindPrevious, 'v',
-				shortcut: new WidgetMenuShortcut( WidgetKey.Function, WidgetInputModifiers.Shift ) { FunctionKeyNumber = 3 } )
+				shortcut: new WidgetMenuShortcut( WidgetKey.Function, WidgetInputModifiers.Shift ) { FunctionKeyNumber = 3 } ),
+			WidgetMenuItem.Separator( "edit.options-separator" ),
+			WidgetMenuItem.Checkable( "edit.search-case", "Match Case", SearchCase, 'm' ),
+			WidgetMenuItem.Checkable( "edit.search-whole-word", "Whole Word", SearchWholeWord, 'w' ),
+			WidgetMenuItem.Checkable( "edit.search-regex", "Regular Expression", SearchRegex, 'g' )
 		], 'e' ),
 		WidgetMenuItem.Submenu( "view", "View", [
 			WidgetMenuItem.Command( "view.go-file", "Go to File...", GoToFile, 'f',
@@ -101,7 +108,7 @@ internal static class DeditMenu {
 			( hasUnsavedChanges ? "Yes discards unsaved edits. " : "" ) +
 			"No keeps the editor copy; Save As can preserve it separately." );
 
-	internal static void UpdateState( WidgetMenuBar menu, WidgetTextEditor? editor, bool canSave = false ) {
+	internal static void UpdateState( WidgetMenuBar menu, WidgetTextEditor? editor, bool canSave = false, WidgetSearchOptions? searchOptions = null ) {
 		ArgumentNullException.ThrowIfNull( menu );
 		bool undo = editor?.CanExecuteEditCommand( WidgetEditCommand.Undo ) == true;
 		bool redo = editor?.CanExecuteEditCommand( WidgetEditCommand.Redo ) == true;
@@ -130,6 +137,9 @@ internal static class DeditMenu {
 			new WidgetMenuItemPresentation( "edit.replace", "Replace...", editor is not null ),
 			new WidgetMenuItemPresentation( "edit.find-next", "Find Next", editor is not null ),
 			new WidgetMenuItemPresentation( "edit.find-previous", "Find Previous", editor is not null ),
+			new WidgetMenuItemPresentation( "edit.search-case", "Match Case", editor is not null, searchOptions?.MatchCase == true ),
+			new WidgetMenuItemPresentation( "edit.search-whole-word", "Whole Word", editor is not null, searchOptions?.WholeWord == true ),
+			new WidgetMenuItemPresentation( "edit.search-regex", "Regular Expression", editor is not null, searchOptions?.UseRegularExpression == true ),
 			new WidgetMenuItemPresentation( "view.wrap", "Word Wrap", editor is not null,
 				editor is not null && editor.View.WrapMode != CursesTextWrapMode.NoWrap )
 		] );

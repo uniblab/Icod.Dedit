@@ -32,6 +32,11 @@ internal sealed class DeditSearchCoordinator {
 	private DocumentEntry? entry;
 	private string? lastKey;
 	private SearchQuery? lastQuery;
+	internal WidgetSearchOptions Options { get; private set; } = new();
+	internal void SetOptions( WidgetSearchOptions options ) {
+		this.Options = options ?? throw new ArgumentNullException( nameof( options ) );
+		this.form?.SetOptions( options );
+	}
 
 	internal DeditSearchCoordinator( WidgetHost host, DocumentManager documents ) {
 		this.host = host ?? throw new ArgumentNullException( nameof( host ) );
@@ -45,6 +50,7 @@ internal sealed class DeditSearchCoordinator {
 		WidgetSearchForm next = new( "dedit-search-" + Guid.NewGuid().ToString( "N" ),
 			allowReplace ? "Replace" : "Find", allowReplace );
 		next.SetContext( entry.Shell.Document.Id, entry.Shell.Editor.View.Id, entry.Shell.Document.Revision );
+		next.SetOptions( this.Options );
 		this.entry = entry;
 		this.form = next;
 		this.host.ShowModal( next );

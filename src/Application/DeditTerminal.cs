@@ -118,7 +118,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	public async ValueTask DrawAsync( IReadOnlyList<string> captions, TimeSpan elapsed, CancellationToken cancellationToken ) {
 		CursesScreen screen = this.session.Screen;
 		this.tabs.SetTabs( this.documents.Tabs, this.documents.Active?.Key );
-		DeditMenu.UpdateState( this.menu, this.Editor?.Editor, this.documents.Active?.FullPath is not null );
+		DeditMenu.UpdateState( this.menu, this.Editor?.Editor, this.documents.Active?.FullPath is not null, this.search.Options );
 		this.menu.Arrange( screen.Bounds );
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.Editor?.Arrange();
@@ -250,6 +250,12 @@ internal sealed class DeditTerminal : IDeditTerminal {
 				this.documents.Active is { } activated ) await this.OfferExternalChangeAsync( activated );
 			else if ( action is WidgetClipboardRequestedAction clipboard ) this.clipboard.Complete( clipboard.Request );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToFile } ) this.host.Focus( this.tabs );
+			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.SearchCase } matchCase )
+				this.search.SetOptions( this.search.Options with { MatchCase = matchCase.IsChecked } );
+			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.SearchWholeWord } wholeWord )
+				this.search.SetOptions( this.search.Options with { WholeWord = wholeWord.IsChecked } );
+			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.SearchRegex } regex )
+				this.search.SetOptions( this.search.Options with { UseRegularExpression = regex.IsChecked } );
 			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.Wrap } wrap && this.Editor is not null )
 				DeditMenu.ApplyWrap( this.Editor.Editor, wrap.IsChecked );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.About } )
