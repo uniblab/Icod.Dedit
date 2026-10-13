@@ -57,8 +57,10 @@ multiple files. Ctrl+P focuses the tab strip; Left/Right select a document,
 and F6 returns to the editor. File loading accepts strict UTF-8 and BOM-marked UTF-16 LE/BE up to
 32 MiB, preserving mixed line endings and the original encoding in memory.
 Ctrl+Z/Ctrl+Y undo and redo; Ctrl+X/C/V/A cut, copy, paste, and select
-all using an in-process clipboard. Copy and cut currently require a
-selection. Terminal clipboard transport and linewise operations are planned.
+all using a bounded process-local clipboard. Explicit copy/cut also attempt
+to write the terminal clipboard; explicit paste requests it with a 250 ms
+limit and uses the process-local text when the terminal query is unavailable.
+Copy and cut currently require a selection; linewise operations remain planned.
 File → Save or Ctrl+S opens Save As for Untitled, or writes an opened file
 using its original encoding and exact line endings after checking for external
 changes. File → Save As or

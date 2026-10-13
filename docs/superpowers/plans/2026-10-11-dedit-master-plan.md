@@ -246,8 +246,9 @@ does not cycle and an active modal scope keeps focus inside the dialog.
 Edit → Cut/Copy/Paste/Select All and their direct Ctrl shortcuts now use the
 Widgets focused edit commands. A 64 KiB process-local clipboard completes
 guarded requests; empty/stale completions leave text unchanged. Selected text
-is supported; linewise no-selection behavior and terminal clipboard transport
-are still pending. Literal control-like paste content is one undoable edit.
+is supported; explicit copy/paste now uses DCurses terminal clipboard I/O
+with a 250 ms read bound and process-local fallback. Linewise no-selection
+behavior remains pending. Literal control-like paste content is one undoable edit.
 The rest of this milestone's menus and forms are still open.
 
 **Files:** `CommandRouter.cs`, `EditorShell.cs`, interaction tests.

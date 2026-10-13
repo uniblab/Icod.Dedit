@@ -18,7 +18,8 @@ The entries under Unreleased describe implemented behavior. They are not a
   indentation, undo/redo, and optional word wrap per view.
 - Added File → New/Open/Save/Save As/Save All/Close/Close All/Exit and Edit →
   Undo/Redo/Cut/Copy/Paste/Select All. Open accepts multiple files in one
-  picker. The clipboard is currently process-local and bounded to 64 KiB.
+  picker. The 64 KiB process-local clipboard also uses DCurses terminal clipboard I/O
+  on explicit copy/paste with a bounded read and local fallback.
 - Added Find and Replace dialogs with literal or .NET regex search, invariant
   case matching, whole-word matching, forward/backward navigation and wrap.
   F3 and Shift+F3 repeat within the current tab. Replace All makes one
