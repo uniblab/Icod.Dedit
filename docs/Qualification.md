@@ -96,3 +96,11 @@ request identity. Tests cover a menu copy followed by direct cut/paste and undo,
 an empty clipboard, a stale completion after focus changes, literal tab/newline/
 control characters as one paste edit, ignored key release, and modal isolation.
 Terminal clipboard transfer and no-selection linewise behavior remain open.
+
+## D1005 text codec boundary
+
+Strict UTF-8, UTF-8 BOM, UTF-16 LE BOM and UTF-16 BE BOM round-trip tests cover
+empty input, Unicode, mixed CRLF/LF/CR and final-newline differences. Invalid
+UTF-8, malformed UTF-16, BOM-less UTF-16-like bytes containing NUL and decoded
+NUL content are rejected rather than replaced. The codec is not wired to file
+opening yet; a bounded read service must enforce the size policy before decode.
