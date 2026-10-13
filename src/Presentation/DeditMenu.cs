@@ -27,6 +27,9 @@ using Icod.Widgets;
 internal static class DeditMenu {
 	internal const string Save = "file.save";
 	internal const string SaveAs = "file.save-as";
+	internal const string SaveAll = "file.save-all";
+	internal const string CloseAll = "file.close-all";
+	internal const string Exit = "file.exit";
 	internal const string Close = "file.close";
 	internal const string GoToFile = "view.go-file";
 	internal const string Wrap = "view.wrap";
@@ -38,8 +41,11 @@ internal static class DeditMenu {
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 's' ) ),
 			WidgetMenuItem.Command( "file.save-as", "Save As...", SaveAs, 'a',
 				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control | WidgetInputModifiers.Shift, 's' ) ),
+			WidgetMenuItem.Command( "file.save-all", "Save All", SaveAll, 'l' ),
 			WidgetMenuItem.Command( "file.close", "Close", Close, 'c',
-				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'w' ) )
+				shortcut: new WidgetMenuShortcut( WidgetKey.Character, WidgetInputModifiers.Control, 'w' ) ),
+			WidgetMenuItem.Command( "file.close-all", "Close All", CloseAll, 'o' ),
+			WidgetMenuItem.Command( "file.exit", "Exit", Exit, 'x' )
 		], 'f' ),
 		WidgetMenuItem.Submenu( "edit", "Edit", [
 			WidgetMenuItem.Command( "edit.undo", "Undo", "edit.undo", 'u', WidgetEditCommand.Undo,
@@ -82,7 +88,10 @@ internal static class DeditMenu {
 			new WidgetMenuItemPresentation( "file", "File", editor is not null ),
 			new WidgetMenuItemPresentation( "file.save", "Save", canSave ),
 			new WidgetMenuItemPresentation( "file.save-as", "Save As...", editor is not null ),
+			new WidgetMenuItemPresentation( "file.save-all", "Save All", editor is not null ),
 			new WidgetMenuItemPresentation( "file.close", "Close", editor is not null ),
+			new WidgetMenuItemPresentation( "file.close-all", "Close All", editor is not null ),
+			new WidgetMenuItemPresentation( "file.exit", "Exit", true ),
 			new WidgetMenuItemPresentation( "edit", "Edit", undo || redo || cut || copy || paste || selectAll ),
 			new WidgetMenuItemPresentation( "edit.undo", "Undo", undo ),
 			new WidgetMenuItemPresentation( "edit.redo", "Redo", redo ),

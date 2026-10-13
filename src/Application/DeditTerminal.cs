@@ -38,6 +38,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly DocumentManager documents;
 	private readonly DocumentFileService files;
 	private readonly CloseCoordinator close;
+	private readonly DocumentBatchCoordinator batch;
 	private string? closeAfterSaveKey;
 	private readonly LocalWidgetFileSystemProvider browserProvider = new();
 	private readonly DeditSaveTargetProvider saveTargetProvider = new();
@@ -55,6 +56,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.documents = new DocumentManager( this.host );
 		this.files = new DocumentFileService( Environment.CurrentDirectory );
 		this.close = new CloseCoordinator( this.host, this.documents, this.files );
+		this.batch = new DocumentBatchCoordinator( this.documents, this.files, this.close );
 		this.host.Attach( this.menu );
 		this.host.Attach( this.tabs );
 		session.StandardScreen.WrapMode = CursesWrapMode.Clip;
@@ -120,7 +122,8 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	}
 
 	public async ValueTask<bool> ProcessAsync( WidgetInput input, TimeSpan elapsed ) {
-		if ( IsQuitKey( input ) ) return RequestQuit( this.host, this.menu, this.documents, input, elapsed );
+		if ( IsQuitKey( input ) ) return CanQuitFromKey( this.host, this.menu, input, elapsed )
+			&& await this.StartBatchAsync( BatchOperation.Exit );
 		if ( TryCycleFocus( this.host, input ) ) return false;
 		IReadOnlyList<WidgetAction> actions = this.Editor is null ? this.host.Process( input, elapsed ).Actions : this.Editor.Process( input, elapsed );
 		Queue<WidgetAction> pending = new( actions );
@@ -128,6 +131,15 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			if ( action is WidgetInvokedAction { CommandId: DeditMenu.Save } && this.documents.Active is { } saving ) {
 				try { await this.documents.SaveAsync( saving, this.files, CancellationToken.None ); this.saveError = null; }
 				catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
+			}
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.SaveAll } ) {
+				if ( await this.StartBatchAsync( BatchOperation.SaveAll ) ) return true;
+			}
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.CloseAll } ) {
+				if ( await this.StartBatchAsync( BatchOperation.CloseAll ) ) return true;
+			}
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.Exit } ) {
+				if ( await this.StartBatchAsync( BatchOperation.Exit ) ) return true;
 			}
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.SaveAs } && this.documents.Active is { } savingAs )
 				await this.StartSaveAsAsync( savingAs, closeAfterSave: false );
@@ -148,13 +160,22 @@ internal sealed class DeditTerminal : IDeditTerminal {
 				this.savePicker = null; this.saveEntry = null;
 				string? closeKey = this.closeAfterSaveKey;
 				this.closeAfterSaveKey = null;
+				bool batchPicker = entry is not null && this.batch.SaveAsKey == entry.Key;
+				bool saved = false;
 				if ( completed.Result is { Outcome: WidgetDialogOutcome.Accepted, Value: WidgetSaveTargetSelection selectedTarget } && entry is not null ) {
 					try {
 						await this.documents.SaveAsNewAsync( entry, this.files, selectedTarget.TargetPath, CancellationToken.None );
 						this.saveError = null;
+						saved = true;
 						if ( closeKey == entry.Key && !entry.Shell.Document.IsModified ) this.documents.Close( entry.Key );
 					}
 					catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
+				}
+				if ( batchPicker ) {
+					try {
+						if ( await this.HandleBatchProgressAsync( await this.batch.CompleteSaveAsAsync( saved, CancellationToken.None ) ) ) return true;
+					}
+					catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.batch.Abort(); this.SetSaveError( exception ); }
 				}
 			}
 			else if ( action is WidgetTabActivationRequestedAction tabActivation ) this.documents.Activate( tabActivation.TabKey, focusEditor: false );
@@ -165,17 +186,36 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.About } )
 				this.host.ShowModal( DeditMenu.CreateAboutDialog() );
 			else if ( action is WidgetDialogCompletedAction decision ) {
-				CloseResolution resolution;
-				try { resolution = await this.close.CompleteAsync( decision, CancellationToken.None ); }
-				catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); continue; }
-				if ( resolution == CloseResolution.SaveAsRequired && this.close.SaveAsKey is { } key &&
-					this.documents.Find( key ) is { } entry ) await this.StartSaveAsAsync( entry, closeAfterSave: true );
-				else if ( resolution == CloseResolution.Unrelated && ConfirmedDiscard( decision ) ) return true;
+				if ( this.batch.IsActive ) {
+					try {
+						if ( await this.HandleBatchProgressAsync( await this.batch.CompleteDecisionAsync( decision, CancellationToken.None ) ) ) return true;
+					}
+					catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.batch.Abort(); this.SetSaveError( exception ); }
+				} else {
+					CloseResolution resolution;
+					try { resolution = await this.close.CompleteAsync( decision, CancellationToken.None ); }
+					catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); continue; }
+					if ( resolution == CloseResolution.SaveAsRequired && this.close.SaveAsKey is { } key &&
+						this.documents.Find( key ) is { } entry ) await this.StartSaveAsAsync( entry, closeAfterSave: true );
+				}
 			}
 		}
 		return false;
 	}
 
+	private async Task<bool> StartBatchAsync( BatchOperation operation ) {
+		try { return await this.HandleBatchProgressAsync( await this.batch.StartAsync( operation, CancellationToken.None ) ); }
+		catch ( Exception exception ) when ( IsSaveError( exception ) ) {
+			this.batch.Abort(); this.SetSaveError( exception ); return false;
+		}
+	}
+
+	private async Task<bool> HandleBatchProgressAsync( BatchProgress progress ) {
+		if ( progress == BatchProgress.ExitReady ) return true;
+		if ( progress == BatchProgress.SaveAsRequired && this.batch.SaveAsKey is { } key &&
+			this.documents.Find( key ) is { } entry ) await this.StartSaveAsAsync( entry, closeAfterSave: false );
+		return false;
+	}
 
 	private async Task StartSaveAsAsync( DocumentEntry entry, bool closeAfterSave ) {
 		string directory = entry.FullPath is null ? Environment.CurrentDirectory :
