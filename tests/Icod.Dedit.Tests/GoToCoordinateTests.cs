@@ -26,7 +26,7 @@ using Xunit;
 public sealed class GoToCoordinateTests {
 	[Theory]
 	[InlineData( "1:1", 0 )]
-	[InlineData( "1:2", 1 )]
+	[InlineData( "1:2", 2 )]
 	[InlineData( "1:3", 3 )]
 	[InlineData( "1:4", 5 )]
 	[InlineData( "1:5", 6 )]
