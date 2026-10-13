@@ -57,6 +57,69 @@ internal sealed class DocumentFileService {
 		byte[] bytes = buffer.ToArray();
 		return new LoadedTextFile( fullPath, TextFileCodec.Decode( bytes ), SHA256.HashData( bytes ) );
 	}
-	internal Task<byte[]> SaveAsync( string fullPath, string expectedIdentity, byte[] expectedFingerprint, string text,
-		TextFileEncoding encoding, CancellationToken cancellationToken ) => throw new NotImplementedException();
+	internal async Task<byte[]> SaveAsync( string fullPath, string expectedIdentity, byte[] expectedFingerprint, string text,
+		TextFileEncoding encoding, CancellationToken cancellationToken ) {
+		ArgumentException.ThrowIfNullOrWhiteSpace( fullPath );
+		ArgumentException.ThrowIfNullOrWhiteSpace( expectedIdentity );
+		ArgumentNullException.ThrowIfNull( expectedFingerprint );
+		ArgumentNullException.ThrowIfNull( text );
+		cancellationToken.ThrowIfCancellationRequested();
+		string path = Path.GetFullPath( fullPath, this.initialDirectory );
+		string target = ResolveTarget( path );
+		if ( !PathComparer.Equals( target, Path.GetFullPath( expectedIdentity ) ) )
+			throw new IOException( "The file target changed since it was opened." );
+		FileAttributes attributes = File.GetAttributes( target );
+		if ( ( attributes & FileAttributes.ReadOnly ) != 0 ) throw new UnauthorizedAccessException( "The file is read-only." );
+		UnixFileMode? mode = OperatingSystem.IsWindows() ? null : File.GetUnixFileMode( target );
+		if ( mode is { } unixMode && ( unixMode & ( UnixFileMode.UserWrite | UnixFileMode.GroupWrite | UnixFileMode.OtherWrite ) ) == 0 )
+			throw new UnauthorizedAccessException( "The file is read-only." );
+		await VerifyUnchangedAsync( target, expectedFingerprint, cancellationToken );
+		byte[] bytes = TextFileCodec.Encode( text, encoding );
+		if ( bytes.Length > this.maximumBytes ) throw new InvalidDataException( $"File exceeds the {this.maximumBytes} byte save limit." );
+		string temporary = Path.Combine( Path.GetDirectoryName( target )!,
+			$".{Path.GetFileName( target )}.dedit-{Guid.NewGuid():N}.tmp" );
+		try {
+			await using ( FileStream stream = new( temporary, new FileStreamOptions {
+				Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None, Options = FileOptions.Asynchronous
+			} ) ) {
+				await stream.WriteAsync( bytes, cancellationToken );
+				await stream.FlushAsync( cancellationToken );
+			}
+			if ( mode is { } preservedMode ) File.SetUnixFileMode( temporary, preservedMode );
+			cancellationToken.ThrowIfCancellationRequested();
+			if ( !PathComparer.Equals( ResolveTarget( path ), target ) )
+				throw new IOException( "The file target changed during the save." );
+			await VerifyUnchangedAsync( target, expectedFingerprint, cancellationToken );
+			cancellationToken.ThrowIfCancellationRequested();
+			File.Move( temporary, target, overwrite: true );
+			return SHA256.HashData( bytes );
+		} finally {
+			if ( File.Exists( temporary ) ) File.Delete( temporary );
+		}
+	}
+
+	private static readonly StringComparer PathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
+	private static string ResolveTarget( string path ) =>
+		Path.GetFullPath( new FileInfo( path ).ResolveLinkTarget( true )?.FullName ?? path );
+
+	private async Task VerifyUnchangedAsync( string path, byte[] fingerprint, CancellationToken cancellationToken ) {
+		await using FileStream stream = new( path, new FileStreamOptions {
+			Mode = FileMode.Open, Access = FileAccess.Read, Share = FileShare.ReadWrite | FileShare.Delete,
+			Options = FileOptions.Asynchronous | FileOptions.SequentialScan
+		} );
+		if ( stream.Length > this.maximumBytes || !SHA256.HashData( await ReadBoundedAsync( stream, cancellationToken ) ).AsSpan().SequenceEqual( fingerprint ) )
+			throw new IOException( "The file changed since it was opened." );
+	}
+
+	private async Task<byte[]> ReadBoundedAsync( FileStream stream, CancellationToken cancellationToken ) {
+		using MemoryStream buffer = new();
+		byte[] chunk = new byte[ 81920 ];
+		int count;
+		while ( ( count = await stream.ReadAsync( chunk, cancellationToken ) ) != 0 ) {
+			if ( count > this.maximumBytes - buffer.Length ) throw new IOException( "The file changed beyond the open limit." );
+			buffer.Write( chunk, 0, count );
+		}
+		return buffer.ToArray();
+	}
 }
