@@ -39,6 +39,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly DocumentFileService files;
 	private readonly CloseCoordinator close;
 	private readonly DocumentBatchCoordinator batch;
+	private readonly ExternalChangeCoordinator external;
 	private string? closeAfterSaveKey;
 	private readonly LocalWidgetFileSystemProvider browserProvider = new();
 	private readonly DeditSaveTargetProvider saveTargetProvider = new();
@@ -60,6 +61,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.files = new DocumentFileService( Environment.CurrentDirectory );
 		this.close = new CloseCoordinator( this.host, this.documents, this.files );
 		this.batch = new DocumentBatchCoordinator( this.documents, this.files, this.close );
+		this.external = new ExternalChangeCoordinator( this.host, this.documents, this.files );
 		this.host.Attach( this.menu );
 		this.host.Attach( this.tabs );
 		session.StandardScreen.WrapMode = CursesWrapMode.Clip;
@@ -133,7 +135,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		while ( pending.TryDequeue( out WidgetAction? action ) ) {
 			if ( action is WidgetInvokedAction { CommandId: DeditMenu.Save } && this.documents.Active is { } saving ) {
 				try { await this.documents.SaveAsync( saving, this.files, CancellationToken.None ); this.saveError = null; }
-				catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
+				catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); await this.OfferExternalChangeAsync( saving ); }
 			}
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.SaveAll } ) {
 				if ( await this.StartBatchAsync( BatchOperation.SaveAll ) ) return true;
@@ -189,7 +191,13 @@ internal sealed class DeditTerminal : IDeditTerminal {
 					confirmed ? pendingOverwrite.Target.FullPath : null, confirmed ? pendingOverwrite.Target : null,
 					pendingOverwrite.CloseAfterSave, pendingOverwrite.BatchPicker ) ) return true;
 			}
-			else if ( action is WidgetTabActivationRequestedAction tabActivation ) this.documents.Activate( tabActivation.TabKey, focusEditor: false );
+			else if ( action is WidgetDialogCompletedAction changed && this.external.Matches( changed ) ) {
+				try {
+					if ( await this.external.CompleteAsync( changed, CancellationToken.None ) == ExternalDecisionResult.Reloaded ) this.saveError = null;
+				} catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
+			}
+			else if ( action is WidgetTabActivationRequestedAction tabActivation && this.documents.Activate( tabActivation.TabKey, focusEditor: false ) &&
+				this.documents.Active is { } activated ) await this.OfferExternalChangeAsync( activated );
 			else if ( action is WidgetClipboardRequestedAction clipboard ) this.clipboard.Complete( clipboard.Request );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.GoToFile } ) this.host.Focus( this.tabs );
 			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.Wrap } wrap && this.Editor is not null )
@@ -258,6 +266,16 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.host.ShowModal( picker );
 		picker.ApplyLoadResult( await WidgetBrowserLoader.LoadAsync( this.browserProvider,
 			picker.RequestDirectory( directory ), CancellationToken.None ) );
+	}
+
+	private async Task OfferExternalChangeAsync( DocumentEntry entry ) {
+		try {
+			ExternalDecisionResult result = await this.external.CheckAsync( entry, CancellationToken.None );
+			if ( result == ExternalDecisionResult.Missing )
+				this.saveError = "File missing on disk; editor buffer kept. Use Save As.";
+			else if ( result == ExternalDecisionResult.Retargeted )
+				this.saveError = "File target changed on disk; editor buffer kept. Use Save As.";
+		} catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
 	}
 
 	private static bool IsSaveError( Exception exception ) => exception is IOException or UnauthorizedAccessException
