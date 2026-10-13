@@ -60,7 +60,7 @@ internal static class DeditMenu {
 	internal static WidgetMessageDialog CreateAboutDialog() => WidgetMessageDialog.Ok(
 		"dedit-about", "About dedit", $"dedit {typeof( DeditMenu ).Assembly.GetName().Version?.ToString( 3 ) ?? "0.1.0"} — GPL-3.0-or-later" );
 
-	internal static void UpdateState( WidgetMenuBar menu, WidgetTextEditor? editor ) {
+	internal static void UpdateState( WidgetMenuBar menu, WidgetTextEditor? editor, bool canSave = false ) {
 		ArgumentNullException.ThrowIfNull( menu );
 		bool undo = editor?.CanExecuteEditCommand( WidgetEditCommand.Undo ) == true;
 		bool redo = editor?.CanExecuteEditCommand( WidgetEditCommand.Redo ) == true;
