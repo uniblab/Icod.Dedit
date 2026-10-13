@@ -119,3 +119,11 @@ to the strip and displayed the second with application-cursor Right (`ESC O C`).
 The shell restored its alternate screen on Ctrl+Q. An earlier probe used
 normal-cursor `ESC [ C` while this session had application-cursor mode enabled;
 that probe did not exercise the intended arrow input.
+
+## D1006 initial exit guard
+
+Ctrl+Q checks every tab for modified text. A dirty workspace shows a captioned
+Yes/No discard prompt with No selected by default; Escape returns Cancel and
+keeps every document. Headless integration tests cover clean exit, active and
+inactive modified documents, repeated quit while modal, cancellation and
+explicit Yes. Save and close workflows are not implemented yet.

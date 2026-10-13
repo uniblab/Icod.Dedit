@@ -46,7 +46,8 @@ Ctrl+P focuses the tab strip; Left/Right select a document, and F6 returns to
 the editor. File loading accepts strict UTF-8 and BOM-marked UTF-16 LE/BE up to
 32 MiB, preserving mixed line endings and the original encoding in memory.
 Ctrl+Z/Ctrl+Y undo and redo in Untitled; Ctrl+X/C/V/A cut, copy, paste and
-select all using an in-process clipboard; Ctrl+Q exits. Copy and cut currently
+select all using an in-process clipboard; Ctrl+Q exits after confirmation when
+any document is modified. Escape cancels that confirmation. Copy and cut currently
 require a selection. Terminal clipboard transport and linewise operations are
 planned. No document is saved.
 F6 and Shift+F6 cycle focus among the visible controls; Tab still indents in

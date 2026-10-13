@@ -28,6 +28,7 @@ using Icod.Dedit.Presentation;
 using Icod.Widgets;
 
 internal sealed class DeditTerminal : IDeditTerminal {
+	private const string QuitDialogId = "dedit-discard-and-quit";
 	private readonly CursesSession session;
 	private readonly WidgetHost host;
 	private readonly WidgetMenuBar menu = DeditMenu.Create();
@@ -109,7 +110,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	}
 
 	public bool Process( WidgetInput input, TimeSpan elapsed ) {
-		if ( IsQuitKey( input ) ) return CanQuitFromKey( this.host, this.menu, input, elapsed );
+		if ( IsQuitKey( input ) ) return RequestQuit( this.host, this.menu, this.documents, input, elapsed );
 		if ( TryCycleFocus( this.host, input ) ) return false;
 		IReadOnlyList<WidgetAction> actions = this.Editor is null ? this.host.Process( input, elapsed ).Actions : this.Editor.Process( input, elapsed );
 		foreach ( WidgetAction action in actions ) {
@@ -120,6 +121,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 				DeditMenu.ApplyWrap( this.Editor.Editor, wrap.IsChecked );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.About } )
 				this.host.ShowModal( DeditMenu.CreateAboutDialog() );
+			else if ( action is WidgetDialogCompletedAction completed && ConfirmedDiscard( completed ) ) return true;
 		}
 		return false;
 	}
@@ -135,6 +137,19 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		WidgetDispatchResult result = host.Process( input, elapsed );
 		return !result.Handled && !menu.IsOpen;
 	}
+
+	internal static bool RequestQuit( WidgetHost host, WidgetMenuBar menu, DocumentManager documents, WidgetInput input, TimeSpan elapsed ) {
+		ArgumentNullException.ThrowIfNull( documents );
+		if ( !CanQuitFromKey( host, menu, input, elapsed ) ) return false;
+		int dirty = documents.Tabs.Count( tab => tab.IsModified );
+		if ( dirty == 0 ) return true;
+		host.ShowModal( WidgetMessageDialog.YesNo( QuitDialogId, "Unsaved changes",
+			$"Discard changes in {dirty} modified document{( dirty == 1 ? "" : "s" )} and exit?" ) );
+		return false;
+	}
+
+	internal static bool ConfirmedDiscard( WidgetDialogCompletedAction action ) =>
+		action.WidgetId == QuitDialogId && action.Result.Outcome == WidgetDialogOutcome.Yes;
 
 	internal static bool TryCycleFocus( WidgetHost host, WidgetInput input ) {
 		ArgumentNullException.ThrowIfNull( host ); ArgumentNullException.ThrowIfNull( input );

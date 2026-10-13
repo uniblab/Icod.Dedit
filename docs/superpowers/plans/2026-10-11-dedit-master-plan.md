@@ -284,6 +284,9 @@ activate an existing tab, and equal basenames gain distinguishing parent
 suffixes. Failed opens leave successful tabs intact and show a status diagnostic;
 when all paths fail an editable Untitled tab remains. Direct file close and save
 are still withheld until the D1006 dirty-document workflow is implemented.
+Ctrl+Q now checks every document for unsaved changes and shows a safe-default
+Yes/No discard confirmation. Escape cancels it, including when a modified
+document is inactive. Save/close coordination and partial-save handling remain.
 
 **Files:** `DocumentManager.cs`, `EditorDocument.cs`, `DocumentFileService.cs`,
 `TextFileCodec.cs`, tab bindings, filesystem/document tests.
