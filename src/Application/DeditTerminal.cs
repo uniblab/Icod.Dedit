@@ -131,7 +131,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.Write( screen.Rows - 1, this.saveError is not null ? this.saveError : this.openErrors.Count > 0 ?
 			$"Open error ({this.openErrors.Count}): {this.openErrors[ 0 ]}" :
 			$"{DocumentManager.SanitizeDisplay( this.documents.Active?.Caption ?? "Untitled" )} | " +
-			$"{this.documents.Active?.Encoding.ToString() ?? "UTF-8"} | " +
+			$"{EncodingLabel( this.documents.Active?.Encoding )} | " +
 			$"{( this.Editor?.Editor.IsOverwriteMode == true ? "OVR" : "INS" )}; Ctrl+S saves. Ctrl+Q exits." );
 		this.host.Render();
 		await this.session.RefreshAsync( cancellationToken );
