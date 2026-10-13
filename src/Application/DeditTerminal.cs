@@ -384,6 +384,13 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		} catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
 	}
 
+	private static string EncodingLabel( TextFileEncoding? encoding ) => encoding switch {
+		TextFileEncoding.Utf8Bom => "UTF-8 BOM",
+		TextFileEncoding.Utf16LittleEndian => "UTF-16 LE",
+		TextFileEncoding.Utf16BigEndian => "UTF-16 BE",
+		_ => "UTF-8"
+	};
+
 	private static bool IsSaveError( Exception exception ) => exception is IOException or UnauthorizedAccessException
 		or ArgumentException or NotSupportedException or InvalidOperationException;
 
