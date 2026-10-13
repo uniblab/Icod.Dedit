@@ -37,7 +37,6 @@ public sealed class ExternalChangeCoordinatorTests {
 			using WidgetHost host = new( new CursesScreen( 60, 18 ), WidgetTheme.Default );
 			using DocumentManager manager = new( host );
 			DocumentEntry entry = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
-			entry.Shell.SetIndentationWidth( 2 );
 			entry.Shell.Process( WidgetInput.Paste( "draft " ), TimeSpan.Zero );
 			await File.WriteAllTextAsync( path, "external" );
 			ExternalChangeCoordinator coordinator = new( host, manager, files );
@@ -70,6 +69,7 @@ public sealed class ExternalChangeCoordinatorTests {
 			using WidgetHost host = new( new CursesScreen( 60, 18 ), WidgetTheme.Default );
 			using DocumentManager manager = new( host );
 			DocumentEntry entry = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			entry.Shell.SetIndentationWidth( 2 );
 			entry.Shell.Process( WidgetInput.Paste( "draft " ), TimeSpan.Zero );
 			await File.WriteAllTextAsync( path, "disk" );
 			ExternalChangeCoordinator coordinator = new( host, manager, files );
