@@ -87,4 +87,17 @@ $helpOutput = (& $executable --help | Out-String).Trim()
 if (0 -ne $LASTEXITCODE -or -not $helpOutput.StartsWith('Usage: dedit ', [System.StringComparison]::Ordinal)) {
     throw "Installed dedit --help returned unexpected output with status $LASTEXITCODE."
 }
-Write-Host "Verified and exercised exact Icod.Dedit $version tool package ($Configuration)."
+# Exercise the update command against the exact candidate package. This is a
+# same-version lifecycle check, not evidence for a cross-version upgrade.
+Invoke-DotNet -Arguments @('tool', 'update', 'Icod.Dedit', '--tool-path', $toolPath,
+    '--version', $version, '--configfile', $configPath)
+$updatedVersionOutput = (& $executable --version | Out-String).Trim()
+if (0 -ne $LASTEXITCODE -or $updatedVersionOutput -ne "dedit $version") {
+    throw "Updated dedit --version returned '$updatedVersionOutput' with status $LASTEXITCODE."
+}
+
+Invoke-DotNet -Arguments @('tool', 'uninstall', 'Icod.Dedit', '--tool-path', $toolPath)
+if (Test-Path -LiteralPath $executable -PathType Leaf) {
+    throw "Tool uninstall left the dedit command at '$executable'."
+}
+Write-Host "Verified install, launch, same-version update and removal of exact Icod.Dedit $version tool package ($Configuration)."
