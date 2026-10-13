@@ -89,8 +89,8 @@ public sealed class DocumentBatchCoordinatorTests {
 			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
 			using DocumentManager manager = new( host );
 			DocumentEntry first = manager.Open( await files.OpenAsync( firstPath, CancellationToken.None ) );
-			DocumentEntry second = manager.Open( await files.OpenAsync( secondPath, CancellationToken.None ) );
 			first.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.Zero );
+			DocumentEntry second = manager.Open( await files.OpenAsync( secondPath, CancellationToken.None ) );
 			second.Shell.Process( WidgetInput.Paste( "?" ), TimeSpan.Zero );
 			await File.WriteAllTextAsync( secondPath, "external" );
 			DocumentBatchCoordinator batch = new( manager, files, new CloseCoordinator( host, manager, files ) );
