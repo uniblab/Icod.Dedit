@@ -83,4 +83,29 @@ public sealed class CloseCoordinatorTests {
 			Assert.Equal( untitled.Key, manager.Active?.Key );
 		} finally { Directory.Delete( directory, true ); }
 	}
+
+	[Fact]
+	public async Task SaveConflictRetainsDirtyTabAndExternalFile() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-close-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "opened.txt" );
+			await File.WriteAllTextAsync( path, "before" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry opened = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			opened.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.FromMilliseconds( 1 ) );
+			await File.WriteAllTextAsync( path, "external" );
+			CloseCoordinator close = new( host, manager, files );
+			Assert.False( close.Request( opened.Key ) );
+			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.FromMilliseconds( 2 ) );
+			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.FromMilliseconds( 3 ) );
+			WidgetDialogCompletedAction save = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+				host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.FromMilliseconds( 4 ) ).Actions ) );
+			await Assert.ThrowsAsync<IOException>( () => close.CompleteAsync( save, CancellationToken.None ) );
+			Assert.Equal( opened.Key, manager.Active?.Key );
+			Assert.True( opened.Shell.Document.IsModified );
+			Assert.Equal( "external", await File.ReadAllTextAsync( path ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
 }

@@ -30,8 +30,8 @@ file paths load into independent editable tabs;
 invalid, missing and oversized paths are reported in the status row while other
 files still open. File → Save or Ctrl+S saves an opened file. File → Save As
 or Ctrl+Shift+S saves to a new path, including an Untitled tab; an existing
-target is refused. Overwrite decisions, tab close and the remaining file
-workflows are under development; keep a separate copy of important files
+target is refused. Overwrite decisions and the remaining file workflows are under development;
+keep a separate copy of important files
 while this build is being qualified.
 
 Build with a .NET 10 SDK (which targets .NET 8, 9, and 10) and run in an
@@ -50,14 +50,17 @@ Ctrl+P focuses the tab strip; Left/Right select a document, and F6 returns to
 the editor. File loading accepts strict UTF-8 and BOM-marked UTF-16 LE/BE up to
 32 MiB, preserving mixed line endings and the original encoding in memory.
 Ctrl+Z/Ctrl+Y undo and redo in Untitled; Ctrl+X/C/V/A cut, copy, paste and
-select all using an in-process clipboard; Ctrl+Q exits after confirmation when
+select all using an in-process clipboard; Ctrl+W closes the active tab after
+Save / Don't Save / Cancel when it is dirty. The close control on each tab uses
+the same decision; Cancel is selected by default. Ctrl+Q exits after confirmation when
 any document is modified. Escape cancels that confirmation. Copy and cut currently
 require a selection. Terminal clipboard transport and linewise operations are
 planned. File → Save or Ctrl+S writes an opened file using its original
 encoding and exact line endings, after checking for external changes.
 File → Save As or Ctrl+Shift+S opens a directory and name picker and creates
 only a new file. Escape cancels without changing the document. A failed save
-leaves the buffer dirty and shows an error in the status row.
+leaves the buffer dirty and shows an error in the status row. Closing the last
+tab creates a fresh Untitled tab.
 F6 and Shift+F6 cycle focus among the visible controls; Tab still indents in
 the editor.
 Help → About opens a captioned OK dialog; Escape cancels it. Find and Replace
