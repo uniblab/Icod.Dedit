@@ -41,14 +41,14 @@ internal sealed record DeditPreferences( int TabWidth, int IndentWidth, bool Wra
 			using JsonDocument json = JsonDocument.Parse( bytes.ToArray(), new JsonDocumentOptions { MaxDepth = 8 } );
 			JsonElement root = json.RootElement;
 			if ( root.ValueKind != JsonValueKind.Object || !root.TryGetProperty( "version", out JsonElement version ) ||
-				!version.TryGetInt32( out int number ) || number != 1 ) return Default;
+				version.ValueKind != JsonValueKind.Number || !version.TryGetInt32( out int number ) || number != 1 ) return Default;
 			int tabWidth = Default.TabWidth, indentWidth = Default.IndentWidth;
 			bool wrap = Default.Wrap;
 			TextFileEncoding encoding = Default.DefaultEncoding;
 			if ( root.TryGetProperty( "tabWidth", out JsonElement tab ) &&
-				( !tab.TryGetInt32( out tabWidth ) || tabWidth is < 1 or > 16 ) ) return Default;
+				( tab.ValueKind != JsonValueKind.Number || !tab.TryGetInt32( out tabWidth ) || tabWidth is < 1 or > 16 ) ) return Default;
 			if ( root.TryGetProperty( "indentWidth", out JsonElement indent ) &&
-				( !indent.TryGetInt32( out indentWidth ) || indentWidth is < 1 or > 16 ) ) return Default;
+				( indent.ValueKind != JsonValueKind.Number || !indent.TryGetInt32( out indentWidth ) || indentWidth is < 1 or > 16 ) ) return Default;
 			if ( root.TryGetProperty( "wrap", out JsonElement wrapping ) ) {
 				if ( wrapping.ValueKind is not ( JsonValueKind.True or JsonValueKind.False ) ) return Default;
 				wrap = wrapping.GetBoolean();
