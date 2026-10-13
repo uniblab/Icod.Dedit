@@ -55,4 +55,19 @@ public sealed class EditorStatusTests {
 
 		Assert.Contains( $" | {expected} | ", EditorStatus.Format( entry ), StringComparison.Ordinal );
 	}
+
+	[Fact]
+	public void StatusBoundsColumnWorkForAVeryLongLogicalLine() {
+		using WidgetHost host = new( new CursesScreen( 60, 10 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry entry = manager.OpenUntitled();
+		string text = new( 'x', 1_000_000 );
+		entry.Shell.Process( WidgetInput.Paste( text ), TimeSpan.Zero );
+
+		long before = GC.GetAllocatedBytesForCurrentThread();
+		string status = EditorStatus.Format( entry );
+
+		Assert.Contains( "Ln 1, Col >4096", status, StringComparison.Ordinal );
+		Assert.InRange( GC.GetAllocatedBytesForCurrentThread() - before, 0, 250_000 );
+	}
 }
