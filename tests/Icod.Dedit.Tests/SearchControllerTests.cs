@@ -92,4 +92,20 @@ public sealed class SearchControllerTests {
 			SearchController.ReplaceAll( entry, literal, "$1", TimeSpan.FromMilliseconds( 2 ) ) );
 		Assert.Equal( "$1 2b", entry.Shell.Document.Read( 0, 5 ) );
 	}
+	[Fact]
+	public void CanceledReplaceAllLeavesTheOriginalDocumentAndUndoHistoryIntact() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry entry = manager.OpenUntitled();
+		entry.Shell.Process( WidgetInput.Paste( "one one" ), TimeSpan.Zero );
+		SearchResult matches = SearchController.Search( entry.Key, entry.Shell.Document.Revision, "one one",
+			new SearchQuery( "one", false, true, false ), CancellationToken.None );
+		using CancellationTokenSource source = new(); source.Cancel();
+		Assert.ThrowsAny<OperationCanceledException>( () =>
+			SearchController.ReplaceAll( entry, matches, "two", TimeSpan.FromMilliseconds( 1 ), source.Token ) );
+		Assert.Equal( "one one", entry.Shell.Document.Read( 0, 7 ) );
+		entry.Shell.Document.Undo();
+		Assert.Equal( 0, entry.Shell.Document.Length );
+	}
+
 }
