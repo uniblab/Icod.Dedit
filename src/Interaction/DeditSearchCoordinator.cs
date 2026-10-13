@@ -30,6 +30,8 @@ internal sealed class DeditSearchCoordinator {
 	private readonly DocumentManager documents;
 	private WidgetSearchForm? form;
 	private DocumentEntry? entry;
+	private string? lastKey;
+	private SearchQuery? lastQuery;
 
 	internal DeditSearchCoordinator( WidgetHost host, DocumentManager documents ) {
 		this.host = host ?? throw new ArgumentNullException( nameof( host ) );
@@ -47,6 +49,21 @@ internal sealed class DeditSearchCoordinator {
 		this.form = next;
 		this.host.ShowModal( next );
 		return next;
+	}
+
+	internal bool HasQueryFor( DocumentEntry entry ) => this.lastKey == entry.Key && this.lastQuery is not null;
+
+	internal SearchHit? Repeat( DocumentEntry entry, bool previous, CancellationToken token ) {
+		ArgumentNullException.ThrowIfNull( entry );
+		if ( !this.HasQueryFor( entry ) || this.documents.Find( entry.Key ) != entry ) return null;
+		using WidgetTextSnapshot snapshot = entry.Shell.Document.CreateSnapshot();
+		SearchResult matches = SearchController.Search( entry.Key, snapshot.Revision,
+			snapshot.Read( 0, checked( (int)snapshot.Length ) ), this.lastQuery!, token );
+		WidgetTextViewState view = entry.Shell.Editor.View;
+		int offset = checked( (int)( view.HasSelection ? previous ? view.SelectionStart : view.SelectionEnd : view.Caret ) );
+		SearchHit? hit = matches.Next( offset, previous );
+		if ( hit is not null ) view.SetSelection( hit.Start, hit.Start + hit.Length );
+		return hit;
 	}
 
 	internal bool Matches( WidgetSearchRequestedAction action ) => this.form is { } active && action.WidgetId == active.Id;
@@ -70,6 +87,7 @@ internal sealed class DeditSearchCoordinator {
 			SearchQuery query = new( request.Query, request.Options.UseRegularExpression,
 				request.Options.MatchCase, request.Options.WholeWord );
 			SearchResult matches = SearchController.Search( target.Key, snapshot.Revision, text, query, token );
+			this.lastKey = target.Key; this.lastQuery = query;
 			if ( matches.Hits.Count == 0 ) {
 				WidgetSearchResult missing = new( request, false );
 				this.form!.ApplyResult( missing ); return missing;

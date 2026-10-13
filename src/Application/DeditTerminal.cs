@@ -159,8 +159,18 @@ internal sealed class DeditTerminal : IDeditTerminal {
 				this.search.Open( finding, allowReplace: false );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.Replace } && this.documents.Active is { } replacing )
 				this.search.Open( replacing, allowReplace: true );
-			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.FindNext or DeditMenu.FindPrevious } &&
-				this.documents.Active is { } navigating ) this.search.Open( navigating, allowReplace: false );
+			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.FindNext or DeditMenu.FindPrevious } findDirection &&
+				this.documents.Active is { } navigating ) {
+				if ( !this.search.HasQueryFor( navigating ) ) this.search.Open( navigating, allowReplace: false );
+				else {
+					try {
+						SearchHit? hit = this.search.Repeat( navigating,
+							findDirection.CommandId == DeditMenu.FindPrevious, CancellationToken.None );
+						this.saveError = hit is null ? "Not found." : null;
+					} catch ( Exception exception ) when ( IsSaveError( exception ) || exception is System.Text.RegularExpressions.RegexMatchTimeoutException
+						or TimeoutException ) { this.SetSaveError( exception ); }
+				}
+			}
 			else if ( action is WidgetSearchRequestedAction searchRequest && this.search.Matches( searchRequest ) ) {
 				WidgetSearchResult result = this.search.CompleteRequest( searchRequest, elapsed, CancellationToken.None );
 				this.saveError = result.Error is not null ? DocumentManager.SanitizeDisplay( result.Error ) :
