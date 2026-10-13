@@ -45,7 +45,7 @@ internal sealed class CloseCoordinator {
 		this.SaveAsKey = null;
 		DocumentEntry? entry = this.documents.Find( key );
 		if ( entry is null ) return false;
-		if ( !entry.Shell.Document.IsModified ) return this.documents.Close( key );
+		if ( !entry.HasUnsavedChanges ) return this.documents.Close( key );
 		this.pendingKey = key;
 		this.pendingDialogId = DialogId + "-" + Guid.NewGuid().ToString( "N" );
 		this.host.ShowModal( WidgetFormDialog.SaveDontSaveCancel( this.pendingDialogId, "Unsaved changes",
@@ -68,7 +68,7 @@ internal sealed class CloseCoordinator {
 			case WidgetDialogOutcome.Save:
 				if ( entry.FullPath is null ) { this.SaveAsKey = key; return CloseResolution.SaveAsRequired; }
 				await this.documents.SaveAsync( entry, this.files, token );
-				return !entry.Shell.Document.IsModified && this.documents.Close( key )
+				return !entry.HasUnsavedChanges && this.documents.Close( key )
 					? CloseResolution.Closed : CloseResolution.Kept;
 			default: return CloseResolution.Kept;
 		}

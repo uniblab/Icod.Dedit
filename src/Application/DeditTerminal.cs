@@ -299,7 +299,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 				else await this.documents.SaveAsExistingAsync( entry, this.files, overwrite, CancellationToken.None );
 				this.saveError = null;
 				saved = true;
-				if ( closeAfterSave && !entry.Shell.Document.IsModified ) this.documents.Close( entry.Key );
+				if ( closeAfterSave && !entry.HasUnsavedChanges ) this.documents.Close( entry.Key );
 			} catch ( Exception exception ) when ( IsSaveError( exception ) ) { this.SetSaveError( exception ); }
 		}
 		if ( batchPicker ) {

@@ -74,7 +74,7 @@ internal sealed class DocumentBatchCoordinator {
 		if ( !this.awaitingSaveAs ) return BatchProgress.Stopped;
 		this.awaitingSaveAs = false;
 		DocumentEntry? entry = this.documents.Find( this.keys[ this.index ] );
-		if ( !saved || entry is null || entry.Shell.Document.IsModified ) {
+		if ( !saved || entry is null || entry.HasUnsavedChanges ) {
 			this.Abort(); return BatchProgress.Stopped;
 		}
 		if ( this.operation != BatchOperation.SaveAll && !this.documents.Close( entry.Key ) ) {
@@ -97,13 +97,13 @@ internal sealed class DocumentBatchCoordinator {
 			DocumentEntry? entry = this.documents.Find( this.keys[ this.index ] );
 			if ( entry is null ) { this.index++; continue; }
 			if ( this.operation == BatchOperation.SaveAll ) {
-				if ( !entry.Shell.Document.IsModified ) { this.index++; continue; }
+				if ( !entry.HasUnsavedChanges ) { this.index++; continue; }
 				if ( entry.FullPath is null ) {
 					this.awaitingSaveAs = true;
 					return BatchProgress.SaveAsRequired;
 				}
 				await this.documents.SaveAsync( entry, this.files, token );
-				if ( entry.Shell.Document.IsModified ) {
+				if ( entry.HasUnsavedChanges ) {
 					this.Abort(); return BatchProgress.Stopped;
 				}
 				this.index++;

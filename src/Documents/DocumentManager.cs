@@ -34,6 +34,8 @@ internal sealed class DocumentEntry( string key, string caption, string? fullPat
 	internal string? FullPath { get; set; } = fullPath;
 	internal string? Identity { get; set; } = identity;
 	internal TextFileEncoding Encoding { get; set; } = encoding;
+	internal TextFileEncoding SavedEncoding { get; set; } = encoding;
+	internal bool HasUnsavedChanges => this.Shell.Document.IsModified || this.Encoding != this.SavedEncoding;
 	internal byte[] Fingerprint { get; set; } = fingerprint;
 	internal EditorShell Shell { get; set; } = shell;
 }
@@ -48,7 +50,7 @@ internal sealed class DocumentManager : IDisposable {
 	internal DocumentManager( WidgetHost host ) => this.host = host ?? throw new ArgumentNullException( nameof( host ) );
 	internal DocumentEntry? Active { get; private set; }
 	internal IReadOnlyList<WidgetTab> Tabs => this.documents.Select( document => new WidgetTab( document.Key, SanitizeDisplay( document.Caption ),
-		IsModified: document.Shell.Document.IsModified, IsClosable: true ) ).ToArray();
+		IsModified: document.HasUnsavedChanges, IsClosable: true ) ).ToArray();
 	internal static string SanitizeDisplay( string text ) => new( text.Select( character => char.IsControl( character ) ? '�' : character ).ToArray() );
 
 	internal DocumentEntry OpenUntitled() => this.Add( $"Untitled{( ++this.nextUntitled == 1 ? "" : $" {this.nextUntitled}" )}", null, null,
@@ -66,6 +68,14 @@ internal sealed class DocumentManager : IDisposable {
 		this.UpdateCaptions(); return entry;
 	}
 
+	internal void SetEncoding( DocumentEntry entry, TextFileEncoding encoding ) {
+		ArgumentNullException.ThrowIfNull( entry );
+		this.ThrowIfDisposed();
+		if ( !this.documents.Contains( entry ) ) throw new ArgumentException( "Document is not open.", nameof( entry ) );
+		if ( !Enum.IsDefined( encoding ) ) throw new ArgumentOutOfRangeException( nameof( encoding ) );
+		entry.Encoding = encoding;
+	}
+
 	internal async Task SaveAsNewAsync( DocumentEntry entry, DocumentFileService files, string path,
 		CancellationToken cancellationToken ) {
 		ArgumentNullException.ThrowIfNull( entry );
@@ -79,9 +89,11 @@ internal sealed class DocumentManager : IDisposable {
 			other.Identity is not null && this.pathComparer.Equals( other.Identity, identity ) ) )
 			throw new IOException( "The save target belongs to another open tab." );
 		using WidgetTextSnapshot snapshot = entry.Shell.Document.CreateSnapshot();
+		TextFileEncoding selectedEncoding = entry.Encoding;
 		string text = snapshot.Read( 0, checked( (int)snapshot.Length ) );
-		byte[] fingerprint = await files.SaveNewAsync( fullPath, text, entry.Encoding, cancellationToken );
+		byte[] fingerprint = await files.SaveNewAsync( fullPath, text, selectedEncoding, cancellationToken );
 		entry.FullPath = fullPath; entry.Identity = identity; entry.Fingerprint = fingerprint;
+		entry.SavedEncoding = selectedEncoding;
 		this.UpdateCaptions();
 		entry.Shell.Document.MarkSaved( snapshot );
 	}
@@ -104,7 +116,7 @@ internal sealed class DocumentManager : IDisposable {
 			? entry.Fingerprint : target.Fingerprint;
 		using WidgetTextSnapshot snapshot = entry.Shell.Document.CreateSnapshot();
 		string text = snapshot.Read( 0, checked( (int)snapshot.Length ) );
-		byte[] fingerprint = await files.SaveAsync( fullPath, target.Identity, baseline, text, entry.Encoding, cancellationToken );
+		byte[] fingerprint = await files.SaveAsync( fullPath, target.Identity, baseline, text, selectedEncoding, cancellationToken );
 		entry.FullPath = fullPath; entry.Identity = identity; entry.Fingerprint = fingerprint;
 		this.UpdateCaptions();
 		entry.Shell.Document.MarkSaved( snapshot );
@@ -118,8 +130,9 @@ internal sealed class DocumentManager : IDisposable {
 		if ( entry.FullPath is null || entry.Identity is null ) throw new InvalidOperationException( "Untitled documents require Save As." );
 		using WidgetTextSnapshot snapshot = entry.Shell.Document.CreateSnapshot();
 		string text = snapshot.Read( 0, checked( (int)snapshot.Length ) );
-		byte[] fingerprint = await files.SaveAsync( entry.FullPath, entry.Identity, entry.Fingerprint, text, entry.Encoding, cancellationToken );
+		byte[] fingerprint = await files.SaveAsync( entry.FullPath, entry.Identity, entry.Fingerprint, text, selectedEncoding, cancellationToken );
 		entry.Fingerprint = fingerprint;
+		entry.SavedEncoding = selectedEncoding;
 		entry.Shell.Document.MarkSaved( snapshot );
 	}
 
@@ -148,7 +161,7 @@ internal sealed class DocumentManager : IDisposable {
 		if ( !this.documents.Contains( entry ) ) throw new ArgumentException( "Document is not open.", nameof( entry ) );
 		if ( entry.FullPath is null || entry.Identity is null ) throw new InvalidOperationException( "Untitled documents cannot reload." );
 		EditorShell previous = entry.Shell;
-		if ( previous.Document.IsModified && !discardModified )
+		if ( entry.HasUnsavedChanges && !discardModified )
 			throw new InvalidOperationException( "Reloading would discard unsaved changes." );
 		long revision = previous.Document.Revision;
 		string path = entry.FullPath;
@@ -156,7 +169,7 @@ internal sealed class DocumentManager : IDisposable {
 		LoadedTextFile loaded = await files.OpenAsync( path, cancellationToken );
 		this.ThrowIfDisposed();
 		if ( !this.documents.Contains( entry ) || !ReferenceEquals( entry.Shell, previous ) ||
-			previous.Document.Revision != revision || ( previous.Document.IsModified && !discardModified ) ||
+			previous.Document.Revision != revision || ( entry.HasUnsavedChanges && !discardModified ) ||
 			!this.pathComparer.Equals( entry.FullPath, path ) || !this.pathComparer.Equals( entry.Identity, identity ) )
 			throw new IOException( "The document changed during reload." );
 		if ( !this.pathComparer.Equals( ResolveIdentity( path ), identity ) )
@@ -171,6 +184,7 @@ internal sealed class DocumentManager : IDisposable {
 			}
 			entry.Shell = replacement;
 			entry.Encoding = loaded.Content.Encoding;
+			entry.SavedEncoding = loaded.Content.Encoding;
 			entry.Fingerprint = loaded.Fingerprint;
 			previous.Dispose();
 		} catch {
@@ -190,7 +204,7 @@ internal sealed class DocumentManager : IDisposable {
 		int index = this.documents.FindIndex( document => document.Key == key );
 		if ( index < 0 ) return false;
 		DocumentEntry closing = this.documents[ index ];
-		if ( closing.Shell.Document.IsModified && !discardModified ) return false;
+		if ( closing.HasUnsavedChanges && !discardModified ) return false;
 		bool wasActive = ReferenceEquals( closing, this.Active );
 		if ( wasActive ) { closing.Shell.Deactivate(); this.Active = null; }
 		this.documents.RemoveAt( index );

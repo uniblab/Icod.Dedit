@@ -56,7 +56,7 @@ internal sealed class ExternalChangeCoordinator {
 		if ( this.acknowledged.TryGetValue( entry.Key, out byte[]? seen ) && seen.AsSpan().SequenceEqual( fingerprint ) )
 			return ExternalDecisionResult.Unchanged;
 		string id = "dedit-external-change-" + Guid.NewGuid().ToString( "N" );
-		this.host.ShowModal( DeditMenu.CreateExternalChangeDialog( id, entry.Caption, entry.Shell.Document.IsModified ) );
+		this.host.ShowModal( DeditMenu.CreateExternalChangeDialog( id, entry.Caption, entry.HasUnsavedChanges ) );
 		this.pendingId = id;
 		this.pendingEntry = entry;
 		this.pendingFingerprint = fingerprint;
