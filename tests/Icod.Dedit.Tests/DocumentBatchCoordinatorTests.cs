@@ -103,6 +103,33 @@ public sealed class DocumentBatchCoordinatorTests {
 		} finally { Directory.Delete( directory, true ); }
 	}
 
+
+	[Fact]
+	public async Task ExitSaveConflictKeepsTabAndResetsTheOperation() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-batch-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "opened.txt" );
+			await File.WriteAllTextAsync( path, "before" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry opened = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			opened.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.Zero );
+			await File.WriteAllTextAsync( path, "external" );
+			DocumentBatchCoordinator batch = new( manager, files, new CloseCoordinator( host, manager, files ) );
+			Assert.Equal( BatchProgress.DecisionRequired, await batch.StartAsync( BatchOperation.Exit, CancellationToken.None ) );
+			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.Zero );
+			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.Zero );
+			WidgetDialogCompletedAction save = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+				host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.Zero ).Actions ) );
+			await Assert.ThrowsAsync<IOException>( () => batch.CompleteDecisionAsync( save, CancellationToken.None ) );
+			Assert.False( batch.IsActive );
+			Assert.Same( opened, manager.Find( opened.Key ) );
+			Assert.True( opened.Shell.Document.IsModified );
+			Assert.Equal( "external", await File.ReadAllTextAsync( path ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
 	[Fact]
 	public async Task ExitWaitsForSavedDocumentBeforeExiting() {
 		string directory = Directory.CreateTempSubdirectory( "dedit-batch-" ).FullName;
