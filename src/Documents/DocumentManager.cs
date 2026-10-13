@@ -185,6 +185,7 @@ internal sealed class DocumentManager : IDisposable {
 		EditorShell replacement = new( this.host, loaded.Content.Text, "editor-" + entry.Key, activate: false, this.preferences );
 		replacement.Editor.View.WrapMode = previous.Editor.View.WrapMode;
 		replacement.Editor.View.TabWidth = previous.Editor.View.TabWidth;
+		replacement.SetIndentationWidth( previous.IndentationWidth );
 		bool wasActive = ReferenceEquals( this.Active, entry );
 		bool wasFocused = wasActive && ReferenceEquals( this.host.FocusedWidget, previous.Editor );
 		try {
