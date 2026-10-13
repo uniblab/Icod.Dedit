@@ -82,3 +82,8 @@ and verifies the stored document text is unchanged.
 Help → About now opens a captioned OK dialog with the executable version and
 GPL identity. A menu integration test confirms Escape returns Cancel and the
 dialog closes. Live About interaction remains to be exercised on a terminal.
+The loop now sends Ctrl+Q to the terminal adapter, which suppresses quitting
+while a menu or modal dialog is open. Tests cover both scopes and the normal
+quit path; a sized xterm pseudo-terminal still exited 0 and restored alternate
+screen state after Ctrl+Q. This does not yet provide dirty-document quit
+confirmation, which remains D1006 work.

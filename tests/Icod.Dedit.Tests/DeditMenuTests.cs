@@ -23,6 +23,7 @@ namespace Icod.Dedit.Tests;
 
 using System.Text;
 using Icod.DCurses;
+using Icod.Dedit.Application;
 using Icod.Dedit.Presentation;
 using Icod.Widgets;
 using Xunit;
@@ -132,5 +133,32 @@ public sealed class DeditMenuTests {
 		WidgetDialogCompletedAction completed = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
 			host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.FromMilliseconds( 3 ) ).Actions ) );
 		Assert.Equal( WidgetDialogOutcome.Cancel, completed.Result.Outcome );
+	}
+
+	[Fact]
+	public void QuitKeyDoesNotBypassAnOpenModal() {
+		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		WidgetMessageDialog dialog = DeditMenu.CreateAboutDialog(); host.ShowModal( dialog );
+		WidgetInput quit = WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'q' ) );
+		Assert.False( DeditTerminal.CanQuitFromKey( host, menu, quit, TimeSpan.FromMilliseconds( 1 ) ) );
+		WidgetDialogCompletedAction cancelled = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.FromMilliseconds( 2 ) ).Actions ) );
+		Assert.Equal( WidgetDialogOutcome.Cancel, cancelled.Result.Outcome );
+		Assert.True( DeditTerminal.CanQuitFromKey( host, menu, quit, TimeSpan.FromMilliseconds( 3 ) ) );
+	}
+
+	[Fact]
+	public void QuitKeyDoesNotBypassAnOpenMenu() {
+		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'v' ) ), TimeSpan.FromMilliseconds( 1 ) );
+		Assert.False( DeditTerminal.CanQuitFromKey( host, menu,
+			WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'q' ) ), TimeSpan.FromMilliseconds( 2 ) ) );
+		Assert.True( menu.IsOpen );
+		host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.FromMilliseconds( 3 ) );
+		host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.FromMilliseconds( 4 ) );
+		Assert.True( DeditTerminal.CanQuitFromKey( host, menu,
+			WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'q' ) ), TimeSpan.FromMilliseconds( 5 ) ) );
 	}
 }

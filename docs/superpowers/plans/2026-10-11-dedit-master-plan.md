@@ -237,6 +237,9 @@ Edit → Undo/Redo now use the focused edit target and dynamic history state.
 View → Word Wrap and Alt+Z change only the active view and reflect its checked
 state without editing stored text.
 Help → About uses a captioned OK dialog and preserves Escape = Cancel.
+Ctrl+Q now reaches the terminal adapter before a quit decision, so a menu or
+modal dialog can block that background shortcut. Dirty-document quit
+coordination remains in D1006.
 The rest of this milestone's menus and forms are still open.
 
 **Files:** `CommandRouter.cs`, `EditorShell.cs`, interaction tests.

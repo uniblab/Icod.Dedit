@@ -93,7 +93,8 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		await this.session.RefreshAsync( cancellationToken );
 	}
 
-	public void Process( WidgetInput input, TimeSpan elapsed ) {
+	public bool Process( WidgetInput input, TimeSpan elapsed ) {
+		if ( IsQuitKey( input ) ) return CanQuitFromKey( this.host, this.menu, input, elapsed );
 		IReadOnlyList<WidgetAction> actions = this.editor is null ? this.host.Process( input, elapsed ).Actions : this.editor.Process( input, elapsed );
 		foreach ( WidgetAction action in actions ) {
 			if ( action is WidgetTabActivationRequestedAction selection ) this.activeKey = selection.TabKey;
@@ -103,6 +104,19 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.About } )
 				this.host.ShowModal( DeditMenu.CreateAboutDialog() );
 		}
+		return false;
+	}
+
+	private static bool IsQuitKey( WidgetInput input ) => input.Kind == WidgetInputKind.Key
+		&& input.KeyPhase is null or CursesKeyEventPhase.Press
+		&& input.Modifiers.HasFlag( WidgetInputModifiers.Control )
+		&& input.Character?.Value is 'q' or 'Q';
+
+	internal static bool CanQuitFromKey( WidgetHost host, WidgetMenuBar menu, WidgetInput input, TimeSpan elapsed ) {
+		ArgumentNullException.ThrowIfNull( host ); ArgumentNullException.ThrowIfNull( menu ); ArgumentNullException.ThrowIfNull( input );
+		if ( !IsQuitKey( input ) ) return false;
+		WidgetDispatchResult result = host.Process( input, elapsed );
+		return !result.Handled && !menu.IsOpen;
 	}
 
 	public void Resize() {

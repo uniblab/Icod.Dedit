@@ -68,7 +68,8 @@ public sealed class DeditStartupTests {
 		FakeTerminal terminal = new( [ new( DeditEventKind.Input, WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'q' ) ) ) ] );
 		int opens = 0;
 		await DeditApplication.RunAsync( DeditOptions.Parse( [ "first", "second" ] ), () => { opens++; return ValueTask.FromResult<IDeditTerminal>( terminal ); }, () => TimeSpan.Zero );
-		Assert.Equal( 1, opens ); Assert.Equal( 1, terminal.DrawCount ); Assert.Equal( [ "first", "second" ], terminal.Captions ); Assert.True( terminal.Disposed );
+		Assert.Equal( 1, opens ); Assert.Equal( 1, terminal.DrawCount ); Assert.Equal( 1, terminal.ProcessCount );
+		Assert.Equal( [ "first", "second" ], terminal.Captions ); Assert.True( terminal.Disposed );
 	}
 
 	[Fact]
@@ -129,7 +130,11 @@ public sealed class DeditStartupTests {
 			if ( this.ThrowOnDraw ) throw new IOException( "Simulated refresh failure" );
 			return ValueTask.CompletedTask;
 		}
-		public void Process( WidgetInput input, TimeSpan elapsed ) => this.ProcessCount++;
+		public bool Process( WidgetInput input, TimeSpan elapsed ) {
+			this.ProcessCount++;
+			return input.Kind == WidgetInputKind.Key && input.Modifiers.HasFlag( WidgetInputModifiers.Control )
+				&& input.Character?.Value is 'q' or 'Q';
+		}
 		public void Resize() => this.ResizeCount++;
 		public ValueTask DisposeAsync() { this.Disposed = true; return ValueTask.CompletedTask; }
 	}
