@@ -18,22 +18,23 @@ editor policy belong here.
 
 ## STATUS
 
-The D1001 behavior decisions are accepted. D1002 provides a runnable terminal
-shell and CLI. D1003 has begun: with no file arguments, the Untitled tab is an
-editable in-memory document with undo/redo. The current D1004 menu slice exposes
-View → Go to File, View → Word Wrap, Edit → Undo/Redo/Cut/Copy/Paste/Select All,
-File → Save/Save As, and Help → About. `Ctrl+P` focuses the tab strip;
-`Alt+Z` toggles wrap for the active editor. Where the terminal reports
-Alt+V distinctly, open View and press plain F for that same action.
-Unsaved changes require an explicit discard confirmation on exit. Supplied
-file paths load into independent editable tabs;
-invalid, missing and oversized paths are reported in the status row while other
-files still open. File → Save or Ctrl+S saves an opened file. File → Save As
-or Ctrl+Shift+S saves to a new path, including an Untitled tab; an existing
-target is refused. Overwrite decisions and the remaining file workflows are under development;
-keep a separate copy of important files
-while this build is being qualified.
+The D1001 behavior decisions are accepted. The current development build has
+editable in-memory and file-backed tabs with independent undo history. File,
+Edit, View, and Help menus expose Save, Save As, Save All, Close, Close All,
+Exit, Undo/Redo, Cut/Copy/Paste/Select All, Go to File, Word Wrap, and About.
+`Ctrl+P` focuses the tab strip and `Alt+Z` toggles wrap for the active
+editor. Where the terminal reports Alt+V distinctly, open View and press plain
+F to focus the tab strip.
 
+Supplied file paths load into independent tabs. Invalid, missing, and oversized
+paths produce a status diagnostic while other files still open. Save As accepts
+a new path or an existing file. Replacing an existing file requires a separate
+confirmation with No selected by default; a changed destination or one owned by
+another open tab is refused. Save All processes dirty tabs in order and pauses
+for Untitled Save As. Close All and Exit ask Save / Don't Save / Cancel for
+each dirty tab. Cancel stops later work while earlier successful saves remain.
+External-change reload choices, search, format controls, and release
+qualification remain under development.
 Build with a .NET 10 SDK (which targets .NET 8, 9, and 10) and run in an
 interactive terminal with the selected runtime installed:
 
@@ -49,18 +50,22 @@ order when paths are supplied. Use `--` before a path beginning with `-`.
 Ctrl+P focuses the tab strip; Left/Right select a document, and F6 returns to
 the editor. File loading accepts strict UTF-8 and BOM-marked UTF-16 LE/BE up to
 32 MiB, preserving mixed line endings and the original encoding in memory.
-Ctrl+Z/Ctrl+Y undo and redo in Untitled; Ctrl+X/C/V/A cut, copy, paste and
-select all using an in-process clipboard; Ctrl+W closes the active tab after
-Save / Don't Save / Cancel when it is dirty. The close control on each tab uses
-the same decision; Cancel is selected by default. Ctrl+Q exits after confirmation when
-any document is modified. Escape cancels that confirmation. Copy and cut currently
-require a selection. Terminal clipboard transport and linewise operations are
-planned. File → Save or Ctrl+S writes an opened file using its original
-encoding and exact line endings, after checking for external changes.
-File → Save As or Ctrl+Shift+S opens a directory and name picker and creates
-only a new file. Escape cancels without changing the document. A failed save
-leaves the buffer dirty and shows an error in the status row. Closing the last
-tab creates a fresh Untitled tab.
+Ctrl+Z/Ctrl+Y undo and redo; Ctrl+X/C/V/A cut, copy, paste, and select
+all using an in-process clipboard. Copy and cut currently require a
+selection. Terminal clipboard transport and linewise operations are planned.
+File → Save or Ctrl+S writes an opened file using its original encoding and
+exact line endings, after checking for external changes. File → Save As or
+Ctrl+Shift+S opens a directory and name picker. An existing file triggers an
+additional No-default overwrite confirmation; Escape or No leaves it untouched.
+The destination's identity and contents are checked again before replacement.
+A failed save leaves the buffer dirty and shows an error in the status row.
+File → Save All visits dirty documents in tab order.
+
+Ctrl+W closes the active tab after Save / Don't Save / Cancel when it is dirty.
+The close control on each tab uses the same decision, with Cancel selected by
+default. File → Close All visits tabs in order. File → Exit or Ctrl+Q uses the
+same per-tab decisions and exits only when the sequence completes. Closing the
+last ordinary tab creates a fresh Untitled tab.
 F6 and Shift+F6 cycle focus among the visible controls; Tab still indents in
 the editor.
 Help → About opens a captioned OK dialog; Escape cancels it. Find and Replace
@@ -96,7 +101,7 @@ The NuGet publication job requires a GitHub `Release` environment, an Actions se
 - Console application: `OutputType=Exe`, not a reusable library or GUI application.
 - Repository/project identity: `Icod.Dedit`; user-facing command: `dedit`.
 - Baseline: C# 13, .NET 8/9/10, managed cross-platform code.
-- Planned: multiple independently editable documents, visible tabs, familiar menus and shortcuts.
+- Implemented in this development branch: independent editable tabs and the listed file/menu commands.
 - No printing, print preview, or printer dependencies.
 - Saving and document lifecycle remain under development; this is not a qualified 1.0 file editor release.
 

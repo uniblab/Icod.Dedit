@@ -25,7 +25,8 @@ Icod.Terminal integration; xUnit tests.
 **Current progress:** The owner accepted the [D1001 behavior matrix](../../Behavior-Matrix.md),
 [decision records](../../decisions/) and [released library contracts](../../Library-Contracts.md).
 D1002 supplies an executable shell and lifecycle foundation. D1003 has begun
-with an in-memory Untitled editor. File loading and later milestones remain.
+with an in-memory Untitled editor. D1004-D1006 have working command, file/tab,
+and safe-save slices; later milestone acceptance remains open.
 
 ## Global constraints
 
@@ -41,7 +42,7 @@ with an in-memory Untitled editor. File loading and later milestones remain.
 - Escape always returns Cancel from dialogs, including OK and Yes/No.
 - The owner merges and tags. Applying a workflow template means changing this
   repository, not opening a PR in `uniblab/.github`.
-- This PR contains the D1002 executable shell and roadmap. Reusable library
+- This PR contains the executable, ongoing editor work, and roadmap. Reusable library
   implementation remains in its owning repositories when required.
 
 ## Review focus
@@ -317,9 +318,13 @@ each dirty tab; Ctrl+Q and File → Exit share the exit path. Cancellation
 stops before later tabs, while earlier successful saves remain on disk.
 Save failures and external-file conflicts retain the affected tab and reset
 the operation. Unique dialog/picker IDs reject delayed completions from
-earlier requests. The cross-platform test matrix covers cancellation at a
-later tab, partial saves, save conflicts and late close results. Existing
-target overwrite and explicit external-change reload choices are still open.
+earlier requests. Save As to an existing file requires a separate No-default
+confirmation. It captures the destination's identity and byte fingerprint,
+then checks them again before replacement; a target owned by another tab
+and an external change to the current file are refused. The 96-test-per-target
+matrix covers cancellation, partial saves, conflicts, overwrite decisions,
+and late close results. Explicit external-change reload/keep choices and
+injected write/rename failure cases remain open.
 
 **Files:** file service, `CloseCoordinator.cs`, document manager, failure-injection tests.
 

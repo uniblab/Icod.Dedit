@@ -225,7 +225,7 @@ public sealed class DocumentManagerTests {
 	}
 
 	[Fact]
-	public async Task SaveAsExistingRefusesAnotherOpenTabAndItsAliases() {
+	public async Task SaveAsExistingRefusesAnotherOpenTab() {
 		string directory = Directory.CreateTempSubdirectory( "dedit-overwrite-" ).FullName;
 		try {
 			string path = Path.Combine( directory, "owned.txt" );
