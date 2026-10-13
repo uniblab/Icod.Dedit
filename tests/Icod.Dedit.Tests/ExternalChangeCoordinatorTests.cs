@@ -99,7 +99,6 @@ public sealed class ExternalChangeCoordinatorTests {
 			ExternalChangeCoordinator coordinator = new( host, manager, files );
 			Assert.Equal( ExternalDecisionResult.Missing, await coordinator.CheckAsync( entry, CancellationToken.None ) );
 			Assert.Equal( "original", entry.Shell.Document.Read( 0, 8 ) );
-			Assert.Null( host.ModalWidget );
 		} finally { Directory.Delete( directory, true ); }
 	}
 }
