@@ -90,6 +90,7 @@ form. Help → About opens a captioned OK dialog; Escape cancels it.
 - [Product and architecture design](docs/DESIGN.md)
 - [Master implementation plan](docs/superpowers/plans/2026-10-11-dedit-master-plan.md)
 - [First-release behavior matrix](docs/Behavior-Matrix.md)
+- [Implemented changes](CHANGELOG.md)
 - [Released library contracts](docs/Library-Contracts.md)
 - [Path, text-format, and coordinate decisions](docs/decisions/)
 
