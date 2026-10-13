@@ -38,7 +38,7 @@ internal sealed class EditorShell : IDisposable {
 		DeditPreferences defaults = preferences ?? DeditPreferences.Default;
 		this.IndentationWidth = defaults.IndentWidth;
 		this.Editor = new WidgetTextEditor( editorId, this.view, new WidgetEditorOptions {
-			Indentation = new string( ' ', defaults.IndentWidth ), TabWidth = defaults.TabWidth,
+			Indentation = new string( ' ', defaults.IndentWidth ), NewLine = DetectNewLine( initialText ), TabWidth = defaults.TabWidth,
 			WrapMode = defaults.Wrap ? CursesTextWrapMode.Word : CursesTextWrapMode.NoWrap,
 			MaximumProjectionSourceUnits = 4_096
 		} );
@@ -47,7 +47,22 @@ internal sealed class EditorShell : IDisposable {
 
 	internal WidgetTextDocument Document { get; }
 	internal WidgetTextEditor Editor { get; }
-	internal int IndentationWidth { get; }
+	internal int IndentationWidth { get; private set; }
+
+	internal void SetIndentationWidth( int width ) {
+		if ( this.disposed ) throw new ObjectDisposedException( nameof( EditorShell ) );
+		if ( width is < 1 or > 16 ) throw new ArgumentOutOfRangeException( nameof( width ) );
+		this.Editor.Indentation = new string( ' ', width );
+		this.IndentationWidth = width;
+	}
+
+	private static string DetectNewLine( string text ) {
+		for ( int index = 0; index < text.Length; index++ ) {
+			if ( text[ index ] == '\r' ) return index + 1 < text.Length && text[ index + 1 ] == '\n' ? "\r\n" : "\r";
+			if ( text[ index ] == '\n' ) return "\n";
+		}
+		return "\n";
+	}
 	internal bool IsActive { get; private set; }
 
 	internal void Activate( bool focus = true ) {
