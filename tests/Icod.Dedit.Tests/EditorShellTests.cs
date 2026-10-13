@@ -127,4 +127,48 @@ public sealed class EditorShellTests {
 		host.Render();
 		Assert.Equal( "x", host.Screen.StandardWindow.GetCell( 2, 0 ).Content );
 	}
+
+	[Fact]
+	public void SelectionReplacementOfCombiningClusterIsOneUndoableEdit() {
+		using WidgetHost host = new( new CursesScreen( 24, 6 ), WidgetTheme.Default );
+		using EditorShell shell = new( host );
+		shell.Process( WidgetInput.Paste( "one e\u0301 two" ), TimeSpan.FromMilliseconds( 1 ) );
+		shell.Editor.View.SetSelection( 4, 6 );
+		shell.Process( WidgetInput.TextInput( new Rune( 'x' ) ), TimeSpan.FromMilliseconds( 2 ) );
+		Assert.Equal( "one x two", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+		shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'z' ) ), TimeSpan.FromMilliseconds( 3 ) );
+		Assert.Equal( "one e\u0301 two", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+		shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'y' ) ), TimeSpan.FromMilliseconds( 4 ) );
+		Assert.Equal( "one x two", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+	}
+
+	[Fact]
+	public void SavedSnapshotIdentityReturnsAfterUndoAndRedirtiesAfterRedo() {
+		using WidgetHost host = new( new CursesScreen( 24, 6 ), WidgetTheme.Default );
+		using EditorShell shell = new( host );
+		shell.Process( WidgetInput.Paste( "draft" ), TimeSpan.FromMilliseconds( 1 ) );
+		using ( WidgetTextSnapshot snapshot = shell.Document.CreateSnapshot() ) shell.Document.MarkSaved( snapshot );
+		Assert.False( shell.Document.IsModified );
+		shell.Process( WidgetInput.TextInput( new Rune( '!' ) ), TimeSpan.FromMilliseconds( 2 ) );
+		Assert.True( shell.Document.IsModified );
+		shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'z' ) ), TimeSpan.FromMilliseconds( 3 ) );
+		Assert.Equal( "draft", shell.Document.Read( 0, 5 ) ); Assert.False( shell.Document.IsModified );
+		shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'y' ) ), TimeSpan.FromMilliseconds( 4 ) );
+		Assert.Equal( "draft!", shell.Document.Read( 0, 6 ) ); Assert.True( shell.Document.IsModified );
+	}
+
+	[Fact]
+	public void PointerHitTestAfterResizeUsesUnicodeCellColumns() {
+		CursesScreen screen = new( 20, 5 ); using WidgetHost host = new( screen, WidgetTheme.Default );
+		using EditorShell shell = new( host );
+		shell.Process( WidgetInput.Paste( "界z" ), TimeSpan.FromMilliseconds( 1 ) ); host.Render();
+		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( CursesMouseAction.Press,
+			CursesMouseButton.Primary, 2, 2 ) ), TimeSpan.FromMilliseconds( 2 ) );
+		Assert.Equal( 1, shell.Editor.View.Caret );
+		screen.Resize( 6, 4 ); shell.Arrange(); host.Render();
+		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( CursesMouseAction.Press,
+			CursesMouseButton.Primary, 0, 2 ) ), TimeSpan.FromMilliseconds( 3 ) );
+		Assert.Equal( 0, shell.Editor.View.Caret );
+		Assert.Equal( "界z", shell.Document.Read( 0, 2 ) );
+	}
 }

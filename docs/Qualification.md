@@ -50,3 +50,13 @@ correctness test bounds a million-unit cold viewport render to 5 MB allocated
 on the test thread; timings above are observations, not portable pass/fail
 limits. File I/O, multi-document editing, history eviction, and real terminal
 editing under this candidate still need qualification.
+
+Further D1003 tests exercise replacement of a combining cluster as one undoable
+edit, saved snapshot identity through undo/redo, and pointer hit testing after
+resize over a wide glyph. The Release build passed with zero warnings or errors
+and all 28 tests passed on each of net8.0, net9.0, and net10.0. A sized 24×80
+xterm pseudo-terminal displayed typed
+text, accepted Ctrl+Z/Ctrl+Y, and exited with Ctrl+Q (exit 0); both alternate
+screen enter and exit sequences were observed. An initial unsized pseudo-terminal
+attempt exited 1, so it is not counted as a successful smoke check. Hardware
+terminal, Windows, and macOS observations remain outstanding.
