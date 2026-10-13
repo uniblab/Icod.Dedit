@@ -109,4 +109,18 @@ public sealed class DocumentFormatTests {
 			entry.Shell.Document.Read( 0, checked( (int)entry.Shell.Document.Length ) ) );
 	}
 
+	[Fact]
+	public void FileLineEndingMenuOffersExplicitCrLfConversion() {
+		using WidgetHost host = new( new CursesScreen( 55, 18 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		using DocumentManager manager = new( host );
+		DocumentEntry entry = manager.OpenUntitled();
+		DeditMenu.UpdateState( menu, entry.Shell.Editor );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'f' ) ), TimeSpan.Zero );
+		host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 't' ) ), TimeSpan.Zero );
+		WidgetInvokedAction selected = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'w' ) ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( DeditMenu.LineEndingCrLf, selected.CommandId );
+	}
+
 }
