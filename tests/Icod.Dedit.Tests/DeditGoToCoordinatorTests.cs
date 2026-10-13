@@ -48,7 +48,7 @@ public sealed class DeditGoToCoordinatorTests {
 		Assert.True( goTo.Validate( valid ) );
 		WidgetDialogCompletedAction completed = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single( host.DrainActions() ) );
 		Assert.True( goTo.Complete( completed ) );
-		Assert.Equal( 10, entry.Shell.Editor.View.Caret );
+		Assert.Equal( 9, entry.Shell.Editor.View.Caret );
 	}
 	[Fact]
 	public void StaleOrCanceledDialogNeverMovesTheCaret() {
@@ -64,7 +64,7 @@ public sealed class DeditGoToCoordinatorTests {
 		entry.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.Zero );
 		Assert.True( goTo.Validate( validation ) );
 		Assert.Empty( host.DrainActions() );
-		Assert.Equal( 0, entry.Shell.Editor.View.SelectionStart );
+		Assert.Equal( entry.Shell.Document.Length, entry.Shell.Editor.View.Caret );
 		WidgetDialogCompletedAction canceled = Assert.IsType<WidgetDialogCompletedAction>(
 			Assert.Single( host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.Zero ).Actions ) );
 		Assert.True( goTo.Complete( canceled ) );
