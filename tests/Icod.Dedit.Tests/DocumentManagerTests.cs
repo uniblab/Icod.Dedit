@@ -102,5 +102,46 @@ public sealed class DocumentManagerTests {
 		Assert.Equal( "bad�name.txt", DocumentManager.SanitizeDisplay( "bad\nname.txt" ) );
 	}
 
+
+	[Fact]
+	public async Task SaveUpdatesDiskAndCheckpointThenFurtherEditIsDirty() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-document-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "before" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry entry = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			entry.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.FromMilliseconds( 1 ) );
+			Assert.True( entry.Shell.Document.IsModified );
+			await manager.SaveAsync( entry, files, CancellationToken.None );
+			Assert.Equal( "!before", await File.ReadAllTextAsync( path ) );
+			Assert.False( entry.Shell.Document.IsModified );
+			entry.Shell.Process( WidgetInput.Paste( "?" ), TimeSpan.FromMilliseconds( 2 ) );
+			Assert.True( entry.Shell.Document.IsModified );
+			await manager.SaveAsync( entry, files, CancellationToken.None );
+			Assert.False( entry.Shell.Document.IsModified );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SaveConflictKeepsDirtyDocumentAndExternalBytes() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-document-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "before" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry entry = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			entry.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.FromMilliseconds( 1 ) );
+			await File.WriteAllTextAsync( path, "external" );
+			await Assert.ThrowsAsync<IOException>( () => manager.SaveAsync( entry, files, CancellationToken.None ) );
+			Assert.True( entry.Shell.Document.IsModified );
+			Assert.Equal( "external", await File.ReadAllTextAsync( path ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
 	private static LoadedTextFile Loaded( string path, string text ) => new( path, new DecodedText( text, TextFileEncoding.Utf8 ), [] );
 }
