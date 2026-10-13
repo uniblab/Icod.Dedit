@@ -66,6 +66,30 @@ public sealed class DocumentManagerTests {
 	}
 
 	[Fact]
+	public async Task SymlinkAndTargetShareOneTabAndSavingThroughTheLinkPreservesIt() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-symlink-" ).FullName;
+		try {
+			string target = Path.Combine( directory, "target.txt" );
+			string link = Path.Combine( directory, "alias.txt" );
+			await File.WriteAllTextAsync( target, "initial" );
+			File.CreateSymbolicLink( link, target );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry entry = manager.Open( await files.OpenAsync( link, CancellationToken.None ) );
+
+			Assert.Same( entry, manager.Open( await files.OpenAsync( target, CancellationToken.None ) ) );
+			Assert.Single( manager.Tabs );
+			entry.Shell.Process( WidgetInput.Paste( "saved " ), TimeSpan.Zero );
+			await manager.SaveAsync( entry, files, CancellationToken.None );
+
+			Assert.NotNull( new FileInfo( link ).LinkTarget );
+			Assert.Equal( "saved initial", await File.ReadAllTextAsync( target ) );
+			Assert.Equal( "saved initial", await File.ReadAllTextAsync( link ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
 	public void TabNavigationKeepsStripFocusedForRepeatedArrows() {
 		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
 		WidgetTabStrip tabs = new( "tabs" ); host.Attach( tabs ); tabs.Arrange( new CursesRectangle( 1, 0, 1, 50 ) );
