@@ -25,18 +25,22 @@ using System.Security.Cryptography;
 
 internal sealed record LoadedTextFile( string FullPath, DecodedText Content, byte[] Fingerprint );
 internal sealed record ExistingSaveTarget( string FullPath, string Identity, byte[] Fingerprint );
+internal enum DocumentSaveStage { BeforeWrite, BeforeReplacement }
 
 internal sealed class DocumentFileService {
 	internal const int DefaultMaximumBytes = 32 * 1024 * 1024;
 	private readonly string initialDirectory;
 	private readonly int maximumBytes;
+	private readonly Action<DocumentSaveStage>? beforeSaveStage;
 
-	internal DocumentFileService( string initialDirectory, int maximumBytes = DefaultMaximumBytes ) {
+	internal DocumentFileService( string initialDirectory, int maximumBytes = DefaultMaximumBytes,
+		Action<DocumentSaveStage>? beforeSaveStage = null ) {
 		ArgumentException.ThrowIfNullOrWhiteSpace( initialDirectory );
 		if ( !Path.IsPathFullyQualified( initialDirectory ) ) throw new ArgumentException( "The initial directory must be absolute.", nameof( initialDirectory ) );
 		if ( maximumBytes < 1 ) throw new ArgumentOutOfRangeException( nameof( maximumBytes ) );
 		this.initialDirectory = Path.GetFullPath( initialDirectory );
 		this.maximumBytes = maximumBytes;
+		this.beforeSaveStage = beforeSaveStage;
 	}
 
 	internal async Task<LoadedTextFile> OpenAsync( string path, CancellationToken cancellationToken ) {
@@ -90,10 +94,12 @@ internal sealed class DocumentFileService {
 			await using ( FileStream stream = new( temporary, new FileStreamOptions {
 				Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None, Options = FileOptions.Asynchronous
 			} ) ) {
+				this.beforeSaveStage?.Invoke( DocumentSaveStage.BeforeWrite );
 				await stream.WriteAsync( bytes, cancellationToken );
 				await stream.FlushAsync( cancellationToken );
 			}
 			cancellationToken.ThrowIfCancellationRequested();
+			this.beforeSaveStage?.Invoke( DocumentSaveStage.BeforeReplacement );
 			File.Move( temporary, target );
 			return SHA256.HashData( bytes );
 		} finally {
@@ -126,6 +132,7 @@ internal sealed class DocumentFileService {
 			await using ( FileStream stream = new( temporary, new FileStreamOptions {
 				Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None, Options = FileOptions.Asynchronous
 			} ) ) {
+				this.beforeSaveStage?.Invoke( DocumentSaveStage.BeforeWrite );
 				await stream.WriteAsync( bytes, cancellationToken );
 				await stream.FlushAsync( cancellationToken );
 			}
@@ -135,6 +142,7 @@ internal sealed class DocumentFileService {
 				throw new IOException( "The file target changed during the save." );
 			await VerifyUnchangedAsync( target, expectedFingerprint, cancellationToken );
 			cancellationToken.ThrowIfCancellationRequested();
+			this.beforeSaveStage?.Invoke( DocumentSaveStage.BeforeReplacement );
 			File.Move( temporary, target, overwrite: true );
 			return SHA256.HashData( bytes );
 		} finally {
