@@ -52,7 +52,7 @@ public sealed class OpenPickerTests {
 			IReadOnlyList<string> paths = Assert.IsAssignableFrom<IReadOnlyList<string>>( selected.Result.Value );
 			DocumentFileService files = new( directory );
 			foreach ( string path in paths ) manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
-			Assert.Equal( [ draft.Key, firstPath, secondPath ], manager.Tabs.Select( tab =>
+			Assert.Equal( new[] { draft.Key, firstPath, secondPath }, manager.Tabs.Select( tab =>
 				manager.Find( tab.Key ) == draft ? draft.Key : manager.Find( tab.Key )!.FullPath! ).ToArray() );
 			Assert.True( draft.Shell.Document.IsModified );
 			Assert.Equal( "second", manager.Active?.Shell.Document.Read( 0, 6 ) );
