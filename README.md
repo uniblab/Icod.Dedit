@@ -6,7 +6,7 @@
 
 ## DESCRIPTION
 
-Icod.Dedit is a planned C# console executable inspired by
+Icod.Dedit is a C# console executable in development, inspired by
 [Microsoft Edit 1.2.1](https://github.com/microsoft/edit/tree/v1.2.1),
 with a visible, multi-document tab interface inspired by modern Windows Notepad.
 Printing is deliberately excluded.
@@ -18,9 +18,24 @@ editor policy belong here.
 
 ## STATUS
 
-This repository contains the design and D1001 behavior/contract review draft,
-not a working editor. The executable project, installation commands, and
-release artifacts will be added during implementation.
+The D1001 behavior decisions are accepted. D1002 provides a runnable
+terminal shell and CLI with placeholder tabs. It does not load or edit files
+yet. Document editing, file operations and the full tab behavior are later
+milestones; do not rely on this build to modify a document.
+
+Build with a .NET 10 SDK (which targets .NET 8, 9, and 10) and run in an
+interactive terminal with the selected runtime installed:
+
+```sh
+./build.sh
+dotnet run --project Icod.Dedit.csproj -f net10.0 -- --help
+dotnet run --project Icod.Dedit.csproj -f net10.0 -- "first file.txt" "second.txt"
+```
+
+On Windows, use `build.cmd` and the same `dotnet run` commands. The shell
+shows one Untitled tab without paths and path captions in argument order when
+paths are supplied. Use `--` before a path beginning with `-`. Ctrl+Q exits.
+The shell does not read the supplied paths in D1002.
 
 - [Product and architecture design](docs/DESIGN.md)
 - [Master implementation plan](docs/superpowers/plans/2026-10-11-dedit-master-plan.md)
@@ -28,17 +43,17 @@ release artifacts will be added during implementation.
 - [Released library contracts](docs/Library-Contracts.md)
 - [Path, text-format, and coordinate decisions](docs/decisions/)
 
-The relevant DCurses and Widgets capabilities have been released. The D1001
-decisions are proposed for owner review; the runnable EXE foundation is D1002.
+The released package references are Icod.Widgets 1.3.0 and its
+Icod.DCurses 2.5.0 dependency.
 
 ## PROJECT CONTRACT
 
 - Console application: `OutputType=Exe`, not a reusable library or GUI application.
 - Repository/project identity: `Icod.Dedit`; user-facing command: `dedit`.
-- Planned baseline: C# 13, .NET 8/9/10, managed cross-platform code.
-- Multiple independently editable documents, visible tabs, familiar menus and shortcuts.
+- Baseline: C# 13, .NET 8/9/10, managed cross-platform code.
+- Planned: multiple independently editable documents, visible tabs, familiar menus and shortcuts.
 - No printing, print preview, or printer dependencies.
-- No implementation, platform qualification, or performance claim is implied by this roadmap.
+- The current shell is not a working text editor or a qualified release.
 
 ## LICENSE
 

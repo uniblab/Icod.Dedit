@@ -1,7 +1,7 @@
 # dedit first-release behavior matrix
 
-Status: D1001 review draft. This records intended behavior and acceptance tests,
-not implemented features. The owner reviews the decisions below before D1002.
+Status: D1001 accepted baseline. This records intended behavior and acceptance
+tests, not a claim that later features are implemented.
 
 The pinned reference is [Microsoft Edit v1.2.1](https://github.com/microsoft/edit/tree/v1.2.1),
 especially its [menu definitions](https://github.com/microsoft/edit/blob/v1.2.1/src/bin/edit/draw_menubar.rs),

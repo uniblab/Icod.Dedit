@@ -1,6 +1,6 @@
 # Dedit product and architecture design
 
-Status: proposed implementation baseline, 2026-10-11.
+Status: accepted implementation baseline, 2026-10-13.
 This document describes intended behavior; it is not a claim of implemented features.
 
 ## Goal and reference

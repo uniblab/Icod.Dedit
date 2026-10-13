@@ -3,8 +3,8 @@
 > **For agentic workers:** Use `superpowers:executing-plans` for approved
 > implementation tasks. Do not begin implementation from this master roadmap:
 > first review it with the owner and complete the DCurses/Widgets capability
-> designs. The libraries have since shipped the relevant contracts; D1001's
-> behavior decisions still need owner review before D1002. Work sequentially
+> designs. The libraries have since shipped the relevant contracts and the owner
+> approved D1001's behavior decisions. Work sequentially
 > unless the owner requests another execution method.
 > Checkboxes record future work, not completed features.
 
@@ -22,9 +22,10 @@ Icod.Terminal integration; xUnit tests.
 
 **Spec:** [Product and architecture design](../../DESIGN.md).
 
-**Current progress:** The [D1001 behavior matrix](../../Behavior-Matrix.md),
-[decision records](../../decisions/) and [released library contracts](../../Library-Contracts.md)
-are a review draft. D1002 and later milestones have not begun.
+**Current progress:** The owner accepted the [D1001 behavior matrix](../../Behavior-Matrix.md),
+[decision records](../../decisions/) and [released library contracts](../../Library-Contracts.md).
+D1002 supplies an executable shell and lifecycle foundation. Later milestones
+have not begun; this shell does not load or edit files.
 
 ## Global constraints
 
@@ -40,8 +41,8 @@ are a review draft. D1002 and later milestones have not begun.
 - Escape always returns Cancel from dialogs, including OK and Yes/No.
 - The owner merges and tags. Applying a workflow template means changing this
   repository, not opening a PR in `uniblab/.github`.
-- This PR contains planning and licensing only. Project scaffolding is D1002;
-  library implementation is explicitly subsequent work.
+- This PR contains the D1002 executable shell and roadmap. Reusable library
+  implementation remains in its owning repositories when required.
 
 ## Review focus
 
@@ -129,7 +130,7 @@ milestone. Do not ship temporary application copies of reusable widget code.
   against published 2.5.0 and 1.3.0 contracts. The application integration
   map is in [Library Contracts](../../Library-Contracts.md); future gaps remain
   in their owning libraries.
-- [ ] Review the behavior matrix and boundary decisions with the owner before
+- [x] Review the behavior matrix and boundary decisions with the owner before
   implementation. Commit the accepted baseline independently of runtime code.
 
 **Acceptance:** every first-release feature has an owner and an observable test;
@@ -174,22 +175,27 @@ slice. Do not label proposed controls as already available.
 **Files:** solution/project, `src/Program.cs`, `src/Application/DeditApplication.cs`,
 `src/CommandLine/DeditOptions.cs`, tests, build scripts.
 
-- [ ] Add failing CLI/process tests: help and version do not initialize a terminal;
+- [x] Add failing CLI/process tests: help and version do not initialize a terminal;
   invalid arguments produce a diagnostic and nonzero status.
-- [ ] Create the EXE/test projects with the specified targets, names, license
+- [x] Create the EXE/test projects with the specified targets, names, license
   metadata and full file headers. Select released library versions explicitly.
-- [ ] Build an empty shell with one owner for the session and an injectable event
+- [x] Build an empty shell with one owner for the session and an injectable event
   source/clock; prove normal exit and handled startup failures release resources.
-- [ ] Establish command-line contract: zero paths opens Untitled, multiple paths
+- [x] Establish command-line contract: zero paths opens Untitled, multiple paths
   open in argument order, `--` terminates options, and quoted/spaced/non-ASCII
   paths work. Defer stream editing and extra flags until separately specified.
-- [ ] Make both build scripts restore/build the full solution before
+- [x] Make both build scripts restore/build the full solution before
   `dotnet test ... --no-build`; fail immediately on a failed phase.
-- [ ] Run Release build/tests on all targets, then a real-terminal startup/exit
+- [x] Run Release build/tests on all targets, then a real-terminal startup/exit
   smoke test. Commit the executable foundation.
 
 **Acceptance:** a runnable `dedit` shell, not an editor-shaped library package;
 no working-editor claim yet.
+
+**D1002 evidence:** `build.sh` ran restore, Release build and 17 tests per target
+on Linux with SDK 10.0.401. A sized xterm pseudo-terminal displayed Untitled,
+then Ctrl+Q exited with code 0 and restored the alternate screen/input modes.
+`build.cmd` is written for Windows but has not been exercised here.
 
 ## D1003 — One-document editing foundation
 
