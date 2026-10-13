@@ -126,4 +126,20 @@ public sealed class DocumentFileServiceTests {
 			Assert.Single( Directory.GetFiles( directory ) );
 		} finally { Directory.Delete( directory, true ); }
 	}
+
+	[Fact]
+	public async Task SaveNewCreatesExactBytesAndRejectsExistingTarget() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-new-save-" ).FullName;
+		try {
+			DocumentFileService service = new( directory );
+			string path = Path.Combine( directory, "sample.txt" );
+			byte[] fingerprint = await service.SaveNewAsync( "sample.txt", "界\r\nnext", TextFileEncoding.Utf8Bom, CancellationToken.None );
+			byte[] expected = TextFileCodec.Encode( "界\r\nnext", TextFileEncoding.Utf8Bom );
+			Assert.Equal( expected, await File.ReadAllBytesAsync( path ) );
+			Assert.Equal( SHA256.HashData( expected ), fingerprint );
+			await Assert.ThrowsAsync<IOException>( () => service.SaveNewAsync( path, "overwrite", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Equal( expected, await File.ReadAllBytesAsync( path ) );
+			Assert.Single( Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
 }

@@ -63,6 +63,9 @@ internal sealed class DocumentManager : IDisposable {
 		this.UpdateCaptions(); return entry;
 	}
 
+	internal Task SaveAsNewAsync( DocumentEntry entry, DocumentFileService files, string path,
+		CancellationToken cancellationToken ) => throw new NotImplementedException();
+
 	internal async Task SaveAsync( DocumentEntry entry, DocumentFileService files, CancellationToken cancellationToken ) {
 		ArgumentNullException.ThrowIfNull( entry );
 		ArgumentNullException.ThrowIfNull( files );

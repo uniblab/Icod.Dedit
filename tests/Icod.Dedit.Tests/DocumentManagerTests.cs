@@ -143,5 +143,41 @@ public sealed class DocumentManagerTests {
 		} finally { Directory.Delete( directory, true ); }
 	}
 
+
+	[Fact]
+	public async Task SaveAsNewAssignsUntitledIdentityOnlyAfterSuccessfulWrite() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-save-as-" ).FullName;
+		try {
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry entry = manager.OpenUntitled();
+			entry.Shell.Process( WidgetInput.Paste( "draft" ), TimeSpan.FromMilliseconds( 1 ) );
+			await manager.SaveAsNewAsync( entry, files, "draft.txt", CancellationToken.None );
+			Assert.Equal( "draft", await File.ReadAllTextAsync( Path.Combine( directory, "draft.txt" ) ) );
+			Assert.Equal( Path.Combine( directory, "draft.txt" ), entry.FullPath );
+			Assert.False( entry.Shell.Document.IsModified );
+			Assert.Equal( "draft.txt", entry.Caption );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SaveAsNewCollisionAndExistingTargetRetainOriginalDocumentIdentity() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-save-as-" ).FullName;
+		try {
+			DocumentFileService files = new( directory );
+			string ownedPath = Path.Combine( directory, "owned.txt" );
+			await File.WriteAllTextAsync( ownedPath, "owned" );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			manager.Open( await files.OpenAsync( ownedPath, CancellationToken.None ) );
+			DocumentEntry untitled = manager.OpenUntitled();
+			untitled.Shell.Process( WidgetInput.Paste( "draft" ), TimeSpan.FromMilliseconds( 1 ) );
+			await Assert.ThrowsAsync<IOException>( () => manager.SaveAsNewAsync( untitled, files, ownedPath, CancellationToken.None ) );
+			Assert.Null( untitled.FullPath ); Assert.True( untitled.Shell.Document.IsModified );
+			Assert.Equal( "owned", await File.ReadAllTextAsync( ownedPath ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
 	private static LoadedTextFile Loaded( string path, string text ) => new( path, new DecodedText( text, TextFileEncoding.Utf8 ), [] );
 }

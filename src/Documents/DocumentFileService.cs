@@ -57,6 +57,11 @@ internal sealed class DocumentFileService {
 		byte[] bytes = buffer.ToArray();
 		return new LoadedTextFile( fullPath, TextFileCodec.Decode( bytes ), SHA256.HashData( bytes ) );
 	}
+	internal string ResolvePath( string path ) => Path.GetFullPath( path, this.initialDirectory );
+
+	internal Task<byte[]> SaveNewAsync( string path, string text, TextFileEncoding encoding,
+		CancellationToken cancellationToken ) => throw new NotImplementedException();
+
 	internal async Task<byte[]> SaveAsync( string fullPath, string expectedIdentity, byte[] expectedFingerprint, string text,
 		TextFileEncoding encoding, CancellationToken cancellationToken ) {
 		ArgumentException.ThrowIfNullOrWhiteSpace( fullPath );
