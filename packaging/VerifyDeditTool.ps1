@@ -33,6 +33,16 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [System.IO.Compression.ZipFile]::OpenRead($package.FullName)
 try {
     $entries = @($archive.Entries | ForEach-Object { $_.FullName.Replace('\', '/') })
+    foreach ($supportFile in @('README.md', 'CHANGELOG.md', 'LICENSE')) {
+        $entry = $archive.GetEntry($supportFile)
+        if ($null -eq $entry) { throw "Tool package '$($package.Name)' is missing '$supportFile'." }
+        $reader = [System.IO.StreamReader]::new($entry.Open())
+        try { $packagedText = $reader.ReadToEnd() } finally { $reader.Dispose() }
+        $sourceText = [System.IO.File]::ReadAllText((Join-Path $repositoryRoot $supportFile))
+        if (-not [string]::Equals($packagedText, $sourceText, [System.StringComparison]::Ordinal)) {
+            throw "Tool package '$($package.Name)' contains a stale '$supportFile'."
+        }
+    }
     foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
         $root = "tools/$framework/any"
         foreach ($relativePath in @('DotnetToolSettings.xml', 'dedit.dll', 'dedit.runtimeconfig.json')) {
