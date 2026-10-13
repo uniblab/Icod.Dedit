@@ -84,6 +84,29 @@ public sealed class CloseCoordinatorTests {
 		} finally { Directory.Delete( directory, true ); }
 	}
 
+
+	[Fact]
+	public async Task LateDecisionFromPreviousTabCannotCloseCurrentTab() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry first = manager.OpenUntitled();
+		first.Shell.Process( WidgetInput.Paste( "first" ), TimeSpan.Zero );
+		DocumentEntry second = manager.OpenUntitled();
+		second.Shell.Process( WidgetInput.Paste( "second" ), TimeSpan.Zero );
+		CloseCoordinator close = new( host, manager, new DocumentFileService( Path.GetTempPath() ) );
+		Assert.False( close.Request( first.Key ) );
+		WidgetDialogCompletedAction oldCancel = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( CloseResolution.Kept, await close.CompleteAsync( oldCancel, CancellationToken.None ) );
+		Assert.False( close.Request( second.Key ) );
+		Assert.Equal( CloseResolution.Unrelated, await close.CompleteAsync( oldCancel, CancellationToken.None ) );
+		Assert.Same( second, manager.Find( second.Key ) );
+		WidgetDialogCompletedAction currentCancel = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( CloseResolution.Kept, await close.CompleteAsync( currentCancel, CancellationToken.None ) );
+		Assert.True( second.Shell.Document.IsModified );
+	}
+
 	[Fact]
 	public async Task SaveConflictRetainsDirtyTabAndExternalFile() {
 		string directory = Directory.CreateTempSubdirectory( "dedit-close-" ).FullName;
