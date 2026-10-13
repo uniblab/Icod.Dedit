@@ -82,6 +82,17 @@ public sealed class EditorShellTests {
 		Assert.Equal( "one\ntwo", first.Document.Read( 0, checked( (int)first.Document.Length ) ) );
 	}
 
+	[Theory]
+	[InlineData( "first\r\nsecond", "first\r\nsecond\r\n" )]
+	[InlineData( "first\rsecond", "first\rsecond\r" )]
+	public void InitialTextUsesItsFirstTerminatorForFutureEnter( string initial, string expected ) {
+		using WidgetHost host = new( new CursesScreen( 32, 8 ), WidgetTheme.Default );
+		using EditorShell shell = new( host, initial );
+		shell.Editor.View.SetSelection( shell.Document.Length, shell.Document.Length );
+		shell.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.Zero );
+		Assert.Equal( expected, shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+	}
+
 	[Fact]
 	public void UnicodeMovementAndMixedNewlinesPreserveStoredText() {
 		using WidgetHost host = new( new CursesScreen( 18, 7 ), WidgetTheme.Default );
