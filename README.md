@@ -133,7 +133,7 @@ Run `build.cmd` on Windows or `./build.sh` on Unix-like systems with a .NET 10 S
 The `Icod.Dedit` NuGet artifact contains one `dedit` .NET tool command with .NET 8, 9 and 10 payloads. The project remains a single EXE. Before a public release, an exact locally built package can be installed and checked with:
 
 ```sh
-dotnet tool install Icod.Dedit --tool-path ./artifacts/tool --add-source ./artifacts --version 0.1.0
+dotnet tool install Icod.Dedit --tool-path ./artifacts/tool --add-source ./artifacts --version 1.0.0
 ./artifacts/tool/dedit --version
 ```
 
