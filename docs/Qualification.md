@@ -4,10 +4,11 @@ This record contains historical checkpoints and current development evidence.
 Earlier sections describe their named revisions; they do not qualify the
 current head or certify a 1.0 release.
 
-## Current development head — 2026-10-13
+## Current development head — 2026-10-14
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
+| [Dedit `cfdf78a` / 38585208213](https://github.com/uniblab/Icod.Dedit/actions/runs/38585208213) | Widgets 1.5.0 linewise clipboard integration; Staging restore/build/test/pack/local tool lifecycle on Linux, Windows and macOS | All jobs passed. Linux logged 195 tests per .NET 8/9/10 target, zero build warnings/errors, exact 0.1.0 package validation, and local tool install, launch, same-version update and removal. |
 | [Dedit `59f38f8` / 38486418817](https://github.com/uniblab/Icod.Dedit/actions/runs/38486418817) | Real hard-link filesystem test plus Staging restore/build/test/pack/local tool installation on Linux, Windows and macOS | All jobs passed. Linux logged 192 tests per .NET 8/9/10 target and zero build warnings/errors. Two hard-link names open separate tabs; saving one replaces only its directory entry and leaves the other name's original bytes. |
 | [Dedit `a68de78` / 38480327720](https://github.com/uniblab/Icod.Dedit/actions/runs/38480327720) | Staging restore/build/test/pack/local tool installation on Linux, Windows and macOS, using the released Icod.Widgets 1.4.0 package | All jobs passed. Linux logged 191 tests per .NET 8/9/10 target, zero failures and zero build warnings/errors. |
 | [Widgets 1.4.0](https://github.com/uniblab/Icod.Widgets/pull/9) | Per-editor newline and indentation API | Merged to main and available to the Dedit CI NuGet restore. |
@@ -19,9 +20,10 @@ package checks do not replace a current-head live-terminal exercise.
 
 ### Remaining release gates
 
-- The linewise clipboard contract is implemented and validated in
-  [Widgets PR #10](https://github.com/uniblab/Icod.Widgets/pull/10), pending
-  owner merge/publication of 1.5.0 before Dedit can pin and integrate it.
+- Widgets 1.5.0 is merged and restored from NuGet in the current Dedit
+  matrix. No-selection Copy/Cut and local linewise Paste are integrated;
+  changed terminal clipboard text pastes as plain text. Live terminal
+  clipboard interoperability still needs a current-head exercise.
 - The accepted hard-link policy is exercised on all three CI filesystems.
   The final cross-process replacement race remains: fingerprint/target
   rechecks narrow the window but are not a portable atomic compare-and-swap.
