@@ -28,6 +28,7 @@ internal sealed class DeditClipboard {
 	private static readonly UTF8Encoding StrictUtf8 = new( false, true );
 	private const int MaximumBytes = 65_536;
 	private readonly WidgetHost host;
+	private bool isLinewise;
 	private readonly Func<string, CancellationToken, ValueTask>? write;
 	private readonly Func<TimeSpan, CancellationToken, ValueTask<byte[]>>? read;
 	private static readonly TimeSpan TerminalTimeout = TimeSpan.FromMilliseconds( 250 );
@@ -43,6 +44,7 @@ internal sealed class DeditClipboard {
 		ArgumentNullException.ThrowIfNull( text );
 		if ( StrictUtf8.GetByteCount( text ) > MaximumBytes ) throw new ArgumentOutOfRangeException( nameof( text ) );
 		this.Text = text;
+		this.isLinewise = false;
 	}
 
 	internal bool Complete( WidgetClipboardRequest request ) {
@@ -51,10 +53,11 @@ internal sealed class DeditClipboard {
 			if ( request.Text is null || StrictUtf8.GetByteCount( request.Text ) > MaximumBytes ) return this.Apply( request, WidgetClipboardStatus.TooLarge );
 			if ( !this.Apply( request, WidgetClipboardStatus.Success ) ) return false;
 			this.Text = request.Text;
+			this.isLinewise = request.IsLinewise;
 			return true;
 		}
 		return this.Text is null ? this.Apply( request, WidgetClipboardStatus.Unsupported ) :
-			this.Apply( request, WidgetClipboardStatus.Success, this.Text );
+			this.Apply( request, WidgetClipboardStatus.Success, this.Text, this.isLinewise );
 	}
 
 
@@ -75,8 +78,9 @@ internal sealed class DeditClipboard {
 				byte[] bytes = await this.read( TerminalTimeout, timeout.Token );
 				if ( bytes.Length <= MaximumBytes ) {
 					string value = StrictUtf8.GetString( bytes );
-					bool applied = this.Apply( request, WidgetClipboardStatus.Success, value );
-					if ( applied ) this.Text = value;
+					bool linewise = this.isLinewise && string.Equals( value, this.Text, StringComparison.Ordinal );
+					bool applied = this.Apply( request, WidgetClipboardStatus.Success, value, linewise );
+					if ( applied ) { this.Text = value; this.isLinewise = linewise; }
 					return applied;
 				}
 			} catch ( Exception exception ) when ( IsUnavailable( exception ) ) { }
@@ -88,8 +92,8 @@ internal sealed class DeditClipboard {
 		or InvalidOperationException or FormatException or DecoderFallbackException or IOException
 		or OperationCanceledException;
 
-	private bool Apply( WidgetClipboardRequest request, WidgetClipboardStatus status, string? text = null ) {
-		bool applied = this.host.ApplyClipboardResult( new WidgetClipboardResult( request.RequestId, status, text ) );
+	private bool Apply( WidgetClipboardRequest request, WidgetClipboardStatus status, string? text = null, bool linewise = false ) {
+		bool applied = this.host.ApplyClipboardResult( new WidgetClipboardResult( request.RequestId, status, text ) { IsLinewise = linewise } );
 		_ = this.host.DrainActions();
 		return applied && status == WidgetClipboardStatus.Success;
 	}
