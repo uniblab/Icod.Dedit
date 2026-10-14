@@ -66,7 +66,7 @@ public sealed class DocumentManagerTests {
 		Assert.Equal( "B", b.Shell.Document.Read( 0, 1 ) );
 	}
 
-	[Theory]
+	[SkippableTheory]
 	[InlineData( false )]
 	[InlineData( true )]
 	public async Task DirectorySymlinkAndTargetShareOneTabAndBlockSaveAsCollision( bool relative ) {
@@ -74,7 +74,7 @@ public sealed class DocumentManagerTests {
 		try {
 			string target = Directory.CreateDirectory( Path.Combine( directory, "target" ) ).FullName;
 			string alias = Path.Combine( directory, "alias" );
-			Directory.CreateSymbolicLink( alias, relative ? "target" : target );
+			SymlinkTestSupport.CreateDirectory( alias, relative ? "target" : target );
 			string path = Path.Combine( target, "file.txt" );
 			await File.WriteAllTextAsync( path, "original" );
 			DocumentFileService files = new( directory );
@@ -84,7 +84,7 @@ public sealed class DocumentManagerTests {
 			string aliasPath = Path.Combine( alias, "file.txt" );
 			Assert.Same( owner, manager.Open( await files.OpenAsync( aliasPath, CancellationToken.None ) ) );
 			string fileAlias = Path.Combine( directory, "file-alias.txt" );
-			File.CreateSymbolicLink( fileAlias, aliasPath );
+			SymlinkTestSupport.CreateFile( fileAlias, aliasPath );
 			Assert.Same( owner, manager.Open( await files.OpenAsync( fileAlias, CancellationToken.None ) ) );
 			Assert.Single( manager.Tabs );
 			DocumentEntry draft = manager.OpenUntitled();
@@ -136,14 +136,14 @@ public sealed class DocumentManagerTests {
 		} finally { Directory.Delete( directory, true ); }
 	}
 
-	[Fact]
+	[SkippableFact]
 	public async Task SymlinkAndTargetShareOneTabAndSavingThroughTheLinkPreservesIt() {
 		string directory = Directory.CreateTempSubdirectory( "dedit-symlink-" ).FullName;
 		try {
 			string target = Path.Combine( directory, "target.txt" );
 			string link = Path.Combine( directory, "alias.txt" );
 			await File.WriteAllTextAsync( target, "initial" );
-			File.CreateSymbolicLink( link, target );
+			SymlinkTestSupport.CreateFile( link, target );
 			DocumentFileService files = new( directory );
 			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
 			using DocumentManager manager = new( host );
