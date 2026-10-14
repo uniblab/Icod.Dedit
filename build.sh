@@ -15,6 +15,7 @@ if [ "$section" = all ] || [ "$section" = build ]; then dotnet build Icod.Dedit.
 if [ "$section" = all ] || [ "$section" = test ]; then dotnet test Icod.Dedit.sln -c Debug --no-build --no-restore; fi
 if [ "$section" = all ] || [ "$section" = pack ]; then
     mkdir -p artifacts
+    rm -f artifacts/*.nupkg artifacts/*.snupkg
     dotnet pack Icod.Dedit.sln -c Debug --no-build --no-restore -o artifacts
 fi
 if [ "$section" = all ] || [ "$section" = validate ]; then
