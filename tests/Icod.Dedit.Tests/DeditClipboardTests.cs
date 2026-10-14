@@ -152,6 +152,51 @@ public sealed class DeditClipboardTests {
 		Assert.Equal( "kept", shell.Document.Read( 0, 4 ) );
 	}
 
+	[Fact]
+	public void NoSelectionCopyAndLocalPasteRetainExactLineEndingAndUndo() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using EditorShell shell = new( host ); DeditClipboard clipboard = new( host );
+		shell.Process( WidgetInput.Paste( "one\r\ntwo" ), TimeSpan.Zero );
+		shell.Editor.View.SetSelection( 1, 1 );
+		WidgetClipboardRequestedAction copy = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+			shell.Process( Ctrl( 'c' ), TimeSpan.FromMilliseconds( 1 ) ) ) );
+		Assert.True( copy.Request.IsLinewise );
+		Assert.Equal( "one\r\n", copy.Request.Text );
+		Assert.True( clipboard.Complete( copy.Request ) );
+		shell.Editor.View.SetSelection( 6, 6 );
+		WidgetClipboardRequestedAction paste = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+			shell.Process( Ctrl( 'v' ), TimeSpan.FromMilliseconds( 2 ) ) ) );
+		Assert.True( clipboard.Complete( paste.Request ) );
+		Assert.Equal( "one\r\none\r\ntwo", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+		shell.Process( Ctrl( 'z' ), TimeSpan.FromMilliseconds( 3 ) );
+		Assert.Equal( "one\r\ntwo", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+	}
+
+	[Fact]
+	public async Task MatchingTerminalReadRetainsLinewiseButDifferentTextIsPlain() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using EditorShell shell = new( host );
+		string terminalText = "one\n";
+		DeditClipboard clipboard = new( host, read: ( _, _ ) => ValueTask.FromResult( Encoding.UTF8.GetBytes( terminalText ) ) );
+		shell.Process( WidgetInput.Paste( "one\ntwo" ), TimeSpan.Zero );
+		shell.Editor.View.SetSelection( 0, 0 );
+		WidgetClipboardRequestedAction copy = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+			shell.Process( Ctrl( 'c' ), TimeSpan.FromMilliseconds( 1 ) ) ) );
+		Assert.True( await clipboard.CompleteAsync( copy.Request ) );
+		shell.Editor.View.SetSelection( 5, 5 );
+		WidgetClipboardRequestedAction linewisePaste = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+			shell.Process( Ctrl( 'v' ), TimeSpan.FromMilliseconds( 2 ) ) ) );
+		Assert.True( await clipboard.CompleteAsync( linewisePaste.Request ) );
+		Assert.Equal( "one\none\ntwo", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+		shell.Process( Ctrl( 'z' ), TimeSpan.FromMilliseconds( 3 ) );
+		terminalText = "external";
+		shell.Editor.View.SetSelection( 5, 5 );
+		WidgetClipboardRequestedAction plainPaste = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+			shell.Process( Ctrl( 'v' ), TimeSpan.FromMilliseconds( 4 ) ) ) );
+		Assert.True( await clipboard.CompleteAsync( plainPaste.Request ) );
+		Assert.Equal( "one\ntexternalwo", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+	}
+
 	private static WidgetInput Ctrl( char key ) => WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( key ) );
 	private static WidgetInput Alt( char key ) => WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( key ) );
 }
