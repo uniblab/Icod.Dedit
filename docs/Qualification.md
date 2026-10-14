@@ -34,8 +34,14 @@ package checks do not replace a current-head live-terminal exercise.
   On Windows at `eb69a72`, the owner's `build.cmd` completed clean, restore and build
   with zero warnings/errors, then stopped on five symbolic-link tests per target
   because that process lacked Windows link-creation privilege (error 1314).
-  The tests now report targeted skips for that host limitation; the full
-  post-fix `build.cmd` and live-terminal exercise still need a rerun.
+  At `d65c1d4`, the owner's rerun completed Clean, Restore and Build with
+  zero warnings/errors; Test reported 190 passed, five skipped and zero failed
+  on each of .NET 8/9/10. Pack produced `Icod.Dedit.1.0.0.nupkg`, but Validate
+  stopped because the same local `artifacts` directory retained an older
+  `Icod.Dedit.0.1.0.nupkg`. Local pack now clears prior package outputs before
+  validating the exact candidate. The owner still needs to rerun the full
+  script through install/update/removal and exercise the live terminal.
+  The owner deferred WSL because of checkout line endings.
 - The 1.0.0 Staging package now checks source-corresponding README,
   CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.5.0 runtime
   dependency, three tool payloads, install/launch, same-version update and
