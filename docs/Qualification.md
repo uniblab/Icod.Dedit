@@ -8,6 +8,7 @@ current head or certify a 1.0 release.
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
+| [Dedit `7694cb1` / 38589379098](https://github.com/uniblab/Icod.Dedit/actions/runs/38589379098) | Test-only handling of Windows symbolic-link privilege denial; Staging restore/build/test/pack and local tool lifecycle on Linux, Windows and macOS | All jobs passed. Linux ran 195 tests per .NET 8/9/10 target with zero skips and zero build warnings/errors. Windows CI retained real symbolic-link coverage. |
 | [Dedit `c7cd528` / 38586803805](https://github.com/uniblab/Icod.Dedit/actions/runs/38586803805) | 1.0.0 candidate using Widgets 1.5.0; Staging restore/build/test/pack, package metadata and local tool lifecycle on Linux, Windows and macOS | All jobs passed. Linux logged 195 tests per .NET 8/9/10 target, zero build warnings/errors, exact package license/runtime dependency/content checks, and install, launch, same-version update and removal. |
 | [Dedit `cfdf78a` / 38585208213](https://github.com/uniblab/Icod.Dedit/actions/runs/38585208213) | Widgets 1.5.0 linewise clipboard integration; Staging restore/build/test/pack/local tool lifecycle on Linux, Windows and macOS | All jobs passed. Linux logged 195 tests per .NET 8/9/10 target, zero build warnings/errors, exact 0.1.0 package validation, and local tool install, launch, same-version update and removal. |
 | [Dedit `59f38f8` / 38486418817](https://github.com/uniblab/Icod.Dedit/actions/runs/38486418817) | Real hard-link filesystem test plus Staging restore/build/test/pack/local tool installation on Linux, Windows and macOS | All jobs passed. Linux logged 192 tests per .NET 8/9/10 target and zero build warnings/errors. Two hard-link names open separate tabs; saving one replaces only its directory entry and leaves the other name's original bytes. |
@@ -30,7 +31,11 @@ package checks do not replace a current-head live-terminal exercise.
   rechecks narrow the window but are not a portable atomic compare-and-swap.
 - Run a keyboard-only current-head terminal exercise of open/edit/select/
   copy/find/replace/tabs/format/save/conflict/cancel/quit and restoration.
-  Hardware terminals and Windows `build.cmd` remain unverified here.
+  On Windows at `eb69a72`, the owner's `build.cmd` completed clean, restore and build
+  with zero warnings/errors, then stopped on five symbolic-link tests per target
+  because that process lacked Windows link-creation privilege (error 1314).
+  The tests now report targeted skips for that host limitation; the full
+  post-fix `build.cmd` and live-terminal exercise still need a rerun.
 - The 1.0.0 Staging package now checks source-corresponding README,
   CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.5.0 runtime
   dependency, three tool payloads, install/launch, same-version update and
