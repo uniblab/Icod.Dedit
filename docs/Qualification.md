@@ -8,6 +8,7 @@ current head or certify a 1.0 release.
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
+| [Dedit `c7cd528` / 38586803805](https://github.com/uniblab/Icod.Dedit/actions/runs/38586803805) | 1.0.0 candidate using Widgets 1.5.0; Staging restore/build/test/pack, package metadata and local tool lifecycle on Linux, Windows and macOS | All jobs passed. Linux logged 195 tests per .NET 8/9/10 target, zero build warnings/errors, exact package license/runtime dependency/content checks, and install, launch, same-version update and removal. |
 | [Dedit `cfdf78a` / 38585208213](https://github.com/uniblab/Icod.Dedit/actions/runs/38585208213) | Widgets 1.5.0 linewise clipboard integration; Staging restore/build/test/pack/local tool lifecycle on Linux, Windows and macOS | All jobs passed. Linux logged 195 tests per .NET 8/9/10 target, zero build warnings/errors, exact 0.1.0 package validation, and local tool install, launch, same-version update and removal. |
 | [Dedit `59f38f8` / 38486418817](https://github.com/uniblab/Icod.Dedit/actions/runs/38486418817) | Real hard-link filesystem test plus Staging restore/build/test/pack/local tool installation on Linux, Windows and macOS | All jobs passed. Linux logged 192 tests per .NET 8/9/10 target and zero build warnings/errors. Two hard-link names open separate tabs; saving one replaces only its directory entry and leaves the other name's original bytes. |
 | [Dedit `a68de78` / 38480327720](https://github.com/uniblab/Icod.Dedit/actions/runs/38480327720) | Staging restore/build/test/pack/local tool installation on Linux, Windows and macOS, using the released Icod.Widgets 1.4.0 package | All jobs passed. Linux logged 191 tests per .NET 8/9/10 target, zero failures and zero build warnings/errors. |
@@ -30,9 +31,40 @@ package checks do not replace a current-head live-terminal exercise.
 - Run a keyboard-only current-head terminal exercise of open/edit/select/
   copy/find/replace/tabs/format/save/conflict/cancel/quit and restoration.
   Hardware terminals and Windows `build.cmd` remain unverified here.
-- Finish package contents/source/license/version review, clean installation,
-  cross-version upgrade/removal and exact candidate matrix before a 1.0.0
-  tag. No Dedit tag or publication has occurred.
+- The 1.0.0 Staging package now checks source-corresponding README,
+  CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.5.0 runtime
+  dependency, three tool payloads, install/launch, same-version update and
+  removal. This is the first public Dedit version, so there is no published
+  older version for a cross-version upgrade test. Release-config six-runner
+  validation and the tagged workflow remain unrun before owner merge/tag.
+  No Dedit tag or publication has occurred.
+
+### Owner terminal exercise on the 1.0.0 candidate
+
+Use the current `docs/dedit-master-plan` PR head in a disposable working
+directory. Record the exact commit, OS and terminal for each exercise.
+
+1. On Windows in a VS Developer Command Prompt, run `build.cmd`, then
+   `dotnet run --project Icod.Dedit.csproj -c Release -f net10.0 -- --version`.
+   Expect `dedit 1.0.0`. Repeat `./build.sh` in WSL if available.
+2. Launch `dotnet run --project Icod.Dedit.csproj -c Release -f net10.0`
+   in an interactive terminal. Type two lines, use Ctrl+C with no selection,
+   move to the next line and Ctrl+V, then Ctrl+Z. Cut a line without a
+   selection and undo it. Also select a range and verify ordinary replacement.
+3. Open two disposable files/tabs. Use F6 and the tab strip, Find/Replace,
+   Go to Line:Column, line-ending conversion and indentation controls.
+   Save and reopen to inspect exact text and line endings.
+4. Save a disposable file, change it from a second process, then activate its
+   tab again. Verify Reload/Keep is explicit, Keep preserves the buffer,
+   an original-path save refuses the conflict, and Save As to a different
+   name succeeds. Cancel a dirty Close/Exit decision; then complete Exit.
+5. After exit or Ctrl+Q, type a normal command in the terminal. Confirm echo,
+   cursor, alternate-screen state and input modes have been restored. Report
+   any unavailable or failed environment rather than treating headless CI
+   as a live terminal pass.
+
+Do not tag or publish until the owner reviews this record and the final
+Release-config distribution matrix after merge.
 
 ## D1002 executable foundation
 
