@@ -4,7 +4,7 @@ All notable user-visible changes in this development branch are recorded here.
 The entries under Unreleased describe implemented behavior. They are not a
 1.0.0 release announcement.
 
-## Unreleased
+## Unreleased — 1.0.0 candidate
 
 ### Application and editing
 
