@@ -29,14 +29,14 @@ using Icod.Widgets;
 using Xunit;
 
 public sealed class DocumentFileServiceTests {
-	[Fact]
+	[SkippableFact]
 	public async Task RetargetedParentDuringNewSaveLeavesBothDirectoriesWithoutTemporaryFiles() {
 		string directory = Directory.CreateTempSubdirectory( "dedit-new-retarget-" ).FullName;
 		try {
 			string first = Directory.CreateDirectory( Path.Combine( directory, "first" ) ).FullName;
 			string second = Directory.CreateDirectory( Path.Combine( directory, "second" ) ).FullName;
 			string alias = Path.Combine( directory, "alias" );
-			Directory.CreateSymbolicLink( alias, first );
+			SymlinkTestSupport.CreateDirectory( alias, first );
 			DocumentFileService files = new( directory, beforeSaveStage: stage => {
 				if ( stage != DocumentSaveStage.BeforeReplacement ) return;
 				Directory.Delete( alias );
@@ -63,14 +63,14 @@ public sealed class DocumentFileServiceTests {
 		} finally { Directory.Delete( directory, true ); }
 	}
 
-	[Fact]
+	[SkippableFact]
 	public async Task RetargetedParentSymlinkWithIdenticalBytesIsNotOverwritten() {
 		string directory = Directory.CreateTempSubdirectory( "dedit-parent-retarget-" ).FullName;
 		try {
 			string first = Directory.CreateDirectory( Path.Combine( directory, "first" ) ).FullName;
 			string second = Directory.CreateDirectory( Path.Combine( directory, "second" ) ).FullName;
 			string alias = Path.Combine( directory, "alias" );
-			Directory.CreateSymbolicLink( alias, first );
+			SymlinkTestSupport.CreateDirectory( alias, first );
 			await File.WriteAllTextAsync( Path.Combine( first, "file.txt" ), "original" );
 			await File.WriteAllTextAsync( Path.Combine( second, "file.txt" ), "original" );
 			DocumentFileService files = new( directory );
