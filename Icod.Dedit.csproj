@@ -29,8 +29,8 @@
 		<EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 		<AssemblyName>dedit</AssemblyName>
 		<RootNamespace>Icod.Dedit</RootNamespace>
-		<Version>0.1.0</Version>
-		<PackageVersion>0.1.0</PackageVersion>
+		<Version>1.0.0</Version>
+		<PackageVersion>1.0.0</PackageVersion>
 		<Configurations>Debug;Staging;Release</Configurations>
 		<PackAsTool>true</PackAsTool>
 		<ToolCommandName>dedit</ToolCommandName>
