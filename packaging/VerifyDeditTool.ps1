@@ -29,10 +29,34 @@ if (1 -ne $packages.Count -or $packages[0].Name -ne "Icod.Dedit.$version.nupkg")
     throw "Expected exactly one package named 'Icod.Dedit.$version.nupkg' in '$ArtifactDirectory'."
 }
 $package = $packages[0]
+$packageMetadata = Get-PackageMetadata -PackagePath $package.FullName
+if ($packageMetadata.Id -ne 'Icod.Dedit' -or $packageMetadata.Version -ne $version) {
+    throw "Tool package identity '$($packageMetadata.Id) $($packageMetadata.Version)' does not match Icod.Dedit $version."
+}
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [System.IO.Compression.ZipFile]::OpenRead($package.FullName)
 try {
     $entries = @($archive.Entries | ForEach-Object { $_.FullName.Replace('\', '/') })
+    $nuspecEntry = @($archive.Entries | Where-Object { $_.FullName.EndsWith('.nuspec', [System.StringComparison]::OrdinalIgnoreCase) })[0]
+    $reader = [System.IO.StreamReader]::new($nuspecEntry.Open())
+    try { [xml]$nuspec = $reader.ReadToEnd() } finally { $reader.Dispose() }
+    $metadata = $nuspec.SelectSingleNode("/*[local-name()='package']/*[local-name()='metadata']")
+    $license = $metadata.SelectSingleNode("*[local-name()='license']")
+    if ($null -eq $license -or $null -eq $license.Attributes['type'] -or
+        $license.Attributes['type'].Value -ne 'expression' -or $license.InnerText.Trim() -ne 'GPL-3.0-or-later') {
+        throw "Tool package must declare GPL-3.0-or-later as its license expression."
+    }
+    $groups = @($metadata.SelectNodes("*[local-name()='dependencies']/*[local-name()='group']"))
+    if (3 -ne $groups.Count) {
+        throw "Tool package must declare dependency groups for net8.0, net9.0 and net10.0."
+    }
+    foreach ($group in $groups) {
+        $dependencies = @($group.SelectNodes("*[local-name()='dependency']"))
+        if (1 -ne $dependencies.Count -or $dependencies[0].Attributes['id'].Value -ne 'Icod.Widgets' -or
+            $dependencies[0].Attributes['version'].Value -notin @('1.5.0', '[1.5.0, )')) {
+            throw "Each tool framework must declare only Icod.Widgets 1.5.0 as a direct dependency."
+        }
+    }
     foreach ($supportFile in @('README.md', 'CHANGELOG.md', 'LICENSE')) {
         $entry = $archive.GetEntry($supportFile)
         if ($null -eq $entry) { throw "Tool package '$($package.Name)' is missing '$supportFile'." }
