@@ -76,6 +76,10 @@ jobs:
               throw "Tag version '$version' does not match Icod.Dedit package version '$projectVersion'."
           }
 
+      - name: Require curated release notes
+        shell: pwsh
+        run: ./packaging/Assert-ReleaseNotes.ps1 -Configuration '${{ env.CONFIGURATION }}'
+
   package:
     needs: metadata
     runs-on: ubuntu-latest
@@ -98,6 +102,13 @@ jobs:
           -c ${{ env.CONFIGURATION }}
           --no-restore
           -p:ContinuousIntegrationBuild=true
+      - name: Test Release solution
+        run: >-
+          dotnet test '${{ needs.metadata.outputs.solution_path }}'
+          -c ${{ env.CONFIGURATION }}
+          --no-build
+          --no-restore
+          --logger trx
       - name: Pack release candidates
         run: >-
           dotnet pack '${{ needs.metadata.outputs.solution_path }}'
@@ -275,6 +286,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - name: Download NuGet packages
         if: needs.package.outputs.has_packages == 'true'
         uses: actions/download-artifact@v4
@@ -320,6 +332,7 @@ jobs:
           $tag = $env:GITHUB_REF_NAME
           $version = '${{ needs.metadata.outputs.version }}'
           $assetDirectory = [System.IO.Path]::GetFullPath('artifacts/release-assets')
+          $notesPath = Join-Path $PWD "docs/releases/$version.md"
           $assets = @(
               Get-ChildItem -LiteralPath $assetDirectory -File |
                   Sort-Object Name |
@@ -330,7 +343,7 @@ jobs:
               'release', 'create', $tag,
               '--verify-tag',
               '--title', "${{ github.event.repository.name }} $version",
-              '--generate-notes'
+              '--notes-file', $notesPath
           )
           if ('true' -eq '${{ needs.metadata.outputs.prerelease }}') {
               $arguments += '--prerelease'
