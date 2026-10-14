@@ -42,6 +42,9 @@ function Invoke-Pack {
     Write-Host ''
     Write-Host "=== Pack ($Configuration) ==="
     New-Item -ItemType Directory -Path $artifactDirectory -Force | Out-Null
+    foreach ($pattern in @('*.nupkg', '*.snupkg')) {
+        Get-ChildItem -LiteralPath $artifactDirectory -Filter $pattern -File | Remove-Item -Force
+    }
     Invoke-DotNet -Arguments @(
         'pack', $solutionPath,
         '-c', $Configuration,
