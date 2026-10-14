@@ -59,3 +59,11 @@ jobs:
       - name: Build, test, pack and install Staging tool
         shell: pwsh
         run: ./packaging/VerifyDistribution.ps1 -Configuration '${{ env.CONFIGURATION }}'
+      - name: Verify local pack clears a stale version
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          Set-Content -Path artifacts/Icod.Dedit.0.1.0.nupkg -Value stale
+          ./packaging/Invoke-Build.ps1 -Section pack -Configuration '${{ env.CONFIGURATION }}'
+          ./packaging/Invoke-Build.ps1 -Section validate -Configuration '${{ env.CONFIGURATION }}'
