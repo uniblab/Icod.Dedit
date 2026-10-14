@@ -40,9 +40,12 @@ package checks do not replace a current-head live-terminal exercise.
   on each of .NET 8/9/10. Pack produced `Icod.Dedit.1.0.0.nupkg`, but Validate
   stopped because the same local `artifacts` directory retained an older
   `Icod.Dedit.0.1.0.nupkg`. Local pack now clears prior package outputs before
-  validating the exact candidate. The owner still needs to rerun the full
-  script through install/update/removal and exercise the live terminal.
-  The owner deferred WSL because of checkout line endings.
+  validating the exact candidate. At `e06190d`, the owner's full Windows
+  `build.cmd` reached Validate, verified exactly one 1.0.0 package, and
+  completed install, launch, same-version update and removal from that
+  package. A separate Release net10.0 `--version` returned `dedit 1.0.0`.
+  The live-terminal exercise remains outstanding. The owner deferred WSL
+  because of checkout line endings.
 - The 1.0.0 Staging package now checks source-corresponding README,
   CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.5.0 runtime
   dependency, three tool payloads, install/launch, same-version update and
