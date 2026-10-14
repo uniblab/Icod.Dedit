@@ -46,17 +46,6 @@ try {
         $license.Attributes['type'].Value -ne 'expression' -or $license.InnerText.Trim() -ne 'GPL-3.0-or-later') {
         throw "Tool package must declare GPL-3.0-or-later as its license expression."
     }
-    $groups = @($metadata.SelectNodes("*[local-name()='dependencies']/*[local-name()='group']"))
-    if (3 -ne $groups.Count) {
-        throw "Tool package must declare dependency groups for net8.0, net9.0 and net10.0."
-    }
-    foreach ($group in $groups) {
-        $dependencies = @($group.SelectNodes("*[local-name()='dependency']"))
-        if (1 -ne $dependencies.Count -or $dependencies[0].Attributes['id'].Value -ne 'Icod.Widgets' -or
-            $dependencies[0].Attributes['version'].Value -notin @('1.5.0', '[1.5.0, )')) {
-            throw "Each tool framework must declare only Icod.Widgets 1.5.0 as a direct dependency."
-        }
-    }
     foreach ($supportFile in @('README.md', 'CHANGELOG.md', 'LICENSE')) {
         $entry = $archive.GetEntry($supportFile)
         if ($null -eq $entry) { throw "Tool package '$($package.Name)' is missing '$supportFile'." }
@@ -69,10 +58,16 @@ try {
     }
     foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
         $root = "tools/$framework/any"
-        foreach ($relativePath in @('DotnetToolSettings.xml', 'dedit.dll', 'dedit.runtimeconfig.json')) {
+        foreach ($relativePath in @('DotnetToolSettings.xml', 'dedit.dll', 'dedit.runtimeconfig.json', 'dedit.deps.json', 'Icod.Widgets.dll')) {
             if ("$root/$relativePath" -notin $entries) {
                 throw "Tool package '$($package.Name)' is missing '$root/$relativePath'."
             }
+        }
+        $dependencyEntry = $archive.GetEntry("$root/dedit.deps.json")
+        $reader = [System.IO.StreamReader]::new($dependencyEntry.Open())
+        try { $dependencyManifest = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
+        if (@($dependencyManifest.libraries.PSObject.Properties.Name) -notcontains 'Icod.Widgets/1.5.0') {
+            throw "Tool payload '$framework' does not reference Icod.Widgets 1.5.0."
         }
         $settingsEntry = $archive.GetEntry("$root/DotnetToolSettings.xml")
         $reader = [System.IO.StreamReader]::new($settingsEntry.Open())
