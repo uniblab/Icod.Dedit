@@ -21,7 +21,10 @@ The entries under Unreleased describe implemented behavior. They are not a
 - Added File → New/Open/Save/Save As/Save All/Close/Close All/Exit and Edit →
   Undo/Redo/Cut/Copy/Paste/Select All. Open accepts multiple files in one
   picker. The 64 KiB process-local clipboard also uses DCurses terminal clipboard I/O
-  on explicit copy/paste with a bounded read and local fallback.
+  on explicit copy/paste with a bounded read and local fallback. With no
+  selection, Copy/Cut transfers the current logical line, retaining its exact
+  terminator; local linewise Paste inserts at the destination line start. A
+  different terminal clipboard value is plain text.
 - Added Find and Replace dialogs with literal or .NET regex search, invariant
   case matching, whole-word matching, forward/backward navigation and wrap.
   F3 and Shift+F3 repeat within the current tab. Replace All makes one
@@ -67,7 +70,8 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Build and validation
 
-- Updated the application dependency from Icod.Widgets 1.3.1 to 1.4.0.
+- Updated the application dependency to Icod.Widgets 1.5.0 for linewise
+  clipboard requests and results.
 - Added local cmd/sh/PowerShell build and package scripts, pull-request
   validation across Linux, Windows and macOS, and guarded tag-triggered
   package/archive release workflows. No release has been published.
