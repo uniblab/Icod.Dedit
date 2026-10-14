@@ -48,7 +48,7 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<Compile Include="src/**/*.cs" />
-		<PackageReference Include="Icod.Widgets" Version="1.4.0" />
+		<PackageReference Include="Icod.Widgets" Version="1.5.0" />
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
 			<_Parameter1>Icod.Dedit.Tests</_Parameter1>
 		</AssemblyAttribute>
