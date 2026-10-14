@@ -40,7 +40,7 @@ internal static class Program {
 			return 0;
 		}
 		if ( options.Mode == DeditOptionMode.Version ) {
-			await output.WriteLineAsync( $"dedit {typeof( Program ).Assembly.GetName().Version?.ToString( 3 ) ?? "0.1.0"}" );
+			await output.WriteLineAsync( $"dedit {typeof( Program ).Assembly.GetName().Version?.ToString( 3 ) ?? "1.0.0"}" );
 			return 0;
 		}
 		try {
