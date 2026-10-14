@@ -27,7 +27,7 @@ using Xunit;
 public sealed class DeditProcessTests {
 	[Theory]
 	[InlineData("--help", 0, "Usage: dedit")]
-	[InlineData("--version", 0, "dedit 0.1.0")]
+	[InlineData("--version", 0, "dedit 1.0.0")]
 	[InlineData("--unknown", 2, "Unknown option: --unknown")]
 	public async Task NoninteractiveArgumentsExitWithoutTerminal( string argument, int expectedExit, string expectedText ) {
 		ProcessStartInfo start = new( "dotnet" ) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
