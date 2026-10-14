@@ -197,6 +197,27 @@ public sealed class DeditClipboardTests {
 		Assert.Equal( "one\ntexternalwo", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
 	}
 
+	[Fact]
+	public void NoSelectionCutIsUndoableAndProgrammaticClipboardTextIsPlain() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using EditorShell shell = new( host ); DeditClipboard clipboard = new( host );
+		shell.Process( WidgetInput.Paste( "alpha\nbeta" ), TimeSpan.Zero );
+		shell.Editor.View.SetSelection( 2, 2 );
+		WidgetClipboardRequestedAction cut = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+			shell.Process( Ctrl( 'x' ), TimeSpan.FromMilliseconds( 1 ) ) ) );
+		Assert.True( cut.Request.IsLinewise );
+		Assert.True( clipboard.Complete( cut.Request ) );
+		Assert.Equal( "beta", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+		shell.Process( Ctrl( 'z' ), TimeSpan.FromMilliseconds( 2 ) );
+		Assert.Equal( "alpha\nbeta", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+		clipboard.SetText( "X" );
+		shell.Editor.View.SetSelection( 2, 2 );
+		WidgetClipboardRequestedAction paste = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+			shell.Process( Ctrl( 'v' ), TimeSpan.FromMilliseconds( 3 ) ) ) );
+		Assert.True( clipboard.Complete( paste.Request ) );
+		Assert.Equal( "alXpha\nbeta", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+	}
+
 	private static WidgetInput Ctrl( char key ) => WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( key ) );
 	private static WidgetInput Alt( char key ) => WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( key ) );
 }
