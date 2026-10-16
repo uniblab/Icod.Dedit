@@ -4,10 +4,11 @@ This record contains historical checkpoints and current development evidence.
 Earlier sections describe their named revisions; they do not qualify the
 current head or certify a 1.0 release.
 
-## Current development head — 2026-10-15
+## Current development head — 2026-10-16
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
+| [Dedit `68c15ec` / 38981129239](https://github.com/uniblab/Icod.Dedit/actions/runs/38981129239) | Widgets 1.6.2 rebind; Dedit menu click, nested overlay, Unicode border, About-button and button-motion protocol regressions; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 200 tests per .NET 8/9/10 target. The package verifier required Widgets 1.6.2, verified exactly one 1.0.0 package, and installed, launched, same-version updated and removed it. Windows also passed the stale-package cleanup regression. |
 | [Dedit `119c795` / 38841351117](https://github.com/uniblab/Icod.Dedit/actions/runs/38841351117) | Widgets 1.6.1 rebind; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Linux logged 195 tests per .NET 8/9/10 target, and the packaged dependency manifest required Widgets 1.6.1. Each OS installed, launched, same-version updated and removed the exact 1.0.0 tool package. |
 | [Dedit `b9904c9` / 38592772413](https://github.com/uniblab/Icod.Dedit/actions/runs/38592772413) | Staging restore/build/test/pack/local tool lifecycle on Linux, Windows and macOS; Windows local-pack regression seeded an old 0.1.0 package | All jobs passed. The regression repacked 1.0.0, verified exactly one package, and installed, launched, updated and removed the tool. |
 | [Dedit `7694cb1` / 38589379098](https://github.com/uniblab/Icod.Dedit/actions/runs/38589379098) | Test-only handling of Windows symbolic-link privilege denial; Staging restore/build/test/pack and local tool lifecycle on Linux, Windows and macOS | All jobs passed. Linux ran 195 tests per .NET 8/9/10 target with zero skips and zero build warnings/errors. Windows CI retained real symbolic-link coverage. |
@@ -24,12 +25,13 @@ package checks do not replace a current-head live-terminal exercise.
 
 ### Remaining release gates
 
-- Widgets 1.6.1 is merged and restored from NuGet in the current Dedit
+- Widgets 1.6.2 is published and restored from NuGet in the current Dedit
   matrix. No-selection Copy/Cut and local linewise Paste are integrated;
   changed terminal clipboard text pastes as plain text. The dependency also
-  carries the corrected menu/dialog interaction and the DCurses 2.5.1 /
-  Terminal 1.29.1 input chain. Live terminal clipboard interoperability still
-  needs a current-head exercise.
+  carries corrected menu/dialog interaction, nested overlay rendering and the
+  DCurses 2.5.2 / Terminal 1.29.2 input chain. Dedit requests button motion
+  for selection drags without enabling unsolicited hover motion. Live terminal
+  pointer and clipboard interoperability still need a current-head exercise.
 - The accepted hard-link policy is exercised on all three CI filesystems.
   The final cross-process replacement race remains: fingerprint/target
   rechecks narrow the window but are not a portable atomic compare-and-swap.
@@ -50,7 +52,7 @@ package checks do not replace a current-head live-terminal exercise.
   The live-terminal exercise remains outstanding. The owner deferred WSL
   because of checkout line endings.
 - The 1.0.0 Staging package now checks source-corresponding README,
-  CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.6.1 runtime
+  CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.6.2 runtime
   dependency, three tool payloads, install/launch, same-version update and
   removal. This is the first public Dedit version, so there is no published
   older version for a cross-version upgrade test. Release-config six-runner
@@ -66,9 +68,12 @@ directory. Record the exact commit, OS and terminal for each exercise.
    `dotnet run --project Icod.Dedit.csproj -c Release -f net10.0 -- --version`.
    Expect `dedit 1.0.0`. Repeat `./build.sh` in WSL if available.
 2. Launch `dotnet run --project Icod.Dedit.csproj -c Release -f net10.0`
-   in an interactive terminal. Type two lines, use Ctrl+C with no selection,
-   move to the next line and Ctrl+V, then Ctrl+Z. Cut a line without a
-   selection and undo it. Also select a range and verify ordinary replacement.
+   in an interactive terminal. Open File with Alt+F, cycle root menus with the
+   arrow keys, open a nested File submenu and verify its parent remains visible.
+   Click a menu command, open Help → About and click OK. Drag a text selection.
+   Type two lines, use Ctrl+C with no selection, move to the next line and
+   Ctrl+V, then Ctrl+Z. Cut a line without a selection and undo it. Also select
+   a range and verify ordinary replacement.
 3. Open two disposable files/tabs. Use F6 and the tab strip, Find/Replace,
    Go to Line:Column, line-ending conversion and indentation controls.
    Save and reopen to inspect exact text and line endings.
