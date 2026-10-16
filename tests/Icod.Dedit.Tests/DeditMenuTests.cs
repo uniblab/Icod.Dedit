@@ -29,9 +29,53 @@ using Icod.Widgets;
 using Xunit;
 
 public sealed class DeditMenuTests {
+	[Fact]
+	public void TerminalRequestsButtonMotionWithoutUnsolicitedHoverMotion() {
+		IReadOnlyList<CursesInputProtocolOptions> protocols = DeditTerminal.InputProtocolOptions();
+		CursesInputProtocolOptions mouse = Assert.Single( protocols, candidate => candidate.MouseTrackingMode is not null );
+		Assert.Equal( CursesMouseTrackingMode.ButtonMotion, mouse.MouseTrackingMode );
+		Assert.DoesNotContain( protocols, candidate => candidate.MouseTrackingMode == CursesMouseTrackingMode.AnyMotion );
+		Assert.Contains( protocols, candidate => candidate.BracketedPaste );
+		Assert.Contains( protocols, candidate => candidate.KeyboardReportingMode == CursesKeyboardReportingMode.Disambiguated );
+	}
 
+	[Fact]
+	public void PointerInvokesAVisibleDeditMenuCommand() {
+		using WidgetHost host = new( new CursesScreen( 60, 16 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( new( 0, 0, 1, 60 ) );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'h' ) ), TimeSpan.Zero );
+		host.Render();
+		int row = menu.RenderBounds.Row + 1; int column = menu.RenderBounds.Column + 2;
+		Assert.Empty( Pointer( host, CursesMouseAction.Press, row, column ).Actions );
+		WidgetInvokedAction invoked = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			Pointer( host, CursesMouseAction.Release, row, column ).Actions ) );
+		Assert.Equal( DeditMenu.About, invoked.CommandId );
+		Assert.False( menu.IsOpen );
+	}
 
-
+	[Theory]
+	[InlineData( 80, true )]
+	[InlineData( 30, false )]
+	public void DeditSubmenusPreserveParentAndRenderIntactBorders( int columns, bool fitsRight ) {
+		using WidgetHost host = new( new CursesScreen( columns, 18 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( new( 0, 0, 1, columns ) );
+		using EditorShell shell = new( host, "text" ); DeditMenu.UpdateState( menu, shell.Editor );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'f' ) ), TimeSpan.Zero );
+		for ( int index = 0; index < 5; index++ ) host.Process( WidgetInput.Key( WidgetKey.Down ), TimeSpan.Zero );
+		host.Render(); CursesRectangle parent = menu.RenderBounds;
+		host.Process( WidgetInput.Key( WidgetKey.Right ), TimeSpan.Zero ); host.Render();
+		CursesPanel[] panels = Panels( host.Screen ).Where( panel => panel.IsVisible ).ToArray();
+		Assert.Equal( 2, panels.Length ); Assert.Equal( parent, panels[ 0 ].Bounds );
+		Assert.Equal( fitsRight ? parent.Column + parent.Columns : parent.Column, panels[ 1 ].Bounds.Column );
+		Assert.Contains( "Encoding", Row( panels[ 0 ].ContentWindow, 6 ) );
+		Assert.Contains( "UTF-8", Row( panels[ 1 ].ContentWindow, 1 ) );
+		foreach ( CursesPanel panel in panels ) {
+			Assert.Equal( "+", panel.ContentWindow.GetCell( 0, 0 ).Content );
+			Assert.Equal( "+", panel.ContentWindow.GetCell( 0, panel.ContentWindow.Columns - 1 ).Content );
+			Assert.Equal( "+", panel.ContentWindow.GetCell( panel.ContentWindow.Rows - 1, 0 ).Content );
+			Assert.Equal( "+", panel.ContentWindow.GetCell( panel.ContentWindow.Rows - 1, panel.ContentWindow.Columns - 1 ).Content );
+		}
+	}
 
 	[Theory]
 	[InlineData( 'l', DeditMenu.SaveAll )]
@@ -199,10 +243,23 @@ public sealed class DeditMenuTests {
 		Assert.Equal( DeditMenu.About, about.CommandId );
 		WidgetMessageDialog dialog = DeditMenu.CreateAboutDialog(); host.ShowModal( dialog ); host.Render();
 		Assert.Contains( "dedit", dialog.Title, StringComparison.OrdinalIgnoreCase );
+		Assert.Contains( "Copyright (C) 2026 Timothy J. Bruce", dialog.Message );
 		Assert.Contains( "GPL-3.0-or-later", dialog.Message );
 		WidgetDialogCompletedAction completed = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
 			host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.FromMilliseconds( 3 ) ).Actions ) );
 		Assert.Equal( WidgetDialogOutcome.Cancel, completed.Result.Outcome );
+	}
+
+	[Fact]
+	public void AboutOkButtonCompletesOnPointerClick() {
+		using WidgetHost host = new( new CursesScreen( 50, 14 ), WidgetTheme.Default );
+		WidgetMessageDialog dialog = DeditMenu.CreateAboutDialog(); host.ShowModal( dialog );
+		dialog.Arrange( new( 2, 4, 7, 40 ) ); host.Render();
+		int row = dialog.Bounds.BottomExclusive - 2; int column = dialog.Bounds.Column + 1;
+		Assert.Empty( Pointer( host, CursesMouseAction.Press, row, column ).Actions );
+		WidgetDialogCompletedAction completed = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+			Pointer( host, CursesMouseAction.Release, row, column ).Actions ) );
+		Assert.Equal( WidgetDialogOutcome.Ok, completed.Result.Outcome ); Assert.False( dialog.IsOpen );
 	}
 
 	[Fact]
@@ -353,5 +410,15 @@ public sealed class DeditMenuTests {
 		Assert.Equal( DeditMenu.GoToLine, mnemonic.CommandId );
 		Assert.Equal( mnemonic.CommandId, shortcut.CommandId );
 	}
+
+	private static WidgetDispatchResult Pointer( WidgetHost host, CursesMouseAction action, int row, int column ) =>
+		host.Process( WidgetInput.PointerInput( new( action, CursesMouseButton.Primary, column, row ) ), TimeSpan.Zero );
+
+	private static CursesPanel[] Panels( CursesScreen screen ) => (CursesPanel[])typeof( CursesScreen ).GetMethod(
+		"SnapshotPanelsBottomToTop", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public |
+		System.Reflection.BindingFlags.NonPublic )!.Invoke( screen, null )!;
+
+	private static string Row( CursesWindow window, int row ) => string.Concat(
+		Enumerable.Range( 0, window.Columns ).Select( column => window.GetCell( row, column ).Content ) );
 
 }
