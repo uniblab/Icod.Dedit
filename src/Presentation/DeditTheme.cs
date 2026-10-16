@@ -26,12 +26,12 @@ using Icod.Widgets;
 
 internal static class DeditTheme {
 	internal static WidgetTheme Create( CursesPresentationCapabilities capabilities ) {
-		ArgumentNullException.ThrowIfNull( capabilities );
 		WidgetTheme theme = WidgetPalette.Create( capabilities );
 		if ( !capabilities.SupportsForegroundColor || !capabilities.SupportsBackgroundColor ) return theme;
 		CursesStyle normal = theme.Resolve( WidgetStyleRole.EditorText );
 		CursesStyle selection = theme.Resolve( WidgetStyleRole.TextSelection );
 		CursesStyle accent = theme.Resolve( WidgetStyleRole.Border );
+		if ( normal.Background.IsDefault || accent.Foreground.IsDefault || normal.Background == accent.Foreground ) return theme;
 		selection = new CursesStyle( normal.Background, accent.Foreground,
 			selection.Attributes & ~( CursesTextAttributes.Reverse | CursesTextAttributes.Standout ) );
 		return theme with { Parts = theme.Parts.With( WidgetStyleRole.TextSelection, selection ) };

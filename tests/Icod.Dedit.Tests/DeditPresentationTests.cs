@@ -40,6 +40,24 @@ public sealed class DeditPresentationTests {
 	}
 
 	[Fact]
+	public void MonochromeThemeRetainsAttributeSelectionFallback() {
+		CursesPresentationCapabilities capabilities = Capabilities( 0, false, false, false,
+			CursesTextAttributes.Reverse );
+
+		Assert.Equal( CursesTextAttributes.Reverse,
+			DeditTheme.Create( capabilities ).Resolve( WidgetStyleRole.TextSelection ).Attributes );
+	}
+
+	[Fact]
+	public void LimitedColorThemeRetainsAttributeSelectionFallback() {
+		CursesPresentationCapabilities capabilities = Capabilities( 2, false, true, true,
+			CursesTextAttributes.Reverse );
+
+		Assert.Equal( CursesTextAttributes.Reverse,
+			DeditTheme.Create( capabilities ).Resolve( WidgetStyleRole.TextSelection ).Attributes );
+	}
+
+	[Fact]
 	public async Task CaretCoordinatorShowsPositionAndStyleThenHidesAndReleases() {
 		FakeCaretSession session = new();
 		await using DeditCaretCoordinator coordinator = new( session );

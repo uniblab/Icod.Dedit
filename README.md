@@ -101,7 +101,9 @@ colon, such as `2:5`; columns count Unicode graphemes, including tabs and
 emoji as one position each. Invalid or out-of-range positions stay in the
 form. Help → About opens a captioned OK dialog; Escape cancels it.
 Menus, tabs, picker and dialog actions accept pointer clicks; dragging in the
-editor extends the text selection.
+editor extends the text selection. On color terminals, selected text uses an
+explicit blue background instead of reverse video, the status row shows `SEL`,
+and a bar/block caret distinguishes insert and overwrite mode.
 
 - [Product and architecture design](https://github.com/uniblab/Icod.Dedit/blob/main/docs/DESIGN.md)
 - [Master implementation plan](https://github.com/uniblab/Icod.Dedit/blob/main/docs/superpowers/plans/2026-10-11-dedit-master-plan.md)

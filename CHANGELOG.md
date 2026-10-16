@@ -8,6 +8,14 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Application and editing
 
+- Added a physical terminal caret that follows the focused text control, uses
+  bar/block shapes for insert/overwrite mode, and hides while a menu or dialog
+  owns focus.
+- Selected editor text now uses explicit contrasting colors instead of reverse
+  video on color terminals, with a `SEL` status indicator; monochrome terminals
+  retain the attribute-based fallback.
+- Preserved a menu's pending pointer press across ordinary redraws, so a mouse
+  release still invokes the row that was pressed.
 - Feed idle elapsed-time updates to Widgets for drag autoscroll, repainting
   after a visible update instead of redrawing every idle tick.
 - Added the `dedit` console executable and .NET tool payloads for .NET 8, 9
