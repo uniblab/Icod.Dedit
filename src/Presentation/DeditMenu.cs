@@ -130,7 +130,9 @@ internal static class DeditMenu {
 	] );
 
 	internal static WidgetMessageDialog CreateAboutDialog() => WidgetMessageDialog.Ok(
-		"dedit-about", "About dedit", $"dedit {typeof( DeditMenu ).Assembly.GetName().Version?.ToString( 3 ) ?? "0.1.0"} — GPL-3.0-or-later" );
+		"dedit-about", "About dedit",
+		$"dedit {typeof( DeditMenu ).Assembly.GetName().Version?.ToString( 3 ) ?? "0.1.0"}\n" +
+		"Copyright (C) 2026 Timothy J. Bruce\nGPL-3.0-or-later" );
 
 	internal static WidgetMessageDialog CreateExternalChangeDialog( string id, string caption, bool hasUnsavedChanges ) =>
 		WidgetMessageDialog.YesNo( id, "External file changed",
