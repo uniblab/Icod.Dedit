@@ -70,10 +70,10 @@ public sealed class DeditMenuTests {
 		Assert.Contains( "Encoding", Row( panels[ 0 ].ContentWindow, 6 ) );
 		Assert.Contains( "UTF-8", Row( panels[ 1 ].ContentWindow, 1 ) );
 		foreach ( CursesPanel panel in panels ) {
-			Assert.Equal( "+", panel.ContentWindow.GetCell( 0, 0 ).Content );
-			Assert.Equal( "+", panel.ContentWindow.GetCell( 0, panel.ContentWindow.Columns - 1 ).Content );
-			Assert.Equal( "+", panel.ContentWindow.GetCell( panel.ContentWindow.Rows - 1, 0 ).Content );
-			Assert.Equal( "+", panel.ContentWindow.GetCell( panel.ContentWindow.Rows - 1, panel.ContentWindow.Columns - 1 ).Content );
+			Assert.Equal( "┌", panel.ContentWindow.GetCell( 0, 0 ).Content );
+			Assert.Equal( "┐", panel.ContentWindow.GetCell( 0, panel.ContentWindow.Columns - 1 ).Content );
+			Assert.Equal( "└", panel.ContentWindow.GetCell( panel.ContentWindow.Rows - 1, 0 ).Content );
+			Assert.Equal( "┘", panel.ContentWindow.GetCell( panel.ContentWindow.Rows - 1, panel.ContentWindow.Columns - 1 ).Content );
 		}
 	}
 
