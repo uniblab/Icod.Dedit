@@ -70,8 +70,9 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Build and validation
 
-- Updated the application dependency to Icod.Widgets 1.5.0 for linewise
-  clipboard requests and results.
+- Updated the application dependency to Icod.Widgets 1.6.1. This retains the
+  1.5.0 linewise clipboard integration while incorporating corrected menu and
+  dialog interaction plus the DCurses 2.5.1 / Terminal 1.29.1 input chain.
 - Added local cmd/sh/PowerShell build and package scripts, pull-request
   validation across Linux, Windows and macOS, and guarded tag-triggered
   package/archive release workflows. No release has been published.

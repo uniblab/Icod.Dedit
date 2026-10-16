@@ -23,10 +23,12 @@ package checks do not replace a current-head live-terminal exercise.
 
 ### Remaining release gates
 
-- Widgets 1.5.0 is merged and restored from NuGet in the current Dedit
+- Widgets 1.6.1 is merged and restored from NuGet in the current Dedit
   matrix. No-selection Copy/Cut and local linewise Paste are integrated;
-  changed terminal clipboard text pastes as plain text. Live terminal
-  clipboard interoperability still needs a current-head exercise.
+  changed terminal clipboard text pastes as plain text. The dependency also
+  carries the corrected menu/dialog interaction and the DCurses 2.5.1 /
+  Terminal 1.29.1 input chain. Live terminal clipboard interoperability still
+  needs a current-head exercise.
 - The accepted hard-link policy is exercised on all three CI filesystems.
   The final cross-process replacement race remains: fingerprint/target
   rechecks narrow the window but are not a portable atomic compare-and-swap.
@@ -47,7 +49,7 @@ package checks do not replace a current-head live-terminal exercise.
   The live-terminal exercise remains outstanding. The owner deferred WSL
   because of checkout line endings.
 - The 1.0.0 Staging package now checks source-corresponding README,
-  CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.5.0 runtime
+  CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.6.1 runtime
   dependency, three tool payloads, install/launch, same-version update and
   removal. This is the first public Dedit version, so there is no published
   older version for a cross-version upgrade test. Release-config six-runner
