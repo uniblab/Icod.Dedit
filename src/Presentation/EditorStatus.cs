@@ -41,6 +41,7 @@ internal static class EditorStatus {
 		return $"{DocumentManager.SanitizeDisplay( entry.Caption )} | " +
 			$"Ln {lineIndex + 1}, Col {column} | {EncodingLabel( entry.Encoding )} | " +
 			$"{LineEndingLabel( document, line )} | Indent {entry.Shell.IndentationWidth} | " +
+			$"{( entry.Shell.Editor.View.HasSelection ? "SEL | " : "" )}" +
 			$"{( entry.Shell.Editor.IsOverwriteMode ? "OVR" : "INS" )}";
 	}
 

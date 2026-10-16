@@ -35,6 +35,8 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly CursesSession session;
 	private readonly WidgetHost host;
 	private readonly WidgetMenuBar menu = DeditMenu.Create();
+	private readonly DeditMenuPresenter menuPresenter;
+	private readonly DeditCaretCoordinator caret;
 	private readonly WidgetTabStrip tabs = new( "workspace-tabs" );
 	private readonly DeditClipboard clipboard;
 	private readonly DocumentManager documents;
@@ -65,7 +67,9 @@ internal sealed class DeditTerminal : IDeditTerminal {
 
 	private DeditTerminal( CursesSession session, DeditPreferences preferences ) {
 		this.session = session;
-		this.host = new WidgetHost( session, WidgetTheme.Default );
+		this.host = new WidgetHost( session, DeditTheme.Create( session.PresentationCapabilities ) );
+		this.menuPresenter = new DeditMenuPresenter( this.menu );
+		this.caret = new DeditCaretCoordinator( session );
 		this.clipboard = new DeditClipboard( this.host,
 			write: ( value, token ) => session.WriteClipboardAsync( CursesClipboardSelection.Clipboard, value, token ),
 			read: ( timeout, token ) => session.ReadClipboardAsync( CursesClipboardSelection.Clipboard, timeout, token ) );
@@ -129,7 +133,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	public async ValueTask DrawAsync( IReadOnlyList<string> captions, TimeSpan elapsed, CancellationToken cancellationToken ) {
 		CursesScreen screen = this.session.Screen;
 		this.tabs.SetTabs( this.documents.Tabs, this.documents.Active?.Key );
-		DeditMenu.UpdateState( this.menu, this.Editor?.Editor, this.documents.Active?.FullPath is not null, this.search.Options, this.documents.Active?.Encoding, this.documents.Active?.Shell.IndentationWidth );
+		this.menuPresenter.Update( this.Editor?.Editor, this.documents.Active?.FullPath is not null, this.search.Options, this.documents.Active?.Encoding, this.documents.Active?.Shell.IndentationWidth );
 		this.menu.Arrange( screen.Bounds );
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.Editor?.Arrange();
@@ -138,8 +142,12 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.Write( screen.Rows - 1, this.saveError is not null ? this.saveError : this.openErrors.Count > 0 ?
 			$"Open error ({this.openErrors.Count}): {this.openErrors[ 0 ]}" :
 			this.documents.Active is { } active ? EditorStatus.Format( active ) : "Untitled" );
+		if ( this.host.GetCaretIntent() is null ) await this.caret.ApplyAsync( null, cancellationToken );
 		this.host.Render();
+		WidgetCaretIntent? caretIntent = this.host.GetCaretIntent();
+		if ( caretIntent is { IsVisible: true } ) this.session.StandardScreen.Move( caretIntent.Row, caretIntent.Column );
 		await this.session.RefreshAsync( cancellationToken );
+		await this.caret.ApplyAsync( caretIntent, cancellationToken );
 	}
 
 	public async ValueTask<bool> ProcessAsync( WidgetInput input, TimeSpan elapsed ) {
@@ -439,7 +447,8 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		try {
 			try { this.session.StandardScreen.Clear(); await this.session.RefreshAsync(); }
 			finally {
-				for ( int index = this.leases.Count - 1; index >= 0; index-- ) await this.leases[ index ].DisposeAsync();
+				try { await this.caret.DisposeAsync(); }
+				finally { for ( int index = this.leases.Count - 1; index >= 0; index-- ) await this.leases[ index ].DisposeAsync(); }
 			}
 		} finally {
 			try { this.documents.Dispose(); }

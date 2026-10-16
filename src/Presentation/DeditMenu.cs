@@ -196,3 +196,49 @@ internal static class DeditMenu {
 		editor.View.WrapMode = enabled ? CursesTextWrapMode.Word : CursesTextWrapMode.NoWrap;
 	}
 }
+
+internal sealed class DeditMenuPresenter {
+	private readonly WidgetMenuBar menu;
+	private DeditMenuPresentationState? state;
+
+	internal DeditMenuPresenter( WidgetMenuBar menu ) =>
+		this.menu = menu ?? throw new ArgumentNullException( nameof( menu ) );
+
+	internal void Update( WidgetTextEditor? editor, bool canSave = false, WidgetSearchOptions? searchOptions = null,
+		TextFileEncoding? encoding = null, int? indentationWidth = null ) {
+		DeditMenuPresentationState current = new(
+			editor is not null,
+			canSave,
+			editor?.CanExecuteEditCommand( WidgetEditCommand.Undo ) == true,
+			editor?.CanExecuteEditCommand( WidgetEditCommand.Redo ) == true,
+			editor?.CanExecuteEditCommand( WidgetEditCommand.Cut ) == true,
+			editor?.CanExecuteEditCommand( WidgetEditCommand.Copy ) == true,
+			editor?.CanExecuteEditCommand( WidgetEditCommand.Paste ) == true,
+			editor?.CanExecuteEditCommand( WidgetEditCommand.SelectAll ) == true,
+			searchOptions?.MatchCase == true,
+			searchOptions?.WholeWord == true,
+			searchOptions?.UseRegularExpression == true,
+			encoding,
+			indentationWidth,
+			editor is not null && editor.View.WrapMode != CursesTextWrapMode.NoWrap );
+		if ( current == this.state ) return;
+		DeditMenu.UpdateState( this.menu, editor, canSave, searchOptions, encoding, indentationWidth );
+		this.state = current;
+	}
+
+	private readonly record struct DeditMenuPresentationState(
+		bool HasEditor,
+		bool CanSave,
+		bool CanUndo,
+		bool CanRedo,
+		bool CanCut,
+		bool CanCopy,
+		bool CanPaste,
+		bool CanSelectAll,
+		bool MatchCase,
+		bool WholeWord,
+		bool UseRegularExpression,
+		TextFileEncoding? Encoding,
+		int? IndentationWidth,
+		bool Wrap );
+}

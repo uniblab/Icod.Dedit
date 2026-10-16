@@ -34,6 +34,7 @@ public sealed class DeditPresentationTests {
 		CursesStyle selection = theme.Resolve( WidgetStyleRole.TextSelection );
 
 		Assert.NotEqual( normal.Background, selection.Background );
+		Assert.Equal( normal.Background, selection.Foreground );
 		Assert.Equal( CursesTextAttributes.None,
 			selection.Attributes & ( CursesTextAttributes.Reverse | CursesTextAttributes.Standout ) );
 	}
