@@ -57,6 +57,11 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private EditorShell? Editor => this.documents.Active?.Shell;
 	private sealed record PendingOverwrite( string DialogId, DocumentEntry Entry, ExistingSaveTarget Target,
 		bool CloseAfterSave, bool BatchPicker );
+	internal static IReadOnlyList<CursesInputProtocolOptions> InputProtocolOptions() => [
+		new CursesInputProtocolOptions { MouseTrackingMode = CursesMouseTrackingMode.ButtonMotion },
+		new CursesInputProtocolOptions { BracketedPaste = true },
+		new CursesInputProtocolOptions { KeyboardReportingMode = CursesKeyboardReportingMode.Disambiguated }
+	];
 
 	private DeditTerminal( CursesSession session, DeditPreferences preferences ) {
 		this.session = session;
@@ -96,11 +101,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			}
 			if ( firstKey is null ) terminal.documents.OpenUntitled();
 			else terminal.documents.Activate( firstKey );
-			foreach ( CursesInputProtocolOptions protocolOptions in new[] {
-				new CursesInputProtocolOptions { MouseTrackingMode = CursesMouseTrackingMode.ButtonEvents },
-				new CursesInputProtocolOptions { BracketedPaste = true },
-				new CursesInputProtocolOptions { KeyboardReportingMode = CursesKeyboardReportingMode.Disambiguated }
-			} ) {
+			foreach ( CursesInputProtocolOptions protocolOptions in InputProtocolOptions() ) {
 				var result = await session.AcquireInputProtocolsAsync( protocolOptions );
 				if ( result.IsAvailable ) terminal.leases.Add( result.GetRequiredValue() );
 			}
