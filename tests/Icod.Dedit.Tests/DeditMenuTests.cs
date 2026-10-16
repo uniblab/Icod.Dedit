@@ -113,13 +113,12 @@ public sealed class DeditMenuTests {
 	}
 
 	[Fact]
-	public void MenuEscapeClosesWithoutInvokingACommand() {
+	public void MenuEscapeClosesRootMenuWithoutInvokingACommand() {
 		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
 		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
 		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'v' ) ), TimeSpan.FromMilliseconds( 1 ) );
+		Assert.True( menu.IsOpen );
 		Assert.Empty( host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.FromMilliseconds( 2 ) ).Actions );
-		Assert.Equal( 1, menu.Depth );
-		Assert.Empty( host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.FromMilliseconds( 3 ) ).Actions );
 		Assert.False( menu.IsOpen );
 	}
 
