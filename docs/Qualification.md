@@ -4,10 +4,11 @@ This record contains historical checkpoints and current development evidence.
 Earlier sections describe their named revisions; they do not qualify the
 current head or certify a 1.0 release.
 
-## Current development head — 2026-10-14
+## Current development head — 2026-10-15
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
+| [Dedit `119c795` / 38841351117](https://github.com/uniblab/Icod.Dedit/actions/runs/38841351117) | Widgets 1.6.1 rebind; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Linux logged 195 tests per .NET 8/9/10 target, and the packaged dependency manifest required Widgets 1.6.1. Each OS installed, launched, same-version updated and removed the exact 1.0.0 tool package. |
 | [Dedit `b9904c9` / 38592772413](https://github.com/uniblab/Icod.Dedit/actions/runs/38592772413) | Staging restore/build/test/pack/local tool lifecycle on Linux, Windows and macOS; Windows local-pack regression seeded an old 0.1.0 package | All jobs passed. The regression repacked 1.0.0, verified exactly one package, and installed, launched, updated and removed the tool. |
 | [Dedit `7694cb1` / 38589379098](https://github.com/uniblab/Icod.Dedit/actions/runs/38589379098) | Test-only handling of Windows symbolic-link privilege denial; Staging restore/build/test/pack and local tool lifecycle on Linux, Windows and macOS | All jobs passed. Linux ran 195 tests per .NET 8/9/10 target with zero skips and zero build warnings/errors. Windows CI retained real symbolic-link coverage. |
 | [Dedit `c7cd528` / 38586803805](https://github.com/uniblab/Icod.Dedit/actions/runs/38586803805) | 1.0.0 candidate using Widgets 1.5.0; Staging restore/build/test/pack, package metadata and local tool lifecycle on Linux, Windows and macOS | All jobs passed. Linux logged 195 tests per .NET 8/9/10 target, zero build warnings/errors, exact package license/runtime dependency/content checks, and install, launch, same-version update and removal. |
