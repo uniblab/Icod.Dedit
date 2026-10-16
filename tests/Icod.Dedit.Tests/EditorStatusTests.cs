@@ -70,4 +70,15 @@ public sealed class EditorStatusTests {
 		Assert.Contains( "Ln 1, Col >4096", status, StringComparison.Ordinal );
 		Assert.InRange( GC.GetAllocatedBytesForCurrentThread() - before, 0, 250_000 );
 	}
+
+	[Fact]
+	public void StatusExplicitlyReportsAnActiveSelection() {
+		using WidgetHost host = new( new CursesScreen( 60, 10 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry entry = manager.OpenUntitled();
+		entry.Shell.Process( WidgetInput.Paste( "selected text" ), TimeSpan.Zero );
+		entry.Shell.Editor.View.SetSelection( 0, 8 );
+
+		Assert.Contains( " | SEL | INS", EditorStatus.Format( entry ), StringComparison.Ordinal );
+	}
 }
