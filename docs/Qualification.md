@@ -4,10 +4,11 @@ This record contains historical checkpoints and current development evidence.
 Earlier sections describe their named revisions; they do not qualify the
 current head or certify a 1.0 release.
 
-## Current development head — 2026-10-16
+## Current development head — 2026-10-17
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
+| [Dedit `d2bd291` / 39063576613](https://github.com/uniblab/Icod.Dedit/actions/runs/39063576613) | Published Widgets 1.7.0 rebind; fixed line-number gutter, themed current-line band, wrapped-row, decorative-click and narrow-viewport regressions; curated documentation; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 212 tests per .NET 8/9/10 target. The package verifier required Widgets 1.7.0, checked exactly one `Icod.Dedit.1.0.0.nupkg`, and installed, launched, same-version updated and removed it. Windows also passed the stale-package cleanup regression. |
 | [Dedit `35779d4` / 38983306761](https://github.com/uniblab/Icod.Dedit/actions/runs/38983306761) | Redraw-safe menu clicks, physical bar/block caret, explicit color selection with monochrome fallback and `SEL` status; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 205 tests per .NET 8/9/10 target. The package verifier checked exactly one 1.0.0 package and installed, launched, same-version updated and removed it. Windows also passed the stale-package cleanup regression. |
 | [Dedit `68c15ec` / 38981129239](https://github.com/uniblab/Icod.Dedit/actions/runs/38981129239) | Widgets 1.6.2 rebind; Dedit menu click, nested overlay, Unicode border, About-button and button-motion protocol regressions; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 200 tests per .NET 8/9/10 target. The package verifier required Widgets 1.6.2, verified exactly one 1.0.0 package, and installed, launched, same-version updated and removed it. Windows also passed the stale-package cleanup regression. |
 | [Dedit `119c795` / 38841351117](https://github.com/uniblab/Icod.Dedit/actions/runs/38841351117) | Widgets 1.6.1 rebind; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Linux logged 195 tests per .NET 8/9/10 target, and the packaged dependency manifest required Widgets 1.6.1. Each OS installed, launched, same-version updated and removed the exact 1.0.0 tool package. |
@@ -26,8 +27,9 @@ package checks do not replace a current-head live-terminal exercise.
 
 ### Remaining release gates
 
-- Widgets 1.6.2 is published and restored from NuGet in the current Dedit
-  matrix. No-selection Copy/Cut and local linewise Paste are integrated;
+- Widgets 1.7.0 is published and restored from NuGet in the current Dedit
+  matrix. Its editor gutter and current-line presentation are integrated.
+  No-selection Copy/Cut and local linewise Paste are integrated;
   changed terminal clipboard text pastes as plain text. The dependency also
   carries corrected menu/dialog interaction, nested overlay rendering and the
   DCurses 2.5.2 / Terminal 1.29.2 input chain. Dedit requests button motion
@@ -53,7 +55,7 @@ package checks do not replace a current-head live-terminal exercise.
   The live-terminal exercise remains outstanding. The owner deferred WSL
   because of checkout line endings.
 - The 1.0.0 Staging package now checks source-corresponding README,
-  CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.6.2 runtime
+  CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.7.0 runtime
   dependency, three tool payloads, install/launch, same-version update and
   removal. This is the first public Dedit version, so there is no published
   older version for a cross-version upgrade test. Release-config six-runner
@@ -72,6 +74,11 @@ directory. Record the exact commit, OS and terminal for each exercise.
    in an interactive terminal. Open File with Alt+F, cycle root menus with the
    arrow keys, open a nested File submenu and verify its parent remains visible.
    Click a menu command, open Help → About and click OK. Drag a text selection.
+   Verify fixed line numbers at the extreme left, a themed current-line band
+   and number, selection remaining visually dominant, blank number cells on
+   wrapped continuation rows, decorative gutter clicks leaving selection
+   unchanged, and gutter suppression after resizing too narrow for both gutter
+   and text.
    Type two lines, use Ctrl+C with no selection, move to the next line and
    Ctrl+V, then Ctrl+Z. Cut a line without a selection and undo it. Also select
    a range and verify ordinary replacement.
