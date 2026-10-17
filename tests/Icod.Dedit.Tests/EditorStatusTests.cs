@@ -42,6 +42,21 @@ public sealed class EditorStatusTests {
 			EditorStatus.Format( entry ) );
 	}
 
+	[Fact]
+	public void WrappedVerticalMovementKeepsLogicalLineAndCharacterStatus() {
+		using WidgetHost host = new( new CursesScreen( 8, 6 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host,
+			new DeditPreferences( TabWidth: 4, IndentWidth: 4, Wrap: true, DefaultEncoding: TextFileEncoding.Utf8 ) );
+		DocumentEntry entry = manager.OpenUntitled();
+		entry.Shell.Process( WidgetInput.Paste( "abcdefghij" ), TimeSpan.Zero );
+		entry.Shell.Editor.View.SetSelection( 2, 2 );
+
+		entry.Shell.Process( WidgetInput.Key( WidgetKey.Down ), TimeSpan.FromMilliseconds( 1 ) );
+
+		Assert.Equal( 8, entry.Shell.Editor.View.Caret );
+		Assert.Contains( "Ln 1, Col 9", EditorStatus.Format( entry ), StringComparison.Ordinal );
+	}
+
 	[Theory]
 	[InlineData( "one\r\ntwo", 1, "CRLF" )]
 	[InlineData( "one\rtwo", 1, "CR" )]
