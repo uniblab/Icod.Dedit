@@ -47,8 +47,7 @@ public sealed class EditorShellTests {
 	[Fact]
 	public void TinyViewportKeepsDocumentWithoutAllocatingScreenForText() {
 		CursesScreen screen = new( 7, 3 ); using WidgetHost host = new( screen, WidgetTheme.Default );
-		using EditorShell shell = new( host ); shell.Arrange();
-		shell.Process( WidgetInput.Paste( "長い行\nsecond" ), TimeSpan.FromMilliseconds( 1 ) );
+		using EditorShell shell = new( host, "長い行\nsecond" ); shell.Arrange();
 		Assert.Equal( "長い行\nsecond", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
 		shell.Editor.View.SetSelection( 0, 0 ); screen.Resize( 2, 3 ); shell.Arrange(); host.Render();
 		Assert.True( shell.Editor.Bounds.Rows <= host.Screen.Rows );

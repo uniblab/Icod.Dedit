@@ -40,6 +40,7 @@ internal sealed class EditorShell : IDisposable {
 		this.Editor = new WidgetTextEditor( editorId, this.view, new WidgetEditorOptions {
 			Indentation = new string( ' ', defaults.IndentWidth ), NewLine = DetectNewLine( initialText ), TabWidth = defaults.TabWidth,
 			WrapMode = defaults.Wrap ? CursesTextWrapMode.Word : CursesTextWrapMode.NoWrap,
+			ShowLineNumbers = true, HighlightCurrentLine = true,
 			MaximumProjectionSourceUnits = 4_096
 		} );
 		if ( activate ) this.Activate();
