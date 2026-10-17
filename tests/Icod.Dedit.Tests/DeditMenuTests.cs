@@ -21,7 +21,6 @@
 
 namespace Icod.Dedit.Tests;
 
-using System.Reflection;
 using System.Text;
 using Icod.DCurses;
 using Icod.Dedit.Application;
@@ -45,14 +44,12 @@ public sealed class DeditMenuTests {
 		using WidgetHost host = new( new CursesScreen( 60, 16 ), WidgetTheme.Default );
 		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu );
 		DeditMenuPresenter presenter = new( menu );
-		MethodInfo? arrange = typeof( DeditMenuPresenter ).GetMethod( "Arrange", BindingFlags.Instance | BindingFlags.NonPublic );
-		Assert.NotNull( arrange );
-		arrange.Invoke( presenter, [ new CursesRectangle( 0, 0, 1, 60 ) ] ); presenter.Update( null );
+		presenter.Arrange( new CursesRectangle( 0, 0, 1, 60 ) ); presenter.Update( null );
 		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( 'h' ) ), TimeSpan.Zero );
 		host.Render();
 		int row = menu.RenderBounds.Row + 1; int column = menu.RenderBounds.Column + 2;
 		Assert.Empty( Pointer( host, CursesMouseAction.Press, row, column ).Actions );
-		arrange.Invoke( presenter, [ new CursesRectangle( 0, 0, 1, 60 ) ] );
+		presenter.Arrange( new CursesRectangle( 0, 0, 1, 60 ) );
 		presenter.Update( null ); // A live Dedit redraw between press and release must preserve the pending click.
 		WidgetInvokedAction invoked = Assert.IsType<WidgetInvokedAction>( Assert.Single(
 			Pointer( host, CursesMouseAction.Release, row, column ).Actions ) );

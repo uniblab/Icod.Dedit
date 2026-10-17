@@ -134,7 +134,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		CursesScreen screen = this.session.Screen;
 		this.tabs.SetTabs( this.documents.Tabs, this.documents.Active?.Key );
 		this.menuPresenter.Update( this.Editor?.Editor, this.documents.Active?.FullPath is not null, this.search.Options, this.documents.Active?.Encoding, this.documents.Active?.Shell.IndentationWidth );
-		this.menu.Arrange( screen.Bounds );
+		this.menuPresenter.Arrange( screen.Bounds );
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.Editor?.Arrange();
 		this.goTo.Arrange();

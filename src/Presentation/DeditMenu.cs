@@ -204,6 +204,10 @@ internal sealed class DeditMenuPresenter {
 	internal DeditMenuPresenter( WidgetMenuBar menu ) =>
 		this.menu = menu ?? throw new ArgumentNullException( nameof( menu ) );
 
+	internal void Arrange( CursesRectangle bounds ) {
+		if ( this.menu.Bounds != bounds ) this.menu.Arrange( bounds );
+	}
+
 	internal void Update( WidgetTextEditor? editor, bool canSave = false, WidgetSearchOptions? searchOptions = null,
 		TextFileEncoding? encoding = null, int? indentationWidth = null ) {
 		DeditMenuPresentationState current = new(
