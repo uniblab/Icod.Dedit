@@ -8,6 +8,7 @@ current head or certify a 1.0 release.
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
+| [Dedit `0d8924b` / 39069412005](https://github.com/uniblab/Icod.Dedit/actions/runs/39069412005) | Published Widgets 1.7.1 rebind; wrapped visual-row movement, preferred-column retention and logical line/character status regression; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 214 tests per .NET 8/9/10 target. The new behavior and exact dependency/documentation contracts failed against Widgets 1.7.0 in run 39069163080 and passed after the rebind. The package verifier required Widgets 1.7.1, checked exactly one `Icod.Dedit.1.0.0.nupkg`, and installed, launched, same-version updated and removed it. Windows also passed stale-package cleanup. |
 | [Dedit `eb59ef9` / 39064571852](https://github.com/uniblab/Icod.Dedit/actions/runs/39064571852) | Final-review correction preserving text-selection drags across ordinary redraws; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 213 tests per .NET 8/9/10 target. The new regression failed before the correction in run 39064418224 and passed afterward. Exact package verification, install, launch, same-version update and removal passed; Windows also passed stale-package cleanup. |
 | [Dedit `d2bd291` / 39063576613](https://github.com/uniblab/Icod.Dedit/actions/runs/39063576613) | Published Widgets 1.7.0 rebind; fixed line-number gutter, themed current-line band, wrapped-row, decorative-click and narrow-viewport regressions; curated documentation; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 212 tests per .NET 8/9/10 target. The package verifier required Widgets 1.7.0, checked exactly one `Icod.Dedit.1.0.0.nupkg`, and installed, launched, same-version updated and removed it. Windows also passed the stale-package cleanup regression. |
 | [Dedit `35779d4` / 38983306761](https://github.com/uniblab/Icod.Dedit/actions/runs/38983306761) | Redraw-safe menu clicks, physical bar/block caret, explicit color selection with monochrome fallback and `SEL` status; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 205 tests per .NET 8/9/10 target. The package verifier checked exactly one 1.0.0 package and installed, launched, same-version updated and removed it. Windows also passed the stale-package cleanup regression. |
@@ -28,8 +29,9 @@ package checks do not replace a current-head live-terminal exercise.
 
 ### Remaining release gates
 
-- Widgets 1.7.0 is published and restored from NuGet in the current Dedit
-  matrix. Its editor gutter and current-line presentation are integrated.
+- Widgets 1.7.1 is published and restored from NuGet in the current Dedit
+  matrix. Its wrapped visual-row navigation, preferred-column retention,
+  editor gutter and current-line presentation are integrated.
   No-selection Copy/Cut and local linewise Paste are integrated;
   changed terminal clipboard text pastes as plain text. The dependency also
   carries corrected menu/dialog interaction, nested overlay rendering and the
@@ -56,7 +58,7 @@ package checks do not replace a current-head live-terminal exercise.
   The live-terminal exercise remains outstanding. The owner deferred WSL
   because of checkout line endings.
 - The 1.0.0 Staging package now checks source-corresponding README,
-  CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.7.0 runtime
+  CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.7.1 runtime
   dependency, three tool payloads, install/launch, same-version update and
   removal. This is the first public Dedit version, so there is no published
   older version for a cross-version upgrade test. Release-config six-runner
@@ -79,7 +81,9 @@ directory. Record the exact commit, OS and terminal for each exercise.
    and number, selection remaining visually dominant, blank number cells on
    wrapped continuation rows, decorative gutter clicks leaving selection
    unchanged, and gutter suppression after resizing too narrow for both gutter
-   and text.
+   and text. On a logical line that wraps, move vertically through its visual
+   rows and across a short row; verify the preferred visual column returns and
+   the status continues to show the real logical line and character position.
    Type two lines, use Ctrl+C with no selection, move to the next line and
    Ctrl+V, then Ctrl+Z. Cut a line without a selection and undo it. Also select
    a range and verify ordinary replacement.
