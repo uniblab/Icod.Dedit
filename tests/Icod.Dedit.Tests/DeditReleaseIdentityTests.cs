@@ -26,29 +26,32 @@ using Xunit;
 
 public sealed class DeditReleaseIdentityTests {
 	[Fact]
-	public void CandidateUsesPublishedWidgets170() {
+	public void CandidateUsesPublishedWidgets171() {
 		XDocument project = XDocument.Load( Path.Combine( RepositoryRoot(), "Icod.Dedit.csproj" ) );
 		XElement dependency = Assert.Single( project.Descendants( "PackageReference" ),
 			candidate => string.Equals( (string?)candidate.Attribute( "Include" ), "Icod.Widgets", StringComparison.Ordinal ) );
 
-		Assert.Equal( "1.7.0", (string?)dependency.Attribute( "Version" ) );
+		Assert.Equal( "1.7.1", (string?)dependency.Attribute( "Version" ) );
 		Assert.Equal( "1.0.0", Assert.Single( project.Descendants( "Version" ) ).Value );
 		Assert.Equal( "1.0.0", Assert.Single( project.Descendants( "PackageVersion" ) ).Value );
 	}
 
 	[Fact]
-	public void ToolVerifierRequiresWidgets170() {
+	public void ToolVerifierRequiresWidgets171() {
 		string verifier = File.ReadAllText( Path.Combine( RepositoryRoot(), "packaging", "VerifyDeditTool.ps1" ) );
 
-		Assert.Contains( "Icod.Widgets/1.7.0", verifier, StringComparison.Ordinal );
-		Assert.DoesNotContain( "Icod.Widgets/1.6.", verifier, StringComparison.Ordinal );
+		Assert.Contains( "Icod.Widgets/1.7.1", verifier, StringComparison.Ordinal );
+		Assert.DoesNotContain( "Icod.Widgets/1.7.0", verifier, StringComparison.Ordinal );
 	}
 
 	[Fact]
-	public void CuratedNotesDescribeLineNumberPresentation() {
+	public void CuratedNotesDescribeWrappedCaretCorrection() {
 		string notes = File.ReadAllText( Path.Combine( RepositoryRoot(), "docs", "releases", "1.0.0.md" ) );
 
-		Assert.Contains( "Icod.Widgets 1.7.0", notes, StringComparison.Ordinal );
+		Assert.Contains( "Icod.Widgets 1.7.1", notes, StringComparison.Ordinal );
+		Assert.Contains( "wrapped visual rows", notes, StringComparison.Ordinal );
+		Assert.Contains( "preferred visual column", notes, StringComparison.Ordinal );
+		Assert.Contains( "logical line and character", notes, StringComparison.Ordinal );
 		Assert.Contains( "line numbers", notes, StringComparison.Ordinal );
 		Assert.Contains( "themed current-line", notes, StringComparison.Ordinal );
 		Assert.Contains( "decorative gutter clicks", notes, StringComparison.Ordinal );
