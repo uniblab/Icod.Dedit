@@ -12,6 +12,8 @@ The entries under Unreleased describe implemented behavior. They are not a
   current-line styling. Wrapped continuations share the current-line band but
   show no repeated number; gutter clicks do not alter selection; and narrow
   viewports suppress the gutter so text retains the final available column.
+- Preserved text-selection drags across ordinary redraws by avoiding redundant
+  editor arrangement when terminal geometry has not changed.
 - Added a physical terminal caret that follows the focused text control, uses
   bar/block shapes for insert/overwrite mode, and hides while a menu or dialog
   owns focus.
