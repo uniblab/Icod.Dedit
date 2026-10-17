@@ -79,8 +79,9 @@ internal sealed class EditorShell : IDisposable {
 
 	internal void Arrange() {
 		CursesScreen screen = this.host.Screen;
-		this.Editor.Arrange( new CursesRectangle( Math.Min( 2, screen.Rows ), 0,
-			Math.Max( 0, screen.Rows - 2 - ( screen.Rows >= 4 ? 1 : 0 ) ), screen.Columns ) );
+		CursesRectangle bounds = new( Math.Min( 2, screen.Rows ), 0,
+			Math.Max( 0, screen.Rows - 2 - ( screen.Rows >= 4 ? 1 : 0 ) ), screen.Columns );
+		if ( this.Editor.Bounds != bounds ) this.Editor.Arrange( bounds );
 	}
 
 	internal IReadOnlyList<WidgetAction> Process( WidgetInput input, TimeSpan elapsed ) {
