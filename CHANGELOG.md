@@ -8,6 +8,10 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Application and editing
 
+- Added fixed line numbers in a decorative left gutter and theme-aware
+  current-line styling. Wrapped continuations share the current-line band but
+  show no repeated number; gutter clicks do not alter selection; and narrow
+  viewports suppress the gutter so text retains the final available column.
 - Added a physical terminal caret that follows the focused text control, uses
   bar/block shapes for insert/overwrite mode, and hides while a menu or dialog
   owns focus.
@@ -78,11 +82,12 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Build and validation
 
-- Updated the application dependency to Icod.Widgets 1.6.2. This retains the
-  1.5.0 linewise clipboard integration while incorporating corrected menu and
-  dialog interaction, intact bordered overlays and the DCurses 2.5.2 /
-  Terminal 1.29.2 input chain. Dedit requests button-motion reporting so text
-  selection drags work without enabling unsolicited pointer-hover reports.
+- Updated the application dependency to Icod.Widgets 1.7.0 for the editor's
+  line-number gutter and current-line presentation API. This retains the 1.6.2
+  menu/dialog and bordered-overlay corrections, the 1.5.0 linewise clipboard
+  integration, and the DCurses 2.5.2 / Terminal 1.29.2 input chain. Dedit
+  requests button-motion reporting so text selection drags work without
+  enabling unsolicited pointer-hover reports.
 - Added local cmd/sh/PowerShell build and package scripts, pull-request
   validation across Linux, Windows and macOS, and guarded tag-triggered
   package/archive release workflows. No release has been published.
