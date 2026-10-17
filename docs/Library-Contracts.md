@@ -5,9 +5,9 @@ anchors, not a request for new APIs. Keep application policy in dedit. The
 released [Icod.DCurses](https://github.com/uniblab/Icod.DCurses) and
 [Icod.Widgets](https://github.com/uniblab/Icod.Widgets) packages cover the
 core session, editing, workspace and theme needs. Verify each finer behavior
-against the package in its D1002+ slice. The initial direct dependency is
-`Icod.Widgets 1.3.0`, which declares
-`Icod.DCurses 2.5.0`; a direct DCurses reference is added only if compiling
+against the package in its D1002+ slice. The 1.0.0 candidate's direct dependency is
+`Icod.Widgets 1.7.0`, which declares
+`Icod.DCurses 2.5.2`; a direct DCurses reference is added only if compiling
 against its public session types requires it.
 
 | Slice | Public capability to consume | dedit responsibility / gate |
@@ -21,9 +21,9 @@ against its public session types requires it.
 | D1008 presentation | `WidgetPalette.Create(session.PresentationCapabilities)`, `WidgetHost.SetTheme`, `CursesSession` clipboard and cursor-style leases. | Use advertised capabilities and bounded clipboard operations; text/default fallback stays usable. Test actual terminal output separately from headless rendering. |
 
 Existing release/API references:
-[Widgets 1.3 README](https://github.com/uniblab/Icod.Widgets/blob/v1.3.0/README.md),
+[Widgets 1.7 README](https://github.com/uniblab/Icod.Widgets/blob/v1.7.0/README.md),
 [Widgets public API baseline](https://github.com/uniblab/Icod.Widgets/blob/v1.3.0/docs/Public-API-Baseline-1.3.md),
-[DCurses 2.5 README](https://github.com/uniblab/Icod.DCurses/blob/v2.5.0/README.md).
+[DCurses 2.5.2 README](https://github.com/uniblab/Icod.DCurses/blob/v2.5.2/README.md).
 
 No further library feature is assumed for D1002. If D1003+ tests expose a
 missing reusable behavior or unacceptable performance, propose that change in
@@ -31,4 +31,4 @@ the owning library's PR and consume its released version; do not copy its
 implementation into dedit. The packages being published does not substitute
 for integration tests in this repository. In particular, linewise clipboard
 semantics, double/triple-click selection and line:column form composition are
-application acceptance requirements, not claims about the 1.3 package.
+application acceptance requirements, not claims about the dependency package.
