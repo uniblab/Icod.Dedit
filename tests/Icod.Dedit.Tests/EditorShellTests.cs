@@ -254,6 +254,23 @@ public sealed class EditorShellTests {
 	}
 
 	[Fact]
+	public void PointerDragSurvivesUnchangedShellArrangeBetweenEvents() {
+		using WidgetHost host = new( new CursesScreen( 20, 5 ), WidgetTheme.Default );
+		using EditorShell shell = new( host, "abcdef" ); host.Render();
+
+		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( CursesMouseAction.Press,
+			CursesMouseButton.Primary, 3, 2 ) ), TimeSpan.Zero );
+		Assert.Equal( ( 1L, 1L ), ( shell.Editor.View.Anchor, shell.Editor.View.Caret ) );
+		shell.Arrange(); host.Render();
+		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( CursesMouseAction.Move,
+			CursesMouseButton.Primary, 6, 2 ) ), TimeSpan.FromMilliseconds( 1 ) );
+		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( CursesMouseAction.Release,
+			CursesMouseButton.Primary, 6, 2 ) ), TimeSpan.FromMilliseconds( 2 ) );
+
+		Assert.Equal( ( 1L, 4L ), ( shell.Editor.View.Anchor, shell.Editor.View.Caret ) );
+	}
+
+	[Fact]
 	public void TerminalControlCharactersStayExactInTheDocumentButNeverReachRenderedCells() {
 		using WidgetHost host = new( new CursesScreen( 36, 7 ), WidgetTheme.Default );
 		using EditorShell shell = new( host );
