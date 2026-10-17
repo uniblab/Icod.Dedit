@@ -23,6 +23,8 @@ namespace Icod.Dedit.Tests;
 
 using System.Text;
 using Icod.DCurses;
+using Icod.Dedit.Configuration;
+using Icod.Dedit.Documents;
 using Icod.Dedit.Presentation;
 using Icod.Widgets;
 using Xunit;
@@ -44,12 +46,61 @@ public sealed class EditorShellTests {
 
 	[Fact]
 	public void TinyViewportKeepsDocumentWithoutAllocatingScreenForText() {
-		using WidgetHost host = new( new CursesScreen( 7, 3 ), WidgetTheme.Default );
+		CursesScreen screen = new( 7, 3 ); using WidgetHost host = new( screen, WidgetTheme.Default );
 		using EditorShell shell = new( host ); shell.Arrange();
 		shell.Process( WidgetInput.Paste( "長い行\nsecond" ), TimeSpan.FromMilliseconds( 1 ) );
 		Assert.Equal( "長い行\nsecond", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
-		host.Render();
+		shell.Editor.View.SetSelection( 0, 0 ); screen.Resize( 2, 3 ); shell.Arrange(); host.Render();
 		Assert.True( shell.Editor.Bounds.Rows <= host.Screen.Rows );
+		Assert.Equal( "長", screen.StandardWindow.GetCell( 2, 0 ).Content );
+		Assert.True( screen.StandardWindow.GetCell( 2, 1 ).IsContinuation );
+	}
+
+	[Fact]
+	public void EditorShowsLineNumbersAndTracksCurrentLogicalLine() {
+		WidgetTheme theme = PresentationTheme(); using WidgetHost host = new( new CursesScreen( 20, 6 ), theme );
+		using EditorShell shell = new( host, "first\nsecond" ); host.Render();
+
+		Assert.Equal( "1", host.Screen.StandardWindow.GetCell( 2, 0 ).Content );
+		Assert.Equal( theme.Resolve( WidgetStyleRole.EditorGutterCurrentLine ), host.Screen.StandardWindow.GetCell( 2, 0 ).Style );
+		Assert.Equal( "2", host.Screen.StandardWindow.GetCell( 3, 0 ).Content );
+		Assert.Equal( theme.Resolve( WidgetStyleRole.EditorGutter ), host.Screen.StandardWindow.GetCell( 3, 0 ).Style );
+		Assert.Equal( "f", host.Screen.StandardWindow.GetCell( 2, 2 ).Content );
+
+		shell.Process( WidgetInput.Key( WidgetKey.Down ), TimeSpan.Zero ); host.Render();
+
+		Assert.Equal( theme.Resolve( WidgetStyleRole.EditorGutter ), host.Screen.StandardWindow.GetCell( 2, 0 ).Style );
+		Assert.Equal( theme.Resolve( WidgetStyleRole.EditorGutterCurrentLine ), host.Screen.StandardWindow.GetCell( 3, 0 ).Style );
+		Assert.Equal( theme.Resolve( WidgetStyleRole.EditorCurrentLine ), host.Screen.StandardWindow.GetCell( 3, 2 ).Style );
+	}
+
+	[Fact]
+	public void WrappedEditorShowsOneNumberAndCurrentStyleAcrossContinuations() {
+		WidgetTheme theme = PresentationTheme(); using WidgetHost host = new( new CursesScreen( 6, 6 ), theme );
+		DeditPreferences preferences = new( 4, 4, true, TextFileEncoding.Utf8 );
+		using EditorShell shell = new( host, "abcdef\nz", preferences: preferences ); host.Render();
+
+		Assert.Equal( "1", host.Screen.StandardWindow.GetCell( 2, 0 ).Content );
+		Assert.True( host.Screen.StandardWindow.GetCell( 3, 0 ).IsBlank );
+		Assert.Equal( "2", host.Screen.StandardWindow.GetCell( 4, 0 ).Content );
+		Assert.Equal( theme.Resolve( WidgetStyleRole.EditorGutterCurrentLine ), host.Screen.StandardWindow.GetCell( 2, 0 ).Style );
+		Assert.Equal( theme.Resolve( WidgetStyleRole.EditorGutterCurrentLine ), host.Screen.StandardWindow.GetCell( 3, 0 ).Style );
+		Assert.Equal( theme.Resolve( WidgetStyleRole.EditorGutter ), host.Screen.StandardWindow.GetCell( 4, 0 ).Style );
+	}
+
+	[Fact]
+	public void DecorativeGutterClickLeavesSelectionUnchanged() {
+		using WidgetHost host = new( new CursesScreen( 20, 6 ), PresentationTheme() );
+		using EditorShell shell = new( host, "first\nsecond" ); shell.Editor.View.SetSelection( 1, 4 ); host.Render();
+
+		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( CursesMouseAction.Press,
+			CursesMouseButton.Primary, 0, 2 ) ), TimeSpan.Zero );
+		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( CursesMouseAction.Move,
+			CursesMouseButton.Primary, 8, 3 ) ), TimeSpan.FromMilliseconds( 1 ) );
+		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( CursesMouseAction.Release,
+			CursesMouseButton.Primary, 8, 3 ) ), TimeSpan.FromMilliseconds( 2 ) );
+
+		Assert.Equal( ( 1L, 4L ), ( shell.Editor.View.Anchor, shell.Editor.View.Caret ) );
 	}
 
 	[Fact]
@@ -144,7 +195,8 @@ public sealed class EditorShellTests {
 			new WidgetTextEditContext( Guid.Empty, 0, 0, 1_000_000, 1_000_000, WidgetTextEditKind.Programmatic, TimeSpan.Zero ) );
 		Assert.Equal( WidgetTextEditStatus.Applied, edit.Status );
 		long before = GC.GetAllocatedBytesForCurrentThread(); host.Render();
-		Assert.Equal( "x", host.Screen.StandardWindow.GetCell( 2, 0 ).Content );
+		Assert.Equal( "1", host.Screen.StandardWindow.GetCell( 2, 0 ).Content );
+		Assert.Equal( "x", host.Screen.StandardWindow.GetCell( 2, 2 ).Content );
 		Assert.InRange( GC.GetAllocatedBytesForCurrentThread() - before, 0, 5_000_000 );
 	}
 
@@ -154,7 +206,8 @@ public sealed class EditorShellTests {
 		using EditorShell shell = new( host ); host.Render();
 		shell.Process( WidgetInput.TextInput( new Rune( 'x' ) ), TimeSpan.FromMilliseconds( 1 ) );
 		host.Render();
-		Assert.Equal( "x", host.Screen.StandardWindow.GetCell( 2, 0 ).Content );
+		Assert.Equal( "1", host.Screen.StandardWindow.GetCell( 2, 0 ).Content );
+		Assert.Equal( "x", host.Screen.StandardWindow.GetCell( 2, 2 ).Content );
 	}
 
 	[Fact]
@@ -192,11 +245,11 @@ public sealed class EditorShellTests {
 		using EditorShell shell = new( host );
 		shell.Process( WidgetInput.Paste( "界z" ), TimeSpan.FromMilliseconds( 1 ) ); host.Render();
 		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( CursesMouseAction.Press,
-			CursesMouseButton.Primary, 2, 2 ) ), TimeSpan.FromMilliseconds( 2 ) );
+			CursesMouseButton.Primary, 4, 2 ) ), TimeSpan.FromMilliseconds( 2 ) );
 		Assert.Equal( 1, shell.Editor.View.Caret );
 		screen.Resize( 6, 4 ); shell.Arrange(); host.Render();
 		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( CursesMouseAction.Press,
-			CursesMouseButton.Primary, 0, 2 ) ), TimeSpan.FromMilliseconds( 3 ) );
+			CursesMouseButton.Primary, 2, 2 ) ), TimeSpan.FromMilliseconds( 3 ) );
 		Assert.Equal( 0, shell.Editor.View.Caret );
 		Assert.Equal( "界z", shell.Document.Read( 0, 2 ) );
 	}
@@ -245,7 +298,8 @@ public sealed class EditorShellTests {
 		screen.Resize( 4, 3 ); shell.Arrange(); host.Render();
 
 		Assert.Equal( text.Length, shell.Document.Length );
-		Assert.Equal( "x", host.Screen.StandardWindow.GetCell( 2, 0 ).Content );
+		Assert.Equal( "1", host.Screen.StandardWindow.GetCell( 2, 0 ).Content );
+		Assert.Equal( "x", host.Screen.StandardWindow.GetCell( 2, 2 ).Content );
 		shell.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( 'z' ) ),
 			TimeSpan.FromMilliseconds( 1 ) );
 		Assert.Equal( 0, shell.Document.Length );
@@ -270,5 +324,16 @@ public sealed class EditorShellTests {
 				TimeSpan.FromSeconds( 129 + index ) );
 		Assert.Equal( 64, shell.Document.Length );
 		Assert.True( shell.Document.IsModified );
+	}
+
+	private static WidgetTheme PresentationTheme() {
+		CursesStyle text = new( CursesColor.Indexed( 7 ), CursesColor.Indexed( 0 ) );
+		CursesStyle current = new( CursesColor.Indexed( 7 ), CursesColor.Indexed( 4 ) );
+		CursesStyle gutter = new( CursesColor.Indexed( 3 ), CursesColor.Indexed( 0 ) );
+		CursesStyle currentGutter = new( CursesColor.Indexed( 15 ), CursesColor.Indexed( 4 ) );
+		return WidgetTheme.Default with { Parts = WidgetStyles.Empty
+			.With( WidgetStyleRole.EditorSurface, text ).With( WidgetStyleRole.EditorText, text )
+			.With( WidgetStyleRole.EditorCurrentLine, current ).With( WidgetStyleRole.EditorGutter, gutter )
+			.With( WidgetStyleRole.EditorGutterCurrentLine, currentGutter ) };
 	}
 }

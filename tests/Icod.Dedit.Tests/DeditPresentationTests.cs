@@ -32,11 +32,19 @@ public sealed class DeditPresentationTests {
 		WidgetTheme theme = DeditTheme.Create( capabilities );
 		CursesStyle normal = theme.Resolve( WidgetStyleRole.EditorText );
 		CursesStyle selection = theme.Resolve( WidgetStyleRole.TextSelection );
+		CursesStyle gutter = theme.Resolve( WidgetStyleRole.EditorGutter );
+		CursesStyle currentGutter = theme.Resolve( WidgetStyleRole.EditorGutterCurrentLine );
 
 		Assert.NotEqual( normal.Background, selection.Background );
 		Assert.Equal( normal.Background, selection.Foreground );
 		Assert.Equal( CursesTextAttributes.None,
 			selection.Attributes & ( CursesTextAttributes.Reverse | CursesTextAttributes.Standout ) );
+		Assert.NotEqual( gutter, currentGutter );
+		using WidgetHost host = new( new CursesScreen( 12, 5 ), theme );
+		using EditorShell shell = new( host, "ab" ); shell.Editor.View.SetSelection( 0, 1 ); host.Render();
+		Assert.Equal( currentGutter, host.Screen.StandardWindow.GetCell( 2, 0 ).Style );
+		Assert.Equal( selection, host.Screen.StandardWindow.GetCell( 2, 2 ).Style );
+		Assert.Equal( theme.Resolve( WidgetStyleRole.EditorCurrentLine ), host.Screen.StandardWindow.GetCell( 2, 3 ).Style );
 	}
 
 	[Fact]
@@ -44,8 +52,14 @@ public sealed class DeditPresentationTests {
 		CursesPresentationCapabilities capabilities = Capabilities( 0, false, false, false,
 			CursesTextAttributes.Reverse );
 
-		Assert.Equal( CursesTextAttributes.Reverse,
-			DeditTheme.Create( capabilities ).Resolve( WidgetStyleRole.TextSelection ).Attributes );
+		WidgetTheme theme = DeditTheme.Create( capabilities );
+		Assert.Equal( CursesTextAttributes.Reverse, theme.Resolve( WidgetStyleRole.TextSelection ).Attributes );
+		foreach ( WidgetStyleRole role in new[] { WidgetStyleRole.EditorGutter, WidgetStyleRole.EditorGutterCurrentLine } ) {
+			CursesStyle style = theme.Resolve( role );
+			Assert.Equal( CursesColorKind.Default, style.Foreground.Kind );
+			Assert.Equal( CursesColorKind.Default, style.Background.Kind );
+			Assert.Equal( CursesTextAttributes.None, style.Attributes & ~CursesTextAttributes.Reverse );
+		}
 	}
 
 	[Fact]
