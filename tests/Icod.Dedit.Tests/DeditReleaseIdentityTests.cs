@@ -44,6 +44,27 @@ public sealed class DeditReleaseIdentityTests {
 		Assert.DoesNotContain( "Icod.Widgets/1.6.", verifier, StringComparison.Ordinal );
 	}
 
+	[Fact]
+	public void CuratedNotesDescribeLineNumberPresentation() {
+		string notes = File.ReadAllText( Path.Combine( RepositoryRoot(), "docs", "releases", "1.0.0.md" ) );
+
+		Assert.Contains( "Icod.Widgets 1.7.0", notes, StringComparison.Ordinal );
+		Assert.Contains( "line numbers", notes, StringComparison.Ordinal );
+		Assert.Contains( "themed current-line", notes, StringComparison.Ordinal );
+		Assert.Contains( "decorative gutter clicks", notes, StringComparison.Ordinal );
+		Assert.Contains( "wrapped continuation rows", notes, StringComparison.Ordinal );
+		Assert.Contains( "narrow viewports suppress the gutter", notes, StringComparison.Ordinal );
+	}
+
+	[Fact]
+	public void ReadmeConciseDescriptionIncludesNumberedEditor() {
+		string readme = File.ReadAllText( Path.Combine( RepositoryRoot(), "README.md" ) );
+
+		Assert.Contains( "fixed line numbers in a decorative left gutter", readme, StringComparison.Ordinal );
+		Assert.Contains( "current logical line", readme, StringComparison.Ordinal );
+		Assert.DoesNotContain( "## Release history", readme, StringComparison.OrdinalIgnoreCase );
+	}
+
 	private static string RepositoryRoot() {
 		DirectoryInfo? directory = new( AppContext.BaseDirectory );
 		while ( directory is not null && !File.Exists( Path.Combine( directory.FullName, "Icod.Dedit.sln" ) ) ) directory = directory.Parent;
