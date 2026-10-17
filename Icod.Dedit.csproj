@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+	Icod.Dedit
+	A tabbed terminal text editor.
+	Copyright (C) 2026  Timothy J. Bruce <uniblab@hotmail.com>
+-->
+
+<!--
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+		<LangVersion>13.0</LangVersion>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+		<AssemblyName>dedit</AssemblyName>
+		<RootNamespace>Icod.Dedit</RootNamespace>
+		<Version>1.0.0</Version>
+		<PackageVersion>1.0.0</PackageVersion>
+		<Configurations>Debug;Staging;Release</Configurations>
+		<PackAsTool>true</PackAsTool>
+		<ToolCommandName>dedit</ToolCommandName>
+		<PackageId>Icod.Dedit</PackageId>
+		<Authors>Timothy J. Bruce</Authors>
+		<Description>Tabbed terminal text editor for .NET 8, 9 and 10.</Description>
+		<PackageReleaseNotes>Initial 1.0.0 release: independent editable tabs, safe file saves, Unicode text editing with wrapped visual-row navigation, search and replace, linewise clipboard, and explicit file-format controls. See CHANGELOG.md for full history.</PackageReleaseNotes>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageProjectUrl>https://github.com/uniblab/Icod.Dedit</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/uniblab/Icod.Dedit</RepositoryUrl>
+		<PackageTags>editor;text-editor;terminal;console;tui;cli;dotnet-tool;dedit;icod;cross-platform</PackageTags>
+		<PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+		<Copyright>Copyright (C) 2026 Timothy J. Bruce</Copyright>
+		<TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
+	</PropertyGroup>
+	<ItemGroup>
+		<Compile Include="src/**/*.cs" />
+		<PackageReference Include="Icod.Widgets" Version="1.7.1" />
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+			<_Parameter1>Icod.Dedit.Tests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+	<ItemGroup>
+		<Content Include="README.md" Pack="true" PackagePath="/" />
+		<Content Include="LICENSE" Pack="true" PackagePath="/" />
+		<Content Include="CHANGELOG.md" Pack="true" PackagePath="/" />
+	</ItemGroup>
+</Project>
