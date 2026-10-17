@@ -60,6 +60,15 @@ public sealed class DeditReleaseIdentityTests {
 	}
 
 	[Fact]
+	public void LibraryContractsTrackPublishedWidgets171() {
+		string contracts = File.ReadAllText( Path.Combine( RepositoryRoot(), "docs", "Library-Contracts.md" ) );
+
+		Assert.Contains( "`Icod.Widgets 1.7.1`", contracts, StringComparison.Ordinal );
+		Assert.Contains( "/v1.7.1/README.md", contracts, StringComparison.Ordinal );
+		Assert.DoesNotContain( "`Icod.Widgets 1.7.0`", contracts, StringComparison.Ordinal );
+	}
+
+	[Fact]
 	public void ReadmeConciseDescriptionIncludesNumberedEditor() {
 		string readme = File.ReadAllText( Path.Combine( RepositoryRoot(), "README.md" ) );
 
