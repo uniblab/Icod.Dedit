@@ -8,6 +8,10 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Application and editing
 
+- Corrected vertical movement on wrapped text through Icod.Widgets 1.7.1.
+  Up/Down and Page Up/Page Down now traverse visual rows, preserve the
+  preferred visual column across short rows, and keep Dedit's status display
+  in logical line and character coordinates.
 - Added fixed line numbers in a decorative left gutter and theme-aware
   current-line styling. Wrapped continuations share the current-line band but
   show no repeated number; gutter clicks do not alter selection; and narrow
@@ -84,8 +88,9 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Build and validation
 
-- Updated the application dependency to Icod.Widgets 1.7.0 for the editor's
-  line-number gutter and current-line presentation API. This retains the 1.6.2
+- Updated the application dependency to Icod.Widgets 1.7.1 for wrapped
+  visual-row caret navigation, preferred-column retention, the editor's
+  line-number gutter, and current-line presentation API. This retains the 1.6.2
   menu/dialog and bordered-overlay corrections, the 1.5.0 linewise clipboard
   integration, and the DCurses 2.5.2 / Terminal 1.29.2 input chain. Dedit
   requests button-motion reporting so text selection drags work without
