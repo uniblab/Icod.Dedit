@@ -8,6 +8,7 @@ current head or certify a 1.0 release.
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
+| [Dedit `96345ed` / 39071905635](https://github.com/uniblab/Icod.Dedit/actions/runs/39071905635) | Preserve menu-item pointer clicks across Dedit's redraw-time layout pass; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 215 tests per .NET 8/9/10 target. Run 39071653508 retained all 214 prior tests and failed only the new redraw-layout click regression on each target before the correction. The package verifier checked exactly one `Icod.Dedit.1.0.0.nupkg`, required Widgets 1.7.1, and installed, launched, same-version updated and removed it. Windows also passed stale-package cleanup. |
 | [Dedit `7e7fae8` / 39070201419](https://github.com/uniblab/Icod.Dedit/actions/runs/39070201419) | Published Widgets 1.7.1 rebind; wrapped visual-row movement, preferred-column retention, logical line/character status regression and aligned released-library contract; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 215 tests per .NET 8/9/10 target. The new behavior and exact dependency/documentation contracts failed against Widgets 1.7.0 in run 39069163080 and passed after the rebind. Final review then found a stale library-contract reference; run 39070053193 retained all 214 prior tests and failed only its new assertion before correction. The package verifier required Widgets 1.7.1, checked exactly one `Icod.Dedit.1.0.0.nupkg`, and installed, launched, same-version updated and removed it. Windows also passed stale-package cleanup. |
 | [Dedit `eb59ef9` / 39064571852](https://github.com/uniblab/Icod.Dedit/actions/runs/39064571852) | Final-review correction preserving text-selection drags across ordinary redraws; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 213 tests per .NET 8/9/10 target. The new regression failed before the correction in run 39064418224 and passed afterward. Exact package verification, install, launch, same-version update and removal passed; Windows also passed stale-package cleanup. |
 | [Dedit `d2bd291` / 39063576613](https://github.com/uniblab/Icod.Dedit/actions/runs/39063576613) | Published Widgets 1.7.0 rebind; fixed line-number gutter, themed current-line band, wrapped-row, decorative-click and narrow-viewport regressions; curated documentation; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 212 tests per .NET 8/9/10 target. The package verifier required Widgets 1.7.0, checked exactly one `Icod.Dedit.1.0.0.nupkg`, and installed, launched, same-version updated and removed it. Windows also passed the stale-package cleanup regression. |
@@ -55,7 +56,11 @@ package checks do not replace a current-head live-terminal exercise.
   `build.cmd` reached Validate, verified exactly one 1.0.0 package, and
   completed install, launch, same-version update and removal from that
   package. A separate Release net10.0 `--version` returned `dedit 1.0.0`.
-  The live-terminal exercise remains outstanding. The owner deferred WSL
+  On 2026-10-17, the owner confirmed the line-number gutter and word-wrap
+  behavior on the then-current candidate, and reported that menu items still
+  ignored pointer clicks. Run 39071653508 reproduced that remaining redraw
+  defect before the correction in `96345ed`; its live menu-click retest and the
+  rest of the terminal exercise remain outstanding. The owner deferred WSL
   because of checkout line endings.
 - The 1.0.0 Staging package now checks source-corresponding README,
   CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.7.1 runtime

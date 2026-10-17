@@ -24,8 +24,9 @@ The entries under Unreleased describe implemented behavior. They are not a
 - Selected editor text now uses explicit contrasting colors instead of reverse
   video on color terminals, with a `SEL` status indicator; monochrome terminals
   retain the attribute-based fallback.
-- Preserved a menu's pending pointer press across ordinary redraws, so a mouse
-  release still invokes the row that was pressed.
+- Preserved a menu's pending pointer press across presentation updates and
+  unchanged layout passes, so the ordinary redraw between mouse press and
+  release no longer prevents the pressed row from being invoked.
 - Feed idle elapsed-time updates to Widgets for drag autoscroll, repainting
   after a visible update instead of redrawing every idle tick.
 - Added the `dedit` console executable and .NET tool payloads for .NET 8, 9
