@@ -29,7 +29,7 @@ using Xunit;
 
 public sealed class DeditClipboardTests {
 	[Fact]
-	public void PointerPasteMenuCommandUsesFocusedEditorClipboard() {
+	public void PointerCopyThenPasteOverSelectionCollapsesSelectionAndPastesAgain() {
 		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
 		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu );
 		DeditMenuPresenter presenter = new( menu ); presenter.Arrange( host.Screen.Bounds );
@@ -48,16 +48,27 @@ public sealed class DeditClipboardTests {
 			Pointer( shell, CursesMouseAction.Release, column, copyRow, 5 ) ) );
 		Assert.True( clipboard.Complete( copy.Request ) );
 
-		shell.Editor.View.SetSelection( shell.Document.Length, shell.Document.Length );
 		presenter.Update( shell.Editor ); host.Render();
 		Assert.Empty( Pointer( shell, CursesMouseAction.Press, 7, 0, 6 ) );
 		Assert.Empty( Pointer( shell, CursesMouseAction.Release, 7, 0, 7 ) );
 		host.Render(); Assert.True( menu.IsOpen );
 		int pasteRow = menu.RenderBounds.Row + 6;
 		Assert.Empty( Pointer( shell, CursesMouseAction.Press, column, pasteRow, 8 ) );
-		WidgetClipboardRequestedAction paste = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+		WidgetClipboardRequestedAction pasteOverSelection = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
 			Pointer( shell, CursesMouseAction.Release, column, pasteRow, 9 ) ) );
-		Assert.True( clipboard.Complete( paste.Request ) );
+		long revision = shell.Document.Revision;
+		Assert.True( clipboard.Complete( pasteOverSelection.Request ) );
+		Assert.Equal( "copy", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
+		Assert.Equal( revision, shell.Document.Revision ); Assert.False( shell.Editor.View.HasSelection ); Assert.Equal( 4, shell.Editor.View.Caret );
+
+		presenter.Update( shell.Editor ); host.Render();
+		Assert.Empty( Pointer( shell, CursesMouseAction.Press, 7, 0, 10 ) );
+		Assert.Empty( Pointer( shell, CursesMouseAction.Release, 7, 0, 11 ) );
+		host.Render(); Assert.True( menu.IsOpen );
+		Assert.Empty( Pointer( shell, CursesMouseAction.Press, column, pasteRow, 12 ) );
+		WidgetClipboardRequestedAction pasteAtCaret = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
+			Pointer( shell, CursesMouseAction.Release, column, pasteRow, 13 ) ) );
+		Assert.True( clipboard.Complete( pasteAtCaret.Request ) );
 		Assert.Equal( "copycopy", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
 	}
 
