@@ -66,8 +66,8 @@ try {
         $dependencyEntry = $archive.GetEntry("$root/dedit.deps.json")
         $reader = [System.IO.StreamReader]::new($dependencyEntry.Open())
         try { $dependencyManifest = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
-        if (@($dependencyManifest.libraries.PSObject.Properties.Name) -notcontains 'Icod.Widgets/1.7.1') {
-            throw "Tool payload '$framework' does not reference Icod.Widgets 1.7.1."
+        if (@($dependencyManifest.libraries.PSObject.Properties.Name) -notcontains 'Icod.Widgets/1.7.2') {
+            throw "Tool payload '$framework' does not reference Icod.Widgets 1.7.2."
         }
         $settingsEntry = $archive.GetEntry("$root/DotnetToolSettings.xml")
         $reader = [System.IO.StreamReader]::new($settingsEntry.Open())

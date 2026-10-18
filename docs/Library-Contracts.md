@@ -6,7 +6,7 @@ released [Icod.DCurses](https://github.com/uniblab/Icod.DCurses) and
 [Icod.Widgets](https://github.com/uniblab/Icod.Widgets) packages cover the
 core session, editing, workspace and theme needs. Verify each finer behavior
 against the package in its D1002+ slice. The 1.0.0 candidate's direct dependency is
-`Icod.Widgets 1.7.1`, which declares
+`Icod.Widgets 1.7.2`, which declares
 `Icod.DCurses 2.5.2`; a direct DCurses reference is added only if compiling
 against its public session types requires it.
 
@@ -21,7 +21,7 @@ against its public session types requires it.
 | D1008 presentation | `WidgetPalette.Create(session.PresentationCapabilities)`, `WidgetHost.SetTheme`, `CursesSession` clipboard and cursor-style leases. | Use advertised capabilities and bounded clipboard operations; text/default fallback stays usable. Test actual terminal output separately from headless rendering. |
 
 Existing release/API references:
-[Widgets 1.7 README](https://github.com/uniblab/Icod.Widgets/blob/v1.7.1/README.md),
+[Widgets 1.7 README](https://github.com/uniblab/Icod.Widgets/blob/v1.7.2/README.md),
 [Widgets public API baseline](https://github.com/uniblab/Icod.Widgets/blob/v1.3.0/docs/Public-API-Baseline-1.3.md),
 [DCurses 2.5.2 README](https://github.com/uniblab/Icod.DCurses/blob/v2.5.2/README.md).
 

@@ -4,7 +4,7 @@ This record contains historical checkpoints and current development evidence.
 Earlier sections describe their named revisions; they do not qualify the
 current head or certify a 1.0 release.
 
-## Current development head — 2026-10-17
+## Current development head — 2026-10-18
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
@@ -30,9 +30,10 @@ package checks do not replace a current-head live-terminal exercise.
 
 ### Remaining release gates
 
-- Widgets 1.7.1 is published and restored from NuGet in the current Dedit
-  matrix. Its wrapped visual-row navigation, preferred-column retention,
-  editor gutter and current-line presentation are integrated.
+- Widgets 1.7.2 is published and restored from NuGet in the current Dedit
+  matrix. Its identical-paste completion, wrapped visual-row navigation,
+  preferred-column retention, editor gutter and current-line presentation are
+  integrated.
   No-selection Copy/Cut and local linewise Paste are integrated;
   changed terminal clipboard text pastes as plain text. The dependency also
   carries corrected menu/dialog interaction, nested overlay rendering and the
@@ -63,7 +64,7 @@ package checks do not replace a current-head live-terminal exercise.
   rest of the terminal exercise remain outstanding. The owner deferred WSL
   because of checkout line endings.
 - The 1.0.0 Staging package now checks source-corresponding README,
-  CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.7.1 runtime
+  CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.7.2 runtime
   dependency, three tool payloads, install/launch, same-version update and
   removal. This is the first public Dedit version, so there is no published
   older version for a cross-version upgrade test. Release-config six-runner

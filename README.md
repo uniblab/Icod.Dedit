@@ -63,8 +63,10 @@ limit and uses the process-local text when the terminal query is unavailable.
 With no selection, Copy/Cut uses the current logical line and its exact
 terminator. A local linewise Paste inserts at the current line start; selected
 text is replaced normally. A different terminal clipboard value pastes as plain
-text. When an unterminated copied line is inserted before existing text, Paste
-adds the editor's current newline as a separator.
+text. Pasting text identical to an active selection completes by collapsing the
+selection at its endpoint without creating a document edit. When an
+unterminated copied line is inserted before existing text, Paste adds the
+editor's current newline as a separator.
 File → Save or Ctrl+S opens Save As for Untitled, or writes an opened file
 using its original encoding and exact line endings after checking for external
 changes. File → Save As or

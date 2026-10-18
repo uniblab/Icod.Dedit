@@ -26,29 +26,32 @@ using Xunit;
 
 public sealed class DeditReleaseIdentityTests {
 	[Fact]
-	public void CandidateUsesPublishedWidgets171() {
+	public void CandidateUsesPublishedWidgets172() {
 		XDocument project = XDocument.Load( Path.Combine( RepositoryRoot(), "Icod.Dedit.csproj" ) );
 		XElement dependency = Assert.Single( project.Descendants( "PackageReference" ),
 			candidate => string.Equals( (string?)candidate.Attribute( "Include" ), "Icod.Widgets", StringComparison.Ordinal ) );
 
-		Assert.Equal( "1.7.1", (string?)dependency.Attribute( "Version" ) );
+		Assert.Equal( "1.7.2", (string?)dependency.Attribute( "Version" ) );
 		Assert.Equal( "1.0.0", Assert.Single( project.Descendants( "Version" ) ).Value );
 		Assert.Equal( "1.0.0", Assert.Single( project.Descendants( "PackageVersion" ) ).Value );
 	}
 
 	[Fact]
-	public void ToolVerifierRequiresWidgets171() {
+	public void ToolVerifierRequiresWidgets172() {
 		string verifier = File.ReadAllText( Path.Combine( RepositoryRoot(), "packaging", "VerifyDeditTool.ps1" ) );
 
-		Assert.Contains( "Icod.Widgets/1.7.1", verifier, StringComparison.Ordinal );
-		Assert.DoesNotContain( "Icod.Widgets/1.7.0", verifier, StringComparison.Ordinal );
+		Assert.Contains( "Icod.Widgets/1.7.2", verifier, StringComparison.Ordinal );
+		Assert.DoesNotContain( "Icod.Widgets/1.7.1", verifier, StringComparison.Ordinal );
 	}
 
 	[Fact]
 	public void CuratedNotesDescribeWrappedCaretCorrection() {
 		string notes = File.ReadAllText( Path.Combine( RepositoryRoot(), "docs", "releases", "1.0.0.md" ) );
 
-		Assert.Contains( "Icod.Widgets 1.7.1", notes, StringComparison.Ordinal );
+		Assert.Contains( "Icod.Widgets 1.7.2", notes, StringComparison.Ordinal );
+		Assert.Contains( "identical text", notes, StringComparison.OrdinalIgnoreCase );
+		Assert.Contains( "mouse", notes, StringComparison.OrdinalIgnoreCase );
+		Assert.Contains( "Ctrl+V", notes, StringComparison.Ordinal );
 		Assert.Contains( "wrapped visual rows", notes, StringComparison.Ordinal );
 		Assert.Contains( "preferred visual column", notes, StringComparison.Ordinal );
 		Assert.Contains( "logical line and character", notes, StringComparison.Ordinal );
@@ -60,12 +63,12 @@ public sealed class DeditReleaseIdentityTests {
 	}
 
 	[Fact]
-	public void LibraryContractsTrackPublishedWidgets171() {
+	public void LibraryContractsTrackPublishedWidgets172() {
 		string contracts = File.ReadAllText( Path.Combine( RepositoryRoot(), "docs", "Library-Contracts.md" ) );
 
-		Assert.Contains( "`Icod.Widgets 1.7.1`", contracts, StringComparison.Ordinal );
-		Assert.Contains( "/v1.7.1/README.md", contracts, StringComparison.Ordinal );
-		Assert.DoesNotContain( "`Icod.Widgets 1.7.0`", contracts, StringComparison.Ordinal );
+		Assert.Contains( "`Icod.Widgets 1.7.2`", contracts, StringComparison.Ordinal );
+		Assert.Contains( "/v1.7.2/README.md", contracts, StringComparison.Ordinal );
+		Assert.DoesNotContain( "`Icod.Widgets 1.7.1`", contracts, StringComparison.Ordinal );
 	}
 
 	[Fact]
@@ -74,6 +77,7 @@ public sealed class DeditReleaseIdentityTests {
 
 		Assert.Contains( "fixed line numbers in a decorative left gutter", readme, StringComparison.Ordinal );
 		Assert.Contains( "current logical line", readme, StringComparison.Ordinal );
+		Assert.Contains( "identical to an active selection", readme, StringComparison.Ordinal );
 		Assert.DoesNotContain( "## Release history", readme, StringComparison.OrdinalIgnoreCase );
 	}
 
