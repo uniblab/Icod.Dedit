@@ -38,25 +38,25 @@ public sealed class DeditClipboardTests {
 		shell.Process( Ctrl( 'a' ), TimeSpan.FromMilliseconds( 1 ) );
 		presenter.Update( shell.Editor ); host.Render();
 
-		Assert.Empty( Pointer( shell, CursesMouseAction.Press, 7, 0 ) );
-		Assert.Empty( Pointer( shell, CursesMouseAction.Release, 7, 0 ) );
+		Assert.Empty( Pointer( shell, CursesMouseAction.Press, 7, 0, 2 ) );
+		Assert.Empty( Pointer( shell, CursesMouseAction.Release, 7, 0, 3 ) );
 		host.Render(); Assert.True( menu.IsOpen );
 		int column = menu.RenderBounds.Column + 2;
 		int copyRow = menu.RenderBounds.Row + 5;
-		Assert.Empty( Pointer( shell, CursesMouseAction.Press, column, copyRow ) );
+		Assert.Empty( Pointer( shell, CursesMouseAction.Press, column, copyRow, 4 ) );
 		WidgetClipboardRequestedAction copy = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
-			Pointer( shell, CursesMouseAction.Release, column, copyRow ) ) );
+			Pointer( shell, CursesMouseAction.Release, column, copyRow, 5 ) ) );
 		Assert.True( clipboard.Complete( copy.Request ) );
 
 		shell.Editor.View.SetSelection( shell.Document.Length, shell.Document.Length );
 		presenter.Update( shell.Editor ); host.Render();
-		Assert.Empty( Pointer( shell, CursesMouseAction.Press, 7, 0 ) );
-		Assert.Empty( Pointer( shell, CursesMouseAction.Release, 7, 0 ) );
+		Assert.Empty( Pointer( shell, CursesMouseAction.Press, 7, 0, 6 ) );
+		Assert.Empty( Pointer( shell, CursesMouseAction.Release, 7, 0, 7 ) );
 		host.Render(); Assert.True( menu.IsOpen );
 		int pasteRow = menu.RenderBounds.Row + 6;
-		Assert.Empty( Pointer( shell, CursesMouseAction.Press, column, pasteRow ) );
+		Assert.Empty( Pointer( shell, CursesMouseAction.Press, column, pasteRow, 8 ) );
 		WidgetClipboardRequestedAction paste = Assert.IsType<WidgetClipboardRequestedAction>( Assert.Single(
-			Pointer( shell, CursesMouseAction.Release, column, pasteRow ) ) );
+			Pointer( shell, CursesMouseAction.Release, column, pasteRow, 9 ) ) );
 		Assert.True( clipboard.Complete( paste.Request ) );
 		Assert.Equal( "copycopy", shell.Document.Read( 0, checked( (int)shell.Document.Length ) ) );
 	}
@@ -253,6 +253,6 @@ public sealed class DeditClipboardTests {
 
 	private static WidgetInput Ctrl( char key ) => WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control, new Rune( key ) );
 	private static WidgetInput Alt( char key ) => WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt, new Rune( key ) );
-	private static IReadOnlyList<WidgetAction> Pointer( EditorShell shell, CursesMouseAction action, int column, int row ) =>
-		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( action, CursesMouseButton.Primary, column, row ) ), TimeSpan.Zero );
+	private static IReadOnlyList<WidgetAction> Pointer( EditorShell shell, CursesMouseAction action, int column, int row, int milliseconds ) =>
+		shell.Process( WidgetInput.PointerInput( new CursesMouseEvent( action, CursesMouseButton.Primary, column, row ) ), TimeSpan.FromMilliseconds( milliseconds ) );
 }
