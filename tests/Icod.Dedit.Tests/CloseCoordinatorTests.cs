@@ -41,6 +41,66 @@ public sealed class CloseCoordinatorTests {
 	}
 
 	[Theory]
+	[InlineData( 100, 30, 12, 27, 5, 45 )]
+	[InlineData( 20, 3, 0, 0, 3, 20 )]
+	public void DirtyPromptUsesDeditSpecifiedCompactBounds( int columns, int rows,
+		int expectedRow, int expectedColumn, int expectedRows, int expectedColumns ) {
+		using WidgetHost host = new( new CursesScreen( columns, rows ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry dirty = manager.OpenUntitled();
+		dirty.Shell.Process( WidgetInput.Paste( "dirty" ), TimeSpan.Zero );
+		CloseCoordinator close = new( host, manager, new DocumentFileService( Path.GetTempPath() ) );
+
+		Assert.False( close.Request( dirty.Key ) );
+
+		WidgetMessageDialog dialog = Assert.IsType<WidgetMessageDialog>( host.FocusedWidget );
+		Assert.Equal( new CursesRectangle( expectedRow, expectedColumn, expectedRows, expectedColumns ), dialog.Bounds );
+	}
+
+	[Fact]
+	public void DirtyPromptRecentersAndClampsAfterResize() {
+		CursesScreen screen = new( 100, 30 );
+		using WidgetHost host = new( screen, WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry dirty = manager.OpenUntitled();
+		dirty.Shell.Process( WidgetInput.Paste( "dirty" ), TimeSpan.Zero );
+		CloseCoordinator close = new( host, manager, new DocumentFileService( Path.GetTempPath() ) );
+		Assert.False( close.Request( dirty.Key ) );
+		WidgetMessageDialog dialog = Assert.IsType<WidgetMessageDialog>( host.FocusedWidget );
+		screen.Resize( 60, 10 );
+		close.Arrange();
+		Assert.Equal( new CursesRectangle( 2, 7, 5, 45 ), dialog.Bounds );
+
+		screen.Resize( 30, 4 );
+		close.Arrange();
+		Assert.Equal( new CursesRectangle( 0, 0, 4, 30 ), dialog.Bounds );
+	}
+
+	[Fact]
+	public void UnchangedLayoutBetweenPointerPressAndReleasePreservesClick() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry dirty = manager.OpenUntitled();
+		dirty.Shell.Process( WidgetInput.Paste( "dirty" ), TimeSpan.Zero );
+		CloseCoordinator close = new( host, manager, new DocumentFileService( Path.GetTempPath() ) );
+		Assert.False( close.Request( dirty.Key ) );
+		WidgetMessageDialog dialog = Assert.IsType<WidgetMessageDialog>( host.FocusedWidget );
+		host.Render();
+		int row = dialog.Bounds.BottomExclusive - 2;
+		int column = dialog.Bounds.Column + 23;
+
+		Assert.Empty( host.Process( WidgetInput.PointerInput( new( CursesMouseAction.Press,
+			CursesMouseButton.Primary, column, row ) ), TimeSpan.Zero ).Actions );
+		close.Arrange();
+		host.Render();
+		WidgetDialogCompletedAction completed = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+			host.Process( WidgetInput.PointerInput( new( CursesMouseAction.Release,
+				CursesMouseButton.Primary, column, row ) ), TimeSpan.Zero ).Actions ) );
+
+		Assert.Equal( WidgetDialogOutcome.Cancel, completed.Result.Outcome );
+	}
+
+	[Theory]
 	[InlineData( "enter" )]
 	[InlineData( "escape" )]
 	[InlineData( "c" )]
@@ -194,7 +254,7 @@ public sealed class CloseCoordinatorTests {
 
 	private static WidgetDialogCompletedAction ClickDecision( WidgetHost host, string choice ) {
 		WidgetMessageDialog dialog = Assert.IsType<WidgetMessageDialog>( host.FocusedWidget );
-		dialog.Arrange( new( 2, 2, 7, 44 ) ); host.Render();
+		host.Render();
 		int row = dialog.Bounds.BottomExclusive - 2;
 		int column = dialog.Bounds.Column + ( choice switch { "yes" => 2, "no" => 9, _ => 23 } );
 		Assert.Empty( host.Process( WidgetInput.PointerInput( new( CursesMouseAction.Press,

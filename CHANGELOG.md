@@ -82,9 +82,11 @@ The entries under Unreleased describe implemented behavior. They are not a
   confirmation with No selected by default.
 - Added per-tab Yes / Don't Save / Cancel decisions for dirty Close, Close All
   and Exit, with Y/N/C shortcuts and Cancel selected by default. These prompts
-  alone use a capability-aware red warning presentation. Clean documents close
-  without a prompt; Cancel leaves later tabs intact and preserves earlier
-  successful saves.
+  alone use a capability-aware red warning presentation in a compact, centered
+  45-column by 5-row pop-up that clamps and recenters on small or resized
+  terminals. Clean documents close without a prompt; Cancel leaves later tabs
+  intact and preserves earlier successful saves. Unchanged redraws preserve a
+  pending pointer click on the dialog actions.
 - Added explicit Reload/Keep decisions when an activated file has changed
   outside the editor or a direct save finds a conflict. Reload confirms
   discarding dirty edits; Keep retains the buffer and the original-path

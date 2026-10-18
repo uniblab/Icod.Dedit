@@ -19,6 +19,7 @@
 - Yes saves and closes only after a successful write; No deliberately discards and closes; Cancel, Escape or default Enter retains the document and stops a batch close/exit.
 - Style is graphical representation only. It must not select actions, assign shortcuts, map outcomes, change hit regions, or decide whether to save/discard/close.
 - Apply the red warning styles only to dirty-document close prompts. About, overwrite, external-change, search, picker and other dialogs retain their existing presentation.
+- Retain the generic lower-layer panel and Widgets `Arrange(CursesRectangle)` contracts. Dedit, not Widgets, specifies the dirty-close dialog's 45-column by 5-row centered bounds and clamps them to the current viewport.
 - Keep README concise and version-neutral; put dependency and release history in CHANGELOG, `docs/releases/1.0.0.md`, `docs/Library-Contracts.md` and `docs/Qualification.md`.
 - Do not merge, tag or publish.
 
@@ -30,6 +31,7 @@
 - Save failure and Save As requirements must keep the document available; the new generic outcome names must not weaken existing safety checks.
 - RGB, indexed-color, partial-color and monochrome terminals must receive legible presentation; capability fallback must not synthesize unsupported color axes.
 - Other Dedit uses of the newly obsolete `WidgetMessageDialog.YesNo` must migrate to explicit arrays so Staging/Release warnings remain clean without suppressing CS0618 in product code.
+- Repeated redraws at unchanged geometry must not rearrange the dirty-close dialog or cancel an in-progress pointer click; terminal resize must recenter and clamp it.
 
 ---
 
@@ -124,3 +126,24 @@
 - [ ] **Step 2: Require the full CI matrix.** Verify Linux, Windows and macOS Staging restore/build/test/pack/tool-lifecycle jobs for net8.0/net9.0/net10.0. Inspect logs for exact Widgets 1.8.0 resolution and zero warnings/errors rather than relying only on job conclusions.
 - [ ] **Step 3: Run a whole-branch review.** Review from the PR merge base through its final head, focusing on clean-close bypass, save/discard safety, default/cancel behavior, mnemonic/pointer parity, style isolation, obsolete-use removal and documentation accuracy. Fix Critical/Important findings test-first.
 - [ ] **Step 4: Record final evidence and stop.** Add the final run URL, commit, test counts and package lifecycle result to `docs/Qualification.md`, push, require the final-head matrix to pass, and report for owner review. Do not merge, tag or publish.
+
+### Task 6: Consumer-sized dirty-close pop-up
+
+**Files:**
+- Modify: `src/Documents/CloseCoordinator.cs`
+- Modify: `src/Application/DeditTerminal.cs`
+- Test: `tests/Icod.Dedit.Tests/CloseCoordinatorTests.cs`
+- Modify: `CHANGELOG.md`
+- Modify: `docs/releases/1.0.0.md`
+
+**Interfaces:**
+- Consumes: the existing DCurses panel-backed modal presentation and public Widgets 1.8.0 `Widget.Arrange(CursesRectangle)` contract.
+- Produces: Dedit-owned 45-column by 5-row centered dirty-close bounds that clamp to and recenter within the current viewport without changing generic Widgets behavior.
+
+- [ ] **Step 1: Write failing layout tests.** Assert a dirty-close request on a 100-column by 30-row screen produces bounds `(12, 27, 5, 45)`, while a 20-column by 3-row screen clamps to `(0, 0, 3, 20)`. Resize the first screen and invoke the coordinator's layout pass to prove the open prompt recenters and reclamps.
+- [ ] **Step 2: Write the redraw-safety regression.** Press a dirty-close action, run the unchanged layout pass and render, then release over the same action. Assert the action completes once so an ordinary draw between press and release cannot cancel the click.
+- [ ] **Step 3: Run and verify RED.** Run `dotnet test tests/Icod.Dedit.Tests/Icod.Dedit.Tests.csproj -c Debug -f net10.0 --filter FullyQualifiedName~CloseCoordinatorTests`. Expected: automatic compact bounds and coordinator layout entry point do not exist.
+- [ ] **Step 4: Implement consumer-owned layout.** Store the pending `WidgetMessageDialog` in `CloseCoordinator`; immediately arrange it after `ShowModal`, expose an internal idempotent `Arrange()` pass, center 45 by 5 within `host.Screen.Bounds`, and clamp each dimension to the viewport. Clear the reference when its matching completion is accepted. Call `close.Arrange()` from `DeditTerminal.DrawAsync` before rendering; skip `dialog.Arrange` when bounds are unchanged.
+- [ ] **Step 5: Run and verify GREEN.** Repeat Step 3, then run the full net10.0 test project. Expected: all tests pass and pointer/mnemonic close policy remains unchanged.
+- [ ] **Step 6: Curate release history.** Record the compact, consumer-sized dirty-close presentation in CHANGELOG and `docs/releases/1.0.0.md`; keep README unchanged and version-neutral.
+- [ ] **Step 7: Run full local validation and commit.** Run the repository build/pack/validation path and `dotnet run --project Icod.Dedit.csproj -c Release -f net10.0 -- --version`; commit the tested change and push it to the existing unmerged PR. Do not merge, tag or publish.

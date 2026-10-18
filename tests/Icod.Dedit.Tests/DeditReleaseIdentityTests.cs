@@ -54,6 +54,8 @@ public sealed class DeditReleaseIdentityTests {
 		Assert.Contains( "Cancel", notes, StringComparison.Ordinal );
 		Assert.Contains( "red", notes, StringComparison.OrdinalIgnoreCase );
 		Assert.Contains( "dirty", notes, StringComparison.OrdinalIgnoreCase );
+		Assert.Contains( "compact", notes, StringComparison.OrdinalIgnoreCase );
+		Assert.Contains( "centered", notes, StringComparison.OrdinalIgnoreCase );
 		Assert.Contains( "identical text", notes, StringComparison.OrdinalIgnoreCase );
 		Assert.Contains( "mouse", notes, StringComparison.OrdinalIgnoreCase );
 		Assert.Contains( "Ctrl+V", notes, StringComparison.Ordinal );
@@ -80,6 +82,8 @@ public sealed class DeditReleaseIdentityTests {
 
 		Assert.Contains( "`Icod.Widgets 1.8.0`", contracts, StringComparison.Ordinal );
 		Assert.Contains( "/v1.8.0/README.md", contracts, StringComparison.Ordinal );
+		Assert.Contains( "`Arrange(CursesRectangle)`", contracts, StringComparison.Ordinal );
+		Assert.Contains( "Dedit supplies the dirty-close dialog bounds", contracts, StringComparison.Ordinal );
 		Assert.DoesNotContain( "`Icod.Widgets 1.7.2`", contracts, StringComparison.Ordinal );
 	}
 

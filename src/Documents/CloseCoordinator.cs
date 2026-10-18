@@ -21,6 +21,7 @@
 
 namespace Icod.Dedit.Documents;
 
+using Icod.DCurses;
 using Icod.Dedit.Presentation;
 using Icod.Widgets;
 
@@ -28,12 +29,15 @@ internal enum CloseResolution { Unrelated, Kept, Closed, SaveAsRequired }
 
 internal sealed class CloseCoordinator {
 	private const string DialogId = "dedit-close-document";
+	private const int DirtyDialogColumns = 45;
+	private const int DirtyDialogRows = 5;
 	private readonly WidgetHost host;
 	private readonly DocumentManager documents;
 	private readonly DocumentFileService files;
 	private readonly WidgetStyles dirtyDialogStyles;
 	private string? pendingKey;
 	private string? pendingDialogId;
+	private WidgetMessageDialog? pendingDialog;
 	internal string? SaveAsKey { get; private set; }
 
 	internal CloseCoordinator( WidgetHost host, DocumentManager documents, DocumentFileService files,
@@ -52,9 +56,28 @@ internal sealed class CloseCoordinator {
 		if ( !entry.HasUnsavedChanges ) return this.documents.Close( key );
 		this.pendingKey = key;
 		this.pendingDialogId = DialogId + "-" + Guid.NewGuid().ToString( "N" );
-		this.host.ShowModal( DeditMenu.CreateDirtyCloseDialog(
-			this.pendingDialogId, entry.Caption, this.dirtyDialogStyles ) );
+		WidgetMessageDialog dialog = DeditMenu.CreateDirtyCloseDialog(
+			this.pendingDialogId, entry.Caption, this.dirtyDialogStyles );
+		this.pendingDialog = dialog;
+		this.host.ShowModal( dialog );
+		this.Arrange();
 		return false;
+	}
+
+	internal void Arrange() {
+		if ( this.pendingDialog is not { IsOpen: true } dialog ) return;
+		CursesRectangle bounds = DirtyDialogBounds( this.host.Screen.Bounds );
+		if ( dialog.Bounds != bounds ) dialog.Arrange( bounds );
+	}
+
+	private static CursesRectangle DirtyDialogBounds( CursesRectangle viewport ) {
+		int rows = Math.Min( DirtyDialogRows, viewport.Rows );
+		int columns = Math.Min( DirtyDialogColumns, viewport.Columns );
+		return new CursesRectangle(
+			viewport.Row + ( viewport.Rows - rows ) / 2,
+			viewport.Column + ( viewport.Columns - columns ) / 2,
+			rows,
+			columns );
 	}
 
 	internal async Task<CloseResolution> CompleteAsync( WidgetDialogCompletedAction action, CancellationToken token ) {
@@ -63,6 +86,7 @@ internal sealed class CloseCoordinator {
 		string key = this.pendingKey;
 		this.pendingKey = null;
 		this.pendingDialogId = null;
+		this.pendingDialog = null;
 		this.SaveAsKey = null;
 		DocumentEntry? entry = this.documents.Find( key );
 		if ( entry is null ) return CloseResolution.Kept;

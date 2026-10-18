@@ -139,6 +139,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.Editor?.Arrange();
 		this.goTo.Arrange();
+		this.close.Arrange();
 		this.session.StandardScreen.Clear();
 		this.Write( screen.Rows - 1, this.saveError is not null ? this.saveError : this.openErrors.Count > 0 ?
 			$"Open error ({this.openErrors.Count}): {this.openErrors[ 0 ]}" :
