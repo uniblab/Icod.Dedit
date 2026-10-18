@@ -134,11 +134,35 @@ internal static class DeditMenu {
 		$"dedit {typeof( DeditMenu ).Assembly.GetName().Version?.ToString( 3 ) ?? "0.1.0"}\n" +
 		"Copyright (C) 2026 Timothy J. Bruce\nGPL-3.0-or-later" );
 
-	internal static WidgetMessageDialog CreateExternalChangeDialog( string id, string caption, bool hasUnsavedChanges ) =>
-		WidgetMessageDialog.YesNo( id, "External file changed",
-			$"Reload {Icod.Dedit.Documents.DocumentManager.SanitizeDisplay( caption )} from disk? " +
-			( hasUnsavedChanges ? "Yes discards unsaved edits. " : "" ) +
-			"No keeps the editor copy; Save As can preserve it separately." );
+	internal static WidgetMessageDialog CreateDirtyCloseDialog( string id, string caption, WidgetStyles styles ) => new WidgetMessageDialog(
+		id,
+		$"Unsaved Changes — {DocumentManager.SanitizeDisplay( caption )}",
+		"Do you want to save these changes?",
+		[
+			new( "yes", "Yes", WidgetDialogOutcome.Yes ) { Mnemonic = 'Y' },
+			new( "no", "Don't Save", WidgetDialogOutcome.No ) { Mnemonic = 'N' },
+			new( "cancel", "Cancel", WidgetDialogOutcome.Cancel ) {
+				Mnemonic = 'C', IsDefault = true, IsCancel = true
+			}
+		]
+	) { Styles = styles ?? throw new ArgumentNullException( nameof( styles ) ) };
+
+	internal static WidgetMessageDialog CreateExternalChangeDialog( string id, string caption, bool hasUnsavedChanges ) => new(
+		id, "External file changed",
+		$"Reload {Icod.Dedit.Documents.DocumentManager.SanitizeDisplay( caption )} from disk? " +
+		( hasUnsavedChanges ? "Yes discards unsaved edits. " : "" ) +
+		"No keeps the editor copy; Save As can preserve it separately.",
+		[
+			new( "yes", "Yes", WidgetDialogOutcome.Yes ) { Mnemonic = 'Y' },
+			new( "no", "No", WidgetDialogOutcome.No ) { Mnemonic = 'N', IsDefault = true }
+		] );
+
+	internal static WidgetMessageDialog CreateOverwriteDialog( string id, string caption ) => new(
+		id, "Overwrite file?", $"Replace {DocumentManager.SanitizeDisplay( caption )}?",
+		[
+			new( "yes", "Yes", WidgetDialogOutcome.Yes ) { Mnemonic = 'Y' },
+			new( "no", "No", WidgetDialogOutcome.No ) { Mnemonic = 'N', IsDefault = true }
+		] );
 
 	internal static void UpdateState( WidgetMenuBar menu, WidgetTextEditor? editor, bool canSave = false, WidgetSearchOptions? searchOptions = null, TextFileEncoding? encoding = null, int? indentationWidth = null ) {
 		ArgumentNullException.ThrowIfNull( menu );

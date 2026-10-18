@@ -25,6 +25,41 @@ using Icod.DCurses;
 using Icod.Widgets;
 
 internal static class DeditTheme {
+	internal static WidgetStyles CreateDirtyDialogStyles( CursesPresentationCapabilities capabilities ) {
+		CursesColor red = capabilities.SupportsDirectRgb ? CursesColor.Rgb( 192, 0, 0 )
+			: capabilities.IndexedColorCount > 7 ? CursesColor.Indexed( 1 ) : CursesColor.Default;
+		CursesColor white = capabilities.SupportsDirectRgb ? CursesColor.Rgb( 255, 255, 255 )
+			: capabilities.IndexedColorCount > 7 ? CursesColor.Indexed( 7 ) : CursesColor.Default;
+		CursesTextAttributes emphasis = capabilities.SupportsBold ? CursesTextAttributes.Bold
+			: capabilities.SupportsUnderline ? CursesTextAttributes.Underline
+			: capabilities.SupportsStandout ? CursesTextAttributes.Standout : CursesTextAttributes.None;
+		CursesTextAttributes focused = red.IsDefault && white.IsDefault
+			? capabilities.SupportsReverse ? CursesTextAttributes.Reverse
+			: capabilities.SupportsStandout ? CursesTextAttributes.Standout : emphasis
+			: CursesTextAttributes.None;
+		CursesTextAttributes disabled = capabilities.SupportsDim ? CursesTextAttributes.Dim : CursesTextAttributes.None;
+
+		CursesStyle Style( CursesColor foreground, CursesColor background, CursesTextAttributes attributes = CursesTextAttributes.None ) {
+			CursesColor front = capabilities.SupportsForegroundColor ? foreground : CursesColor.Default;
+			CursesColor back = capabilities.SupportsBackgroundColor ? background : CursesColor.Default;
+			CursesTextAttributes allowed = capabilities.SupportedAttributes;
+			if ( !front.IsDefault || !back.IsDefault ) allowed &= ~capabilities.ColorRestrictedAttributes;
+			return new CursesStyle( front, back, attributes & allowed );
+		}
+
+		CursesStyle ordinary = Style( white, red, red.IsDefault && white.IsDefault ? emphasis : CursesTextAttributes.None );
+		CursesStyle emphasized = Style( white, red, emphasis );
+		return WidgetStyles.Empty
+			.With( WidgetStyleRole.DialogSurface, ordinary )
+			.With( WidgetStyleRole.Text, ordinary )
+			.With( WidgetStyleRole.DialogTitle, emphasized )
+			.With( WidgetStyleRole.DialogBorder, emphasized )
+			.With( WidgetStyleRole.DialogAction, ordinary )
+			.With( WidgetStyleRole.DialogDefaultAction, emphasized )
+			.With( WidgetStyleRole.DialogFocusedAction, Style( red, white, focused ) )
+			.With( WidgetStyleRole.DialogDisabledAction, Style( white, red, disabled ) );
+	}
+
 	internal static WidgetTheme Create( CursesPresentationCapabilities capabilities ) {
 		WidgetTheme theme = WidgetPalette.Create( capabilities );
 		if ( !capabilities.SupportsForegroundColor || !capabilities.SupportsBackgroundColor ) return theme;

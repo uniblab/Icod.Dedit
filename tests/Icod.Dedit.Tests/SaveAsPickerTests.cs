@@ -23,6 +23,7 @@ namespace Icod.Dedit.Tests;
 
 using Icod.DCurses;
 using Icod.Dedit.Documents;
+using Icod.Dedit.Presentation;
 using Icod.Widgets;
 using Xunit;
 
@@ -49,7 +50,7 @@ public sealed class SaveAsPickerTests {
 			Assert.True( target.ExistedAtInspection );
 			Assert.Equal( path, target.TargetPath );
 			Assert.Equal( "original", await File.ReadAllTextAsync( path ) );
-			host.ShowModal( WidgetMessageDialog.YesNo( "confirm-overwrite", "Overwrite file?", "Replace existing.txt?" ) );
+			host.ShowModal( DeditMenu.CreateOverwriteDialog( "confirm-overwrite", "existing.txt" ) );
 			WidgetDialogCompletedAction declined = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
 				host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.Zero ).Actions ) );
 			Assert.Equal( WidgetDialogOutcome.No, declined.Result.Outcome );

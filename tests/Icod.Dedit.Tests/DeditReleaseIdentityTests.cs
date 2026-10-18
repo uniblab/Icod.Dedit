@@ -26,29 +26,34 @@ using Xunit;
 
 public sealed class DeditReleaseIdentityTests {
 	[Fact]
-	public void CandidateUsesPublishedWidgets172() {
+	public void CandidateUsesPublishedWidgets180() {
 		XDocument project = XDocument.Load( Path.Combine( RepositoryRoot(), "Icod.Dedit.csproj" ) );
 		XElement dependency = Assert.Single( project.Descendants( "PackageReference" ),
 			candidate => string.Equals( (string?)candidate.Attribute( "Include" ), "Icod.Widgets", StringComparison.Ordinal ) );
 
-		Assert.Equal( "1.7.2", (string?)dependency.Attribute( "Version" ) );
+		Assert.Equal( "1.8.0", (string?)dependency.Attribute( "Version" ) );
 		Assert.Equal( "1.0.0", Assert.Single( project.Descendants( "Version" ) ).Value );
 		Assert.Equal( "1.0.0", Assert.Single( project.Descendants( "PackageVersion" ) ).Value );
 	}
 
 	[Fact]
-	public void ToolVerifierRequiresWidgets172() {
+	public void ToolVerifierRequiresWidgets180() {
 		string verifier = File.ReadAllText( Path.Combine( RepositoryRoot(), "packaging", "VerifyDeditTool.ps1" ) );
 
-		Assert.Contains( "Icod.Widgets/1.7.2", verifier, StringComparison.Ordinal );
-		Assert.DoesNotContain( "Icod.Widgets/1.7.1", verifier, StringComparison.Ordinal );
+		Assert.Contains( "Icod.Widgets/1.8.0", verifier, StringComparison.Ordinal );
+		Assert.DoesNotContain( "Icod.Widgets/1.7.2", verifier, StringComparison.Ordinal );
 	}
 
 	[Fact]
-	public void CuratedNotesDescribeWrappedCaretCorrection() {
+	public void CuratedNotesDescribeWidgets180DirtyCloseBehavior() {
 		string notes = File.ReadAllText( Path.Combine( RepositoryRoot(), "docs", "releases", "1.0.0.md" ) );
 
-		Assert.Contains( "Icod.Widgets 1.7.2", notes, StringComparison.Ordinal );
+		Assert.Contains( "Icod.Widgets 1.8.0", notes, StringComparison.Ordinal );
+		Assert.Contains( "Yes / Don't Save / Cancel", notes, StringComparison.Ordinal );
+		Assert.Contains( "Y/N/C", notes, StringComparison.Ordinal );
+		Assert.Contains( "Cancel", notes, StringComparison.Ordinal );
+		Assert.Contains( "red", notes, StringComparison.OrdinalIgnoreCase );
+		Assert.Contains( "dirty", notes, StringComparison.OrdinalIgnoreCase );
 		Assert.Contains( "identical text", notes, StringComparison.OrdinalIgnoreCase );
 		Assert.Contains( "mouse", notes, StringComparison.OrdinalIgnoreCase );
 		Assert.Contains( "Ctrl+V", notes, StringComparison.Ordinal );
@@ -63,21 +68,32 @@ public sealed class DeditReleaseIdentityTests {
 	}
 
 	[Fact]
-	public void LibraryContractsTrackPublishedWidgets172() {
+	public void ProductSourceDoesNotUseObsoleteYesNoFactory() {
+		string source = Path.Combine( RepositoryRoot(), "src" );
+		foreach ( string path in Directory.EnumerateFiles( source, "*.cs", SearchOption.AllDirectories ) )
+			Assert.DoesNotContain( "WidgetMessageDialog.YesNo(", File.ReadAllText( path ), StringComparison.Ordinal );
+	}
+
+	[Fact]
+	public void LibraryContractsTrackPublishedWidgets180() {
 		string contracts = File.ReadAllText( Path.Combine( RepositoryRoot(), "docs", "Library-Contracts.md" ) );
 
-		Assert.Contains( "`Icod.Widgets 1.7.2`", contracts, StringComparison.Ordinal );
-		Assert.Contains( "/v1.7.2/README.md", contracts, StringComparison.Ordinal );
-		Assert.DoesNotContain( "`Icod.Widgets 1.7.1`", contracts, StringComparison.Ordinal );
+		Assert.Contains( "`Icod.Widgets 1.8.0`", contracts, StringComparison.Ordinal );
+		Assert.Contains( "/v1.8.0/README.md", contracts, StringComparison.Ordinal );
+		Assert.DoesNotContain( "`Icod.Widgets 1.7.2`", contracts, StringComparison.Ordinal );
 	}
 
 	[Fact]
 	public void ReadmeConciseDescriptionIncludesNumberedEditor() {
 		string readme = File.ReadAllText( Path.Combine( RepositoryRoot(), "README.md" ) );
 
+		Assert.Contains( "Yes / Don't Save / Cancel", readme, StringComparison.Ordinal );
+		Assert.Contains( "Y/N/C", readme, StringComparison.Ordinal );
+		Assert.Contains( "Cancel selected by default", readme, StringComparison.Ordinal );
 		Assert.Contains( "fixed line numbers in a decorative left gutter", readme, StringComparison.Ordinal );
 		Assert.Contains( "current logical line", readme, StringComparison.Ordinal );
 		Assert.Contains( "identical to an active selection", readme, StringComparison.Ordinal );
+		Assert.DoesNotContain( "Icod.Widgets 1.8.0", readme, StringComparison.Ordinal );
 		Assert.DoesNotContain( "## Release history", readme, StringComparison.OrdinalIgnoreCase );
 	}
 

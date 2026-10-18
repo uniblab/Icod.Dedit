@@ -21,6 +21,7 @@
 
 namespace Icod.Dedit.Tests;
 
+using System.Text;
 using Icod.DCurses;
 using Icod.Dedit.Documents;
 using Icod.Widgets;
@@ -118,10 +119,8 @@ public sealed class DocumentBatchCoordinatorTests {
 			await File.WriteAllTextAsync( path, "external" );
 			DocumentBatchCoordinator batch = new( manager, files, new CloseCoordinator( host, manager, files ) );
 			Assert.Equal( BatchProgress.DecisionRequired, await batch.StartAsync( BatchOperation.Exit, CancellationToken.None ) );
-			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.Zero );
-			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.Zero );
 			WidgetDialogCompletedAction save = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
-				host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.Zero ).Actions ) );
+				host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'y' ) ), TimeSpan.Zero ).Actions ) );
 			await Assert.ThrowsAsync<IOException>( () => batch.CompleteDecisionAsync( save, CancellationToken.None ) );
 			Assert.False( batch.IsActive );
 			Assert.Same( opened, manager.Find( opened.Key ) );
@@ -144,10 +143,8 @@ public sealed class DocumentBatchCoordinatorTests {
 			CloseCoordinator close = new( host, manager, files );
 			DocumentBatchCoordinator batch = new( manager, files, close );
 			Assert.Equal( BatchProgress.DecisionRequired, await batch.StartAsync( BatchOperation.Exit, CancellationToken.None ) );
-			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.Zero );
-			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.Zero );
 			WidgetDialogCompletedAction save = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
-				host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.Zero ).Actions ) );
+				host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'y' ) ), TimeSpan.Zero ).Actions ) );
 			Assert.Equal( BatchProgress.ExitReady, await batch.CompleteDecisionAsync( save, CancellationToken.None ) );
 			Assert.Equal( "!before", await File.ReadAllTextAsync( path ) );
 			Assert.Null( manager.Find( first.Key ) );

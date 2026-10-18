@@ -21,6 +21,7 @@
 
 namespace Icod.Dedit.Tests;
 
+using System.Text;
 using Icod.DCurses;
 using Icod.Dedit.Documents;
 using Icod.Widgets;
@@ -28,7 +29,45 @@ using Xunit;
 
 public sealed class CloseCoordinatorTests {
 	[Fact]
-	public async Task CancelRetainsDirtyTabAndDontSaveRemovesIt() {
+	public void CleanDocumentClosesImmediatelyWithoutShowingAModal() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry clean = manager.OpenUntitled();
+		CloseCoordinator close = new( host, manager, new DocumentFileService( Path.GetTempPath() ) );
+
+		Assert.True( close.Request( clean.Key ) );
+		Assert.Null( manager.Find( clean.Key ) );
+		Assert.Equal( 0, host.ModalDepth );
+	}
+
+	[Theory]
+	[InlineData( "enter" )]
+	[InlineData( "escape" )]
+	[InlineData( "c" )]
+	public async Task DefaultEnterEscapeAndCMnemonicRetainDirtyTab( string input ) {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentEntry dirty = manager.OpenUntitled();
+		dirty.Shell.Process( WidgetInput.Paste( "keep" ), TimeSpan.Zero );
+		CloseCoordinator close = new( host, manager, new DocumentFileService( Path.GetTempPath() ) );
+		Assert.False( close.Request( dirty.Key ) );
+
+		WidgetInput decision = input switch {
+			"enter" => WidgetInput.Key( WidgetKey.Enter ),
+			"escape" => WidgetInput.Key( WidgetKey.Escape ),
+			_ => WidgetInput.Key( WidgetKey.Character, character: new Rune( 'c' ) )
+		};
+		WidgetDialogCompletedAction canceled = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+			host.Process( decision, TimeSpan.Zero ).Actions ) );
+
+		Assert.Equal( WidgetDialogOutcome.Cancel, canceled.Result.Outcome );
+		Assert.Equal( CloseResolution.Kept, await close.CompleteAsync( canceled, CancellationToken.None ) );
+		Assert.Same( dirty, manager.Find( dirty.Key ) );
+		Assert.True( dirty.Shell.Document.IsModified );
+	}
+
+	[Fact]
+	public async Task NMnemonicDiscardsDirtyTab() {
 		string directory = Directory.CreateTempSubdirectory( "dedit-close-" ).FullName;
 		try {
 			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
@@ -37,16 +76,9 @@ public sealed class CloseCoordinatorTests {
 			dirty.Shell.Process( WidgetInput.Paste( "keep" ), TimeSpan.FromMilliseconds( 1 ) );
 			CloseCoordinator close = new( host, manager, new DocumentFileService( directory ) );
 			Assert.False( close.Request( dirty.Key ) );
-			WidgetDialogCompletedAction canceled = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
-				host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.FromMilliseconds( 2 ) ).Actions ) );
-			Assert.Equal( CloseResolution.Kept, await close.CompleteAsync( canceled, CancellationToken.None ) );
-			Assert.Equal( dirty.Key, manager.Active?.Key );
-			Assert.True( dirty.Shell.Document.IsModified );
-			Assert.False( close.Request( dirty.Key ) );
-			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.FromMilliseconds( 3 ) );
 			WidgetDialogCompletedAction discarded = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
-				host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.FromMilliseconds( 4 ) ).Actions ) );
-			Assert.Equal( WidgetDialogOutcome.DontSave, discarded.Result.Outcome );
+				host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'n' ) ), TimeSpan.FromMilliseconds( 2 ) ).Actions ) );
+			Assert.Equal( WidgetDialogOutcome.No, discarded.Result.Outcome );
 			Assert.Equal( CloseResolution.Closed, await close.CompleteAsync( discarded, CancellationToken.None ) );
 			Assert.NotEqual( dirty.Key, manager.Active?.Key );
 		} finally { Directory.Delete( directory, true ); }
@@ -65,20 +97,16 @@ public sealed class CloseCoordinatorTests {
 			opened.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.FromMilliseconds( 1 ) );
 			CloseCoordinator close = new( host, manager, files );
 			Assert.False( close.Request( opened.Key ) );
-			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.FromMilliseconds( 2 ) );
-			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.FromMilliseconds( 3 ) );
 			WidgetDialogCompletedAction save = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
-				host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.FromMilliseconds( 4 ) ).Actions ) );
-			Assert.Equal( WidgetDialogOutcome.Save, save.Result.Outcome );
+				host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'y' ) ), TimeSpan.FromMilliseconds( 2 ) ).Actions ) );
+			Assert.Equal( WidgetDialogOutcome.Yes, save.Result.Outcome );
 			Assert.Equal( CloseResolution.Closed, await close.CompleteAsync( save, CancellationToken.None ) );
 			Assert.Equal( "!before", await File.ReadAllTextAsync( path ) );
 			DocumentEntry untitled = manager.Active!;
 			untitled.Shell.Process( WidgetInput.Paste( "new" ), TimeSpan.FromMilliseconds( 5 ) );
 			Assert.False( close.Request( untitled.Key ) );
-			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.FromMilliseconds( 6 ) );
-			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.FromMilliseconds( 7 ) );
 			WidgetDialogCompletedAction needPath = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
-				host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.FromMilliseconds( 8 ) ).Actions ) );
+				host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'y' ) ), TimeSpan.FromMilliseconds( 6 ) ).Actions ) );
 			Assert.Equal( CloseResolution.SaveAsRequired, await close.CompleteAsync( needPath, CancellationToken.None ) );
 			Assert.Equal( untitled.Key, manager.Active?.Key );
 		} finally { Directory.Delete( directory, true ); }
@@ -121,14 +149,58 @@ public sealed class CloseCoordinatorTests {
 			await File.WriteAllTextAsync( path, "external" );
 			CloseCoordinator close = new( host, manager, files );
 			Assert.False( close.Request( opened.Key ) );
-			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.FromMilliseconds( 2 ) );
-			host.Process( WidgetInput.Key( WidgetKey.Left ), TimeSpan.FromMilliseconds( 3 ) );
 			WidgetDialogCompletedAction save = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
-				host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.FromMilliseconds( 4 ) ).Actions ) );
+				host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'y' ) ), TimeSpan.FromMilliseconds( 2 ) ).Actions ) );
 			await Assert.ThrowsAsync<IOException>( () => close.CompleteAsync( save, CancellationToken.None ) );
 			Assert.Equal( opened.Key, manager.Active?.Key );
 			Assert.True( opened.Shell.Document.IsModified );
 			Assert.Equal( "external", await File.ReadAllTextAsync( path ) );
 		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Theory]
+	[InlineData( "yes", false, WidgetDialogOutcome.Yes, true )]
+	[InlineData( "yes", true, WidgetDialogOutcome.Yes, true )]
+	[InlineData( "no", false, WidgetDialogOutcome.No, true )]
+	[InlineData( "no", true, WidgetDialogOutcome.No, true )]
+	[InlineData( "cancel", false, WidgetDialogOutcome.Cancel, false )]
+	[InlineData( "cancel", true, WidgetDialogOutcome.Cancel, false )]
+	public async Task PointerAndMnemonicActivationShareClosePolicy( string choice, bool pointer,
+		WidgetDialogOutcome outcome, bool closes ) {
+		string directory = Directory.CreateTempSubdirectory( "dedit-close-parity-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "opened.txt" );
+			await File.WriteAllTextAsync( path, "before" );
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry dirty = manager.Open( await files.OpenAsync( path, CancellationToken.None ) );
+			dirty.Shell.Process( WidgetInput.Paste( "!" ), TimeSpan.Zero );
+			CloseCoordinator close = new( host, manager, files );
+			Assert.False( close.Request( dirty.Key ) );
+
+			WidgetDialogCompletedAction completed = pointer
+				? ClickDecision( host, choice )
+				: Assert.IsType<WidgetDialogCompletedAction>( Assert.Single( host.Process(
+					WidgetInput.Key( WidgetKey.Character, character: new Rune( choice[ 0 ] ) ), TimeSpan.Zero ).Actions ) );
+
+			Assert.Equal( outcome, completed.Result.Outcome );
+			Assert.Equal( closes ? CloseResolution.Closed : CloseResolution.Kept,
+				await close.CompleteAsync( completed, CancellationToken.None ) );
+			Assert.Equal( !closes, manager.Find( dirty.Key ) is not null );
+			Assert.Equal( choice == "yes" ? "!before" : "before", await File.ReadAllTextAsync( path ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	private static WidgetDialogCompletedAction ClickDecision( WidgetHost host, string choice ) {
+		WidgetMessageDialog dialog = Assert.IsType<WidgetMessageDialog>( host.FocusedWidget );
+		dialog.Arrange( new( 2, 2, 7, 44 ) ); host.Render();
+		int row = dialog.Bounds.BottomExclusive - 2;
+		int column = dialog.Bounds.Column + ( choice switch { "yes" => 2, "no" => 9, _ => 23 } );
+		Assert.Empty( host.Process( WidgetInput.PointerInput( new( CursesMouseAction.Press,
+			CursesMouseButton.Primary, column, row ) ), TimeSpan.Zero ).Actions );
+		return Assert.IsType<WidgetDialogCompletedAction>( Assert.Single( host.Process(
+			WidgetInput.PointerInput( new( CursesMouseAction.Release, CursesMouseButton.Primary, column, row ) ),
+			TimeSpan.Zero ).Actions ) );
 	}
 }

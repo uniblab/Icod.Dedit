@@ -8,6 +8,7 @@ current head or certify a 1.0 release.
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
+| Dedit `c4b233a` / local Linux candidate | Published Widgets 1.8.0 rebind; generic dirty-close Yes / Don't Save / Cancel actions; capability-aware dirty-only warning styles; obsolete YesNo migration; release documentation and exact package lifecycle | Serial Debug and Staging builds completed with zero warnings/errors. All 234 tests passed on each of net8.0, net9.0 and net10.0 using runtime roll-forward in the net10-only local SDK. Exactly one `Icod.Dedit.1.0.0.nupkg` contained all three tool payloads and `Icod.Widgets/1.8.0`; install, `dedit 1.0.0` launch, same-version update and uninstall passed. The stripped-down SDK's parallel workload resolver silently failed solution Clean/Pack, while identical `-m:1 --disable-build-servers` commands passed; published-SDK CI remains required. |
 | [Dedit `09193ec` / 39164365676](https://github.com/uniblab/Icod.Dedit/actions/runs/39164365676) | Published Widgets 1.7.2 rebind; identical pointer Paste over the active copied selection completes the selection and a following pointer Paste inserts again; aligned package and release contracts; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 216 tests per .NET 8/9/10 target. Run 39163981049 retained all 215 prior tests and failed only the new identical-paste selection-completion regression on each target against Widgets 1.7.1. The package verifier required Widgets 1.7.2, checked exactly one `Icod.Dedit.1.0.0.nupkg`, and installed, launched, same-version updated and removed it. Windows also passed stale-package cleanup. |
 | [Dedit `96345ed` / 39071905635](https://github.com/uniblab/Icod.Dedit/actions/runs/39071905635) | Preserve menu-item pointer clicks across Dedit's redraw-time layout pass; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 215 tests per .NET 8/9/10 target. Run 39071653508 retained all 214 prior tests and failed only the new redraw-layout click regression on each target before the correction. The package verifier checked exactly one `Icod.Dedit.1.0.0.nupkg`, required Widgets 1.7.1, and installed, launched, same-version updated and removed it. Windows also passed stale-package cleanup. |
 | [Dedit `7e7fae8` / 39070201419](https://github.com/uniblab/Icod.Dedit/actions/runs/39070201419) | Published Widgets 1.7.1 rebind; wrapped visual-row movement, preferred-column retention, logical line/character status regression and aligned released-library contract; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 215 tests per .NET 8/9/10 target. The new behavior and exact dependency/documentation contracts failed against Widgets 1.7.0 in run 39069163080 and passed after the rebind. Final review then found a stale library-contract reference; run 39070053193 retained all 214 prior tests and failed only its new assertion before correction. The package verifier required Widgets 1.7.1, checked exactly one `Icod.Dedit.1.0.0.nupkg`, and installed, launched, same-version updated and removed it. Windows also passed stale-package cleanup. |
@@ -31,8 +32,12 @@ package checks do not replace a current-head live-terminal exercise.
 
 ### Remaining release gates
 
-- Widgets 1.7.2 is published and restored from NuGet in the current Dedit
-  matrix. Its identical-paste completion, wrapped visual-row navigation,
+- Widgets 1.8.0 is published and restored from NuGet in the current Dedit
+  candidate. Its explicit generic dialog actions and per-instance styles supply
+  the common keyboard/pointer mechanism for Dedit's dirty-only red warning
+  prompt. Dedit owns its Yes / Don't Save / Cancel captions, Y/N/C shortcuts,
+  Cancel default, and guarded save/discard policy. The dependency also carries
+  identical-paste completion, wrapped visual-row navigation,
   preferred-column retention, editor gutter and current-line presentation are
   integrated.
   No-selection Copy/Cut and local linewise Paste are integrated;
@@ -64,8 +69,8 @@ package checks do not replace a current-head live-terminal exercise.
   defect before the correction in `96345ed`; its live menu-click retest and the
   rest of the terminal exercise remain outstanding. The owner deferred WSL
   because of checkout line endings.
-- The 1.0.0 Staging package now checks source-corresponding README,
-  CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.7.2 runtime
+- The 1.0.0 Staging package checks source-corresponding README,
+  CHANGELOG and LICENSE, GPL expression, embedded Widgets 1.8.0 runtime
   dependency, three tool payloads, install/launch, same-version update and
   removal. This is the first public Dedit version, so there is no published
   older version for a cross-version upgrade test. Release-config six-runner

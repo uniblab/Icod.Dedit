@@ -24,6 +24,7 @@ namespace Icod.Dedit.Tests;
 using System.Text;
 using Icod.DCurses;
 using Icod.Dedit.Application;
+using Icod.Dedit.Documents;
 using Icod.Dedit.Presentation;
 using Icod.Widgets;
 using Xunit;
@@ -267,6 +268,29 @@ public sealed class DeditMenuTests {
 	}
 
 	[Fact]
+	public void DirtyCloseDialogHasExactSafeActionContractAndSuppliedStyles() {
+		WidgetStyles styles = WidgetStyles.Empty.With( WidgetStyleRole.DialogSurface,
+			new CursesStyle( CursesColor.Indexed( 7 ), CursesColor.Indexed( 1 ) ) );
+
+		WidgetMessageDialog dialog = DeditMenu.CreateDirtyCloseDialog( "dirty", "bad\ncaption", styles );
+
+		Assert.Equal( $"Unsaved Changes — {DocumentManager.SanitizeDisplay( "bad\ncaption" )}", dialog.Title );
+		Assert.Equal( "Do you want to save these changes?", dialog.Message );
+		Assert.Equal( styles, dialog.Styles );
+		Assert.Collection( dialog.Actions,
+			action => AssertAction( action, "yes", "Yes", WidgetDialogOutcome.Yes, 'Y' ),
+			action => AssertAction( action, "no", "Don't Save", WidgetDialogOutcome.No, 'N' ),
+			action => {
+				AssertAction( action, "cancel", "Cancel", WidgetDialogOutcome.Cancel, 'C' );
+				Assert.True( action.IsDefault ); Assert.True( action.IsCancel );
+			} );
+		Assert.All( dialog.Actions.Take( 2 ), action => {
+			Assert.False( action.IsDefault ); Assert.False( action.IsCancel );
+		} );
+		Assert.Equal( WidgetStyles.Empty, DeditMenu.CreateAboutDialog().Styles );
+	}
+
+	[Fact]
 	public void QuitKeyDoesNotBypassAnOpenModal() {
 		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
 		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
@@ -317,11 +341,39 @@ public sealed class DeditMenuTests {
 	[Fact]
 	public void ExternalChangeDialogDefaultsToKeepAndEscapeCancels() {
 		using WidgetHost host = new( new CursesScreen( 60, 18 ), WidgetTheme.Default );
-		host.ShowModal( DeditMenu.CreateExternalChangeDialog( "reload-one", "sample.txt", true ) );
+		WidgetMessageDialog first = DeditMenu.CreateExternalChangeDialog( "reload-one", "sample.txt", true );
+		Assert.Collection( first.Actions,
+			action => AssertAction( action, "yes", "Yes", WidgetDialogOutcome.Yes, 'Y' ),
+			action => {
+				AssertAction( action, "no", "No", WidgetDialogOutcome.No, 'N' );
+				Assert.True( action.IsDefault );
+			} );
+		host.ShowModal( first );
 		WidgetDialogCompletedAction kept = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
 			host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.Zero ).Actions ) );
 		Assert.Equal( WidgetDialogOutcome.No, kept.Result.Outcome );
 		host.ShowModal( DeditMenu.CreateExternalChangeDialog( "reload-two", "sample.txt", true ) );
+		WidgetDialogCompletedAction canceled = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( WidgetDialogOutcome.Cancel, canceled.Result.Outcome );
+	}
+
+	[Fact]
+	public void OverwriteDialogDefaultsToNoAndEscapeCancels() {
+		using WidgetHost host = new( new CursesScreen( 60, 18 ), WidgetTheme.Default );
+		WidgetMessageDialog first = DeditMenu.CreateOverwriteDialog( "overwrite-one", "bad\nname.txt" );
+		Assert.Collection( first.Actions,
+			action => AssertAction( action, "yes", "Yes", WidgetDialogOutcome.Yes, 'Y' ),
+			action => {
+				AssertAction( action, "no", "No", WidgetDialogOutcome.No, 'N' );
+				Assert.True( action.IsDefault );
+			} );
+		Assert.Contains( DocumentManager.SanitizeDisplay( "bad\nname.txt" ), first.Message, StringComparison.Ordinal );
+		host.ShowModal( first );
+		WidgetDialogCompletedAction declined = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Enter ), TimeSpan.Zero ).Actions ) );
+		Assert.Equal( WidgetDialogOutcome.No, declined.Result.Outcome );
+		host.ShowModal( DeditMenu.CreateOverwriteDialog( "overwrite-two", "sample.txt" ) );
 		WidgetDialogCompletedAction canceled = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(
 			host.Process( WidgetInput.Key( WidgetKey.Escape ), TimeSpan.Zero ).Actions ) );
 		Assert.Equal( WidgetDialogOutcome.Cancel, canceled.Result.Outcome );
@@ -417,6 +469,12 @@ public sealed class DeditMenuTests {
 
 	private static WidgetDispatchResult Pointer( WidgetHost host, CursesMouseAction action, int row, int column ) =>
 		host.Process( WidgetInput.PointerInput( new( action, CursesMouseButton.Primary, column, row ) ), TimeSpan.Zero );
+
+	private static void AssertAction( WidgetDialogAction action, string id, string label,
+		WidgetDialogOutcome outcome, char mnemonic ) {
+		Assert.Equal( id, action.Id ); Assert.Equal( label, action.Label );
+		Assert.Equal( outcome, action.Outcome ); Assert.Equal( mnemonic, action.Mnemonic );
+	}
 
 	private static CursesPanel[] Panels( CursesScreen screen ) => (CursesPanel[])typeof( CursesScreen ).GetMethod(
 		"SnapshotPanelsBottomToTop", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public |

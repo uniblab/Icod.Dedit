@@ -32,7 +32,7 @@ paths produce a status diagnostic while other files still open. Save As accepts
 a new path or an existing file. Replacing an existing file requires a separate
 confirmation with No selected by default; a changed destination or one owned by
 another open tab is refused. Save All processes dirty tabs in order and pauses
-for Untitled Save As. Close All and Exit ask Save / Don't Save / Cancel for
+for Untitled Save As. Close All and Exit ask Yes / Don't Save / Cancel for
 each dirty tab. Cancel stops later work while earlier successful saves remain.
 Externally changed files offer an explicit Reload or Keep decision when a tab
 is activated or an active save finds a conflict. The default Keep choice
@@ -87,9 +87,10 @@ file uses its first existing terminator for future Enter keys.
 File → Indentation selects 2, 4 or 8 spaces for future Tab indentation in
 the active tab. Changing the setting leaves existing text and save state intact.
 
-Ctrl+W closes the active tab after Save / Don't Save / Cancel when it is dirty.
-The close control on each tab uses the same decision, with Cancel selected by
-default. File → Close All visits tabs in order. File → Exit or Ctrl+Q uses the
+Ctrl+W closes the active tab after Yes / Don't Save / Cancel when it is dirty.
+The close control on each tab uses the same decision: Y/N/C are the shortcuts,
+with Cancel selected by default; clean documents close without a prompt. File →
+Close All visits tabs in order. File → Exit or Ctrl+Q uses the
 same per-tab decisions and exits only when the sequence completes. Closing the
 last ordinary tab creates a fresh Untitled tab.
 F6 and Shift+F6 cycle focus among the visible controls; Tab still indents in

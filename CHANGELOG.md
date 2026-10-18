@@ -8,7 +8,8 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Application and editing
 
-- Updated to Icod.Widgets 1.7.2 so Paste completes when clipboard text is
+- Updated to Icod.Widgets 1.8.0. The 1.7.2 editing correction makes Paste
+  complete when clipboard text is
   identical to the active selection: the selection collapses at the resulting
   caret without changing document revision or adding undo history. Mouse menu
   activation and Ctrl+V use the same focused-editor clipboard route.
@@ -79,9 +80,11 @@ The entries under Unreleased describe implemented behavior. They are not a
   externally changed and another tab's targets are refused; failed writes
   clean up temporary files. Existing-target Save As requires an extra
   confirmation with No selected by default.
-- Added per-tab Save / Don't Save / Cancel decisions for dirty Close All
-  and Exit, with Save All processing tabs in order. Cancel leaves later tabs
-  intact and preserves earlier successful saves.
+- Added per-tab Yes / Don't Save / Cancel decisions for dirty Close, Close All
+  and Exit, with Y/N/C shortcuts and Cancel selected by default. These prompts
+  alone use a capability-aware red warning presentation. Clean documents close
+  without a prompt; Cancel leaves later tabs intact and preserves earlier
+  successful saves.
 - Added explicit Reload/Keep decisions when an activated file has changed
   outside the editor or a direct save finds a conflict. Reload confirms
   discarding dirty edits; Keep retains the buffer and the original-path
@@ -93,7 +96,10 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Build and validation
 
-- Updated the application dependency to Icod.Widgets 1.7.2 for identical-paste
+- Updated the application dependency to Icod.Widgets 1.8.0 for explicit generic
+  dialog actions and instance styles. Dedit supplies the dirty-close captions,
+  Y/N/C mnemonics, safe default and red warning style while Widgets owns common
+  keyboard and pointer activation. The dependency also includes identical-paste
   completion, wrapped visual-row caret navigation, preferred-column retention,
   the editor's line-number gutter, and current-line presentation API. This
   retains the 1.6.2 menu/dialog and bordered-overlay corrections, the 1.5.0

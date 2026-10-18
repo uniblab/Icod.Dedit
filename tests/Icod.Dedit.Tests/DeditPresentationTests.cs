@@ -25,6 +25,78 @@ using Icod.Widgets;
 using Xunit;
 
 public sealed class DeditPresentationTests {
+	private static readonly WidgetStyleRole[] DirtyDialogRoles = [
+		WidgetStyleRole.DialogSurface,
+		WidgetStyleRole.Text,
+		WidgetStyleRole.DialogTitle,
+		WidgetStyleRole.DialogBorder,
+		WidgetStyleRole.DialogAction,
+		WidgetStyleRole.DialogDefaultAction,
+		WidgetStyleRole.DialogFocusedAction,
+		WidgetStyleRole.DialogDisabledAction
+	];
+
+	[Fact]
+	public void RgbDirtyDialogUsesWhiteOnRedAndInvertedFocus() {
+		WidgetStyles styles = DeditTheme.CreateDirtyDialogStyles( Capabilities( 256, true, true, true,
+			CursesTextAttributes.Bold | CursesTextAttributes.Dim | CursesTextAttributes.Reverse ) );
+		CursesColor white = CursesColor.Rgb( 255, 255, 255 ); CursesColor red = CursesColor.Rgb( 192, 0, 0 );
+
+		Assert.Equal( new CursesStyle( white, red ), Style( styles, WidgetStyleRole.DialogSurface ) );
+		Assert.Equal( new CursesStyle( white, red ), Style( styles, WidgetStyleRole.Text ) );
+		Assert.Equal( new CursesStyle( white, red ), Style( styles, WidgetStyleRole.DialogAction ) );
+		Assert.Equal( new CursesStyle( red, white ),
+			Style( styles, WidgetStyleRole.DialogFocusedAction ) );
+	}
+
+	[Fact]
+	public void IndexedDirtyDialogUsesWhiteOnRedAndInvertedFocus() {
+		WidgetStyles styles = DeditTheme.CreateDirtyDialogStyles( Capabilities( 8, false, true, true,
+			CursesTextAttributes.Bold | CursesTextAttributes.Reverse ) );
+		CursesColor white = CursesColor.Indexed( 7 ); CursesColor red = CursesColor.Indexed( 1 );
+
+		Assert.Equal( new CursesStyle( white, red ), Style( styles, WidgetStyleRole.DialogSurface ) );
+		Assert.Equal( new CursesStyle( red, white ),
+			Style( styles, WidgetStyleRole.DialogFocusedAction ) );
+	}
+
+	[Fact]
+	public void PartialColorDirtyDialogUsesOnlySupportedAxes() {
+		WidgetStyles foregroundOnly = DeditTheme.CreateDirtyDialogStyles( Capabilities( 8, false, true, false,
+			CursesTextAttributes.Bold | CursesTextAttributes.Reverse ) );
+		WidgetStyles backgroundOnly = DeditTheme.CreateDirtyDialogStyles( Capabilities( 8, false, false, true,
+			CursesTextAttributes.Bold | CursesTextAttributes.Reverse ) );
+
+		Assert.Equal( CursesColor.Indexed( 7 ), Style( foregroundOnly, WidgetStyleRole.DialogSurface ).Foreground );
+		Assert.True( Style( foregroundOnly, WidgetStyleRole.DialogSurface ).Background.IsDefault );
+		Assert.True( Style( backgroundOnly, WidgetStyleRole.DialogSurface ).Foreground.IsDefault );
+		Assert.Equal( CursesColor.Indexed( 1 ), Style( backgroundOnly, WidgetStyleRole.DialogSurface ).Background );
+	}
+
+	[Fact]
+	public void MonochromeDirtyDialogUsesLegibleAttributeFallback() {
+		WidgetStyles styles = DeditTheme.CreateDirtyDialogStyles( Capabilities( 0, false, false, false,
+			CursesTextAttributes.Bold | CursesTextAttributes.Reverse | CursesTextAttributes.Dim ) );
+
+		foreach ( WidgetStyleRole role in DirtyDialogRoles ) {
+			CursesStyle style = Style( styles, role );
+			Assert.True( style.Foreground.IsDefault ); Assert.True( style.Background.IsDefault );
+			Assert.Equal( CursesTextAttributes.None, style.Attributes & ~(
+				CursesTextAttributes.Bold | CursesTextAttributes.Reverse | CursesTextAttributes.Dim ) );
+		}
+		Assert.Equal( CursesTextAttributes.Bold, Style( styles, WidgetStyleRole.DialogSurface ).Attributes );
+		Assert.Equal( CursesTextAttributes.Reverse, Style( styles, WidgetStyleRole.DialogFocusedAction ).Attributes );
+	}
+
+	[Fact]
+	public void DirtyDialogStylesOverrideOnlyDialogPresentationRoles() {
+		WidgetStyles styles = DeditTheme.CreateDirtyDialogStyles( Capabilities( 256, true, true, true,
+			CursesTextAttributes.Bold | CursesTextAttributes.Dim | CursesTextAttributes.Reverse ) );
+
+		foreach ( WidgetStyleRole role in Enum.GetValues<WidgetStyleRole>() )
+			Assert.Equal( DirtyDialogRoles.Contains( role ), styles.TryGetValue( role, out _ ) );
+	}
+
 	[Fact]
 	public void ColorThemeDistinguishesSelectionWithoutReverseVideo() {
 		CursesPresentationCapabilities capabilities = Capabilities( 256, true, true, true,
@@ -92,6 +164,10 @@ public sealed class DeditPresentationTests {
 			.Single( candidate => candidate.GetParameters().Length == 11 );
 		return (CursesPresentationCapabilities)constructor.Invoke( [ colors, rgb, foreground, background, true, attributes,
 			CursesTextAttributes.None, false, true, true, false ] );
+	}
+
+	private static CursesStyle Style( WidgetStyles styles, WidgetStyleRole role ) {
+		Assert.True( styles.TryGetValue( role, out CursesStyle style ) ); return style;
 	}
 
 	private sealed class FakeCaretSession : IDeditCaretSession {

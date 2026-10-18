@@ -75,7 +75,8 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			read: ( timeout, token ) => session.ReadClipboardAsync( CursesClipboardSelection.Clipboard, timeout, token ) );
 		this.documents = new DocumentManager( this.host, preferences );
 		this.files = new DocumentFileService( Environment.CurrentDirectory );
-		this.close = new CloseCoordinator( this.host, this.documents, this.files );
+		this.close = new CloseCoordinator( this.host, this.documents, this.files,
+			DeditTheme.CreateDirtyDialogStyles( session.PresentationCapabilities ) );
 		this.batch = new DocumentBatchCoordinator( this.documents, this.files, this.close );
 		this.external = new ExternalChangeCoordinator( this.host, this.documents, this.files );
 		this.search = new DeditSearchCoordinator( this.host, this.documents );
@@ -243,8 +244,8 @@ internal sealed class DeditTerminal : IDeditTerminal {
 					try {
 						ExistingSaveTarget target = await this.files.CaptureExistingAsync( selection.TargetPath, CancellationToken.None );
 						string dialogId = OverwriteDialogId + "-" + Guid.NewGuid().ToString( "N" );
-						this.host.ShowModal( WidgetMessageDialog.YesNo( dialogId, "Overwrite file?",
-							$"Replace {DocumentManager.SanitizeDisplay( Path.GetFileName( target.FullPath ) )}?" ) );
+						this.host.ShowModal( DeditMenu.CreateOverwriteDialog(
+							dialogId, Path.GetFileName( target.FullPath ) ) );
 						this.pendingOverwrite = new( dialogId, entry, target, closeAfterSave, batchPicker );
 					}
 					catch ( Exception exception ) when ( IsSaveError( exception ) ) {
