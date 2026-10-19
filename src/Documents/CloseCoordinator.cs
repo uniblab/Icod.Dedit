@@ -21,7 +21,6 @@
 
 namespace Icod.Dedit.Documents;
 
-using Icod.DCurses;
 using Icod.Dedit.Presentation;
 using Icod.Widgets;
 
@@ -66,18 +65,7 @@ internal sealed class CloseCoordinator {
 
 	internal void Arrange() {
 		if ( this.pendingDialog is not { IsOpen: true } dialog ) return;
-		CursesRectangle bounds = DirtyDialogBounds( this.host.Screen.Bounds );
-		if ( dialog.Bounds != bounds ) dialog.Arrange( bounds );
-	}
-
-	private static CursesRectangle DirtyDialogBounds( CursesRectangle viewport ) {
-		int rows = Math.Min( DirtyDialogRows, viewport.Rows );
-		int columns = Math.Min( DirtyDialogColumns, viewport.Columns );
-		return new CursesRectangle(
-			viewport.Row + ( viewport.Rows - rows ) / 2,
-			viewport.Column + ( viewport.Columns - columns ) / 2,
-			rows,
-			columns );
+		DeditDialogLayout.ArrangeCentered( dialog, this.host.Screen.Bounds, DirtyDialogRows, DirtyDialogColumns );
 	}
 
 	internal async Task<CloseResolution> CompleteAsync( WidgetDialogCompletedAction action, CancellationToken token ) {

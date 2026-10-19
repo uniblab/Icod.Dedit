@@ -147,3 +147,25 @@
 - [ ] **Step 5: Run and verify GREEN.** Repeat Step 3, then run the full net10.0 test project. Expected: all tests pass and pointer/mnemonic close policy remains unchanged.
 - [ ] **Step 6: Curate release history.** Record the compact, consumer-sized dirty-close presentation in CHANGELOG and `docs/releases/1.0.0.md`; keep README unchanged and version-neutral.
 - [ ] **Step 7: Run full local validation and commit.** Run the repository build/pack/validation path and `dotnet run --project Icod.Dedit.csproj -c Release -f net10.0 -- --version`; commit the tested change and push it to the existing unmerged PR. Do not merge, tag or publish.
+
+### Task 7: Consumer-sized About pop-up
+
+**Files:**
+- Create: `src/Presentation/DeditAboutCoordinator.cs`
+- Create: `src/Presentation/DeditDialogLayout.cs`
+- Modify: `src/Documents/CloseCoordinator.cs`
+- Modify: `src/Application/DeditTerminal.cs`
+- Test: `tests/Icod.Dedit.Tests/DeditAboutCoordinatorTests.cs`
+- Modify: `CHANGELOG.md`
+- Modify: `docs/releases/1.0.0.md`
+
+**Interfaces:**
+- Consumes: the existing `WidgetMessageDialog`, `WidgetHost.ShowModal` and public Widgets 1.8.0 `Widget.Arrange(CursesRectangle)` contracts.
+- Produces: Dedit-owned 45-column by 7-row centered About bounds that clamp to and recenter within the current viewport without changing generic Widgets behavior.
+
+- [ ] **Step 1: Write failing layout tests.** Assert About on a 100-column by 30-row screen produces bounds `(11, 27, 7, 45)`, while a 20-column by 3-row screen clamps to `(0, 0, 3, 20)`. Resize an open About dialog and invoke its layout pass to prove it recenters and reclamps.
+- [ ] **Step 2: Write the redraw-safety regression.** Press OK, run the unchanged layout pass and render, then release over OK. Assert the dialog completes once so an ordinary draw between press and release cannot cancel the click.
+- [ ] **Step 3: Run and verify RED.** Run the focused About coordinator tests. Expected: `DeditAboutCoordinator` does not exist.
+- [ ] **Step 4: Implement consumer-owned layout.** Add a small Dedit About coordinator which owns the dialog lifecycle and applies 45 by 7 bounds. Extract the shared centered/clamped and unchanged-bounds layout calculation so the dirty-close and About presentations use the same Dedit policy. Call the About layout pass from `DeditTerminal.DrawAsync` before rendering.
+- [ ] **Step 5: Run and verify GREEN.** Repeat Step 3, then run the full net10.0 test project. Expected: all tests pass and About keyboard/pointer behavior remains unchanged.
+- [ ] **Step 6: Curate release history and qualify.** Record the compact About presentation in CHANGELOG and `docs/releases/1.0.0.md`; keep README unchanged. Run the full repository build/pack/validation path, push to the existing unmerged PR, require the final-head three-OS matrix to pass, and record measured evidence in `docs/Qualification.md`. Do not merge, tag or publish.

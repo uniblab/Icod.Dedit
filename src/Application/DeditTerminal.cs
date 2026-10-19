@@ -36,6 +36,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly WidgetHost host;
 	private readonly WidgetMenuBar menu = DeditMenu.Create();
 	private readonly DeditMenuPresenter menuPresenter;
+	private readonly DeditAboutCoordinator about;
 	private readonly DeditCaretCoordinator caret;
 	private readonly WidgetTabStrip tabs = new( "workspace-tabs" );
 	private readonly DeditClipboard clipboard;
@@ -69,6 +70,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.session = session;
 		this.host = new WidgetHost( session, DeditTheme.Create( session.PresentationCapabilities ) );
 		this.menuPresenter = new DeditMenuPresenter( this.menu );
+		this.about = new DeditAboutCoordinator( this.host );
 		this.caret = new DeditCaretCoordinator( session );
 		this.clipboard = new DeditClipboard( this.host,
 			write: ( value, token ) => session.WriteClipboardAsync( CursesClipboardSelection.Clipboard, value, token ),
@@ -139,6 +141,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.Editor?.Arrange();
 		this.goTo.Arrange();
+		this.about.Arrange();
 		this.close.Arrange();
 		this.session.StandardScreen.Clear();
 		this.Write( screen.Rows - 1, this.saveError is not null ? this.saveError : this.openErrors.Count > 0 ?
@@ -320,7 +323,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 			else if ( action is WidgetCheckedInvokedAction { CommandId: DeditMenu.Wrap } wrap && this.Editor is not null )
 				DeditMenu.ApplyWrap( this.Editor.Editor, wrap.IsChecked );
 			else if ( action is WidgetInvokedAction { CommandId: DeditMenu.About } )
-				this.host.ShowModal( DeditMenu.CreateAboutDialog() );
+				this.about.Open();
 			else if ( action is WidgetDialogCompletedAction searchClosed && this.search.Close( searchClosed ) ) { }
 			else if ( action is WidgetDialogCompletedAction decision ) {
 				if ( this.batch.IsActive ) {
