@@ -4,10 +4,11 @@ This record contains historical checkpoints and current development evidence.
 Earlier sections describe their named revisions; they do not qualify the
 current head or certify a 1.0 release.
 
-## Current development head — 2026-10-18
+## Current development head — 2026-10-19
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
+| [Dedit `39d062f` / 39183759756](https://github.com/uniblab/Icod.Dedit/actions/runs/39183759756) | Dedit-owned compact, centered and resize-clamped About bounds; shared unchanged-layout guard for About and dirty-close pointer clicks; curated release documentation | Metadata plus Linux, Windows and macOS jobs passed. Each OS built with zero warnings/errors, passed 242 tests per .NET 8/9/10 target, verified exactly one `Icod.Dedit.1.0.0.nupkg`, and installed, launched, same-version updated and removed it. Windows also repacked after seeding a stale 0.1.0 package and repeated exact package and tool-lifecycle validation successfully. |
 | [Dedit `cd0573e` / 39177582562](https://github.com/uniblab/Icod.Dedit/actions/runs/39177582562) | Dedit-owned compact, centered and resize-clamped dirty-close bounds; redraw-safe dialog clicks; preserved generic Widgets 1.8.0 modal/layout contract; curated release and library-contract documentation | Metadata plus Linux, Windows and macOS jobs passed. Each OS built with zero warnings/errors, passed 238 tests per .NET 8/9/10 target, verified exactly one `Icod.Dedit.1.0.0.nupkg`, and installed, launched, same-version updated and removed it. Windows also repacked after seeding a stale 0.1.0 package and repeated exact package and tool-lifecycle validation successfully. |
 | [Dedit `569d49b` / 39175246987](https://github.com/uniblab/Icod.Dedit/actions/runs/39175246987) | Published Widgets 1.8.0 rebind; generic dirty-close Yes / Don't Save / Cancel actions; capability-aware dirty-only warning styles; obsolete YesNo migration; release documentation and exact package lifecycle | All Linux, Windows and macOS jobs passed. Each OS built with zero warnings/errors, passed 234 tests per .NET 8/9/10 target, verified exactly one `Icod.Dedit.1.0.0.nupkg`, and installed, launched, same-version updated and removed it; Windows also passed stale-package cleanup. Local serial Debug/Staging validation produced the same counts and confirmed all three payload manifests contain `Icod.Widgets/1.8.0`. The stripped-down local SDK's parallel workload resolver silently failed solution Clean/Pack, while identical `-m:1 --disable-build-servers` commands passed. |
 | [Dedit `09193ec` / 39164365676](https://github.com/uniblab/Icod.Dedit/actions/runs/39164365676) | Published Widgets 1.7.2 rebind; identical pointer Paste over the active copied selection completes the selection and a following pointer Paste inserts again; aligned package and release contracts; Staging restore/build/test/pack and exact local tool lifecycle on Linux, Windows and macOS | All jobs passed. Each OS built with zero warnings/errors and passed 216 tests per .NET 8/9/10 target. Run 39163981049 retained all 215 prior tests and failed only the new identical-paste selection-completion regression on each target against Widgets 1.7.1. The package verifier required Widgets 1.7.2, checked exactly one `Icod.Dedit.1.0.0.nupkg`, and installed, launched, same-version updated and removed it. Windows also passed stale-package cleanup. |
@@ -89,7 +90,9 @@ directory. Record the exact commit, OS and terminal for each exercise.
 2. Launch `dotnet run --project Icod.Dedit.csproj -c Release -f net10.0`
    in an interactive terminal. Open File with Alt+F, cycle root menus with the
    arrow keys, open a nested File submenu and verify its parent remains visible.
-   Click a menu command, open Help → About and click OK. Drag a text selection.
+   Click a menu command, open Help → About and verify its compact centered
+   presentation, resize the terminal to confirm it recenters/clamps, then click
+   OK. Drag a text selection.
    Select text, click Edit → Copy, then click Edit → Paste without moving the
    selection. Verify the unchanged text is no longer selected, then click
    Edit → Paste again and verify a second copy is inserted at the caret.
