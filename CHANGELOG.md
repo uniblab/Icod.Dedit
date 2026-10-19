@@ -39,6 +39,11 @@ The entries under Unreleased describe implemented behavior. They are not a
 - Added independent editable tabs with stable keys, disambiguated duplicate
   basenames, per-tab caret and undo history, a keyboard-accessible tab strip,
   and an overflow-aware tab view.
+- Closing the final document now leaves a true blank workspace: the tab strip,
+  editor, caret and ordinary status text disappear; Edit, View and
+  document-dependent File commands remain visible but disabled. New and Open
+  restore the document workspace, while a no-path launch still starts with one
+  Untitled document.
 - Added Unicode text editing with grapheme-aware movement, selection, typed
   input and bracketed paste, mixed line-ending preservation, four-space
   indentation, undo/redo, and optional word wrap per view.

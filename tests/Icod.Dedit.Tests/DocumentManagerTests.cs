@@ -375,9 +375,12 @@ public sealed class DocumentManagerTests {
 		Assert.Single( manager.Tabs );
 		Assert.Same( clean, manager.Active );
 		Assert.True( manager.Close( clean.Key ) );
+		Assert.Empty( manager.Tabs );
+		Assert.Null( manager.Active );
+
+		DocumentEntry reopened = manager.OpenUntitled();
+		Assert.Same( reopened, manager.Active );
 		Assert.Single( manager.Tabs );
-		Assert.NotEqual( clean.Key, manager.Active?.Key );
-		Assert.StartsWith( "Untitled", manager.Active?.Caption );
 	}
 
 	[Fact]

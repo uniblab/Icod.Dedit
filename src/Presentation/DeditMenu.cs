@@ -209,6 +209,8 @@ internal static class DeditMenu {
 			new WidgetMenuItemPresentation( "edit.search-case", "Match Case", editor is not null, searchOptions?.MatchCase == true ),
 			new WidgetMenuItemPresentation( "edit.search-whole-word", "Whole Word", editor is not null, searchOptions?.WholeWord == true ),
 			new WidgetMenuItemPresentation( "edit.search-regex", "Regular Expression", editor is not null, searchOptions?.UseRegularExpression == true ),
+			new WidgetMenuItemPresentation( "view", "View", editor is not null ),
+			new WidgetMenuItemPresentation( "view.go-file", "Go to File...", editor is not null ),
 			new WidgetMenuItemPresentation( "view.go-line", "Go to Line:Column...", editor is not null ),
 			new WidgetMenuItemPresentation( "view.wrap", "Word Wrap", editor is not null,
 				editor is not null && editor.View.WrapMode != CursesTextWrapMode.NoWrap )

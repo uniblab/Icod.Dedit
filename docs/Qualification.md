@@ -108,7 +108,10 @@ directory. Record the exact commit, OS and terminal for each exercise.
    a range and verify ordinary replacement.
 3. Open two disposable files/tabs. Use F6 and the tab strip, Find/Replace,
    Go to Line:Column, line-ending conversion and indentation controls.
-   Save and reopen to inspect exact text and line endings.
+   Save and reopen to inspect exact text and line endings. Close both tabs and
+   verify the tab strip, editor, caret and ordinary status text disappear;
+   Edit, View and document-dependent File commands should be disabled. Use New
+   and Open in turn to verify each restores the document workspace.
 4. Save a disposable file, change it from a second process, then activate its
    tab again. Verify Reload/Keep is explicit, Keep preserves the buffer,
    an original-path save refuses the conflict, and Save As to a different

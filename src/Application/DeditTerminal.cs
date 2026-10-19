@@ -39,6 +39,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 	private readonly DeditAboutCoordinator about;
 	private readonly DeditCaretCoordinator caret;
 	private readonly WidgetTabStrip tabs = new( "workspace-tabs" );
+	private readonly DeditWorkspacePresenter workspace;
 	private readonly DeditClipboard clipboard;
 	private readonly DocumentManager documents;
 	private readonly DocumentFileService files;
@@ -72,6 +73,7 @@ internal sealed class DeditTerminal : IDeditTerminal {
 		this.menuPresenter = new DeditMenuPresenter( this.menu );
 		this.about = new DeditAboutCoordinator( this.host );
 		this.caret = new DeditCaretCoordinator( session );
+		this.workspace = new DeditWorkspacePresenter( this.tabs );
 		this.clipboard = new DeditClipboard( this.host,
 			write: ( value, token ) => session.WriteClipboardAsync( CursesClipboardSelection.Clipboard, value, token ),
 			read: ( timeout, token ) => session.ReadClipboardAsync( CursesClipboardSelection.Clipboard, timeout, token ) );
@@ -135,18 +137,16 @@ internal sealed class DeditTerminal : IDeditTerminal {
 
 	public async ValueTask DrawAsync( IReadOnlyList<string> captions, TimeSpan elapsed, CancellationToken cancellationToken ) {
 		CursesScreen screen = this.session.Screen;
-		this.tabs.SetTabs( this.documents.Tabs, this.documents.Active?.Key );
+		this.workspace.Update( this.documents.Tabs, this.documents.Active?.Key, screen.Bounds );
 		this.menuPresenter.Update( this.Editor?.Editor, this.documents.Active?.FullPath is not null, this.search.Options, this.documents.Active?.Encoding, this.documents.Active?.Shell.IndentationWidth );
 		this.menuPresenter.Arrange( screen.Bounds );
-		this.tabs.Arrange( new CursesRectangle( Math.Min( 1, screen.Rows ), 0, Math.Min( 1, Math.Max( 0, screen.Rows - 1 ) ), screen.Columns ) );
 		this.Editor?.Arrange();
 		this.goTo.Arrange();
 		this.about.Arrange();
 		this.close.Arrange();
 		this.session.StandardScreen.Clear();
-		this.Write( screen.Rows - 1, this.saveError is not null ? this.saveError : this.openErrors.Count > 0 ?
-			$"Open error ({this.openErrors.Count}): {this.openErrors[ 0 ]}" :
-			this.documents.Active is { } active ? EditorStatus.Format( active ) : "Untitled" );
+		this.Write( screen.Rows - 1, DeditWorkspacePresenter.StatusText(
+			this.documents.Active, this.saveError, this.openErrors ) );
 		if ( this.host.GetCaretIntent() is null ) await this.caret.ApplyAsync( null, cancellationToken );
 		this.host.Render();
 		WidgetCaretIntent? caretIntent = this.host.GetCaretIntent();

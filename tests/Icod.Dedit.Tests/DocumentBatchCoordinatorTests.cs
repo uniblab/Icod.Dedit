@@ -29,6 +29,32 @@ using Xunit;
 
 public sealed class DocumentBatchCoordinatorTests {
 	[Fact]
+	public async Task CloseAllCleanDocumentsLeavesNoActiveDocument() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		manager.OpenUntitled();
+		manager.OpenUntitled();
+		DocumentFileService files = new( Path.GetTempPath() );
+		DocumentBatchCoordinator batch = new( manager, files, new CloseCoordinator( host, manager, files ) );
+
+		Assert.Equal( BatchProgress.Completed, await batch.StartAsync( BatchOperation.CloseAll, CancellationToken.None ) );
+		Assert.Empty( manager.Tabs );
+		Assert.Null( manager.Active );
+	}
+
+	[Fact]
+	public async Task ExitWithNoDocumentsIsImmediatelyReady() {
+		using WidgetHost host = new( new CursesScreen( 50, 15 ), WidgetTheme.Default );
+		using DocumentManager manager = new( host );
+		DocumentFileService files = new( Path.GetTempPath() );
+		DocumentBatchCoordinator batch = new( manager, files, new CloseCoordinator( host, manager, files ) );
+
+		Assert.Equal( BatchProgress.ExitReady, await batch.StartAsync( BatchOperation.Exit, CancellationToken.None ) );
+		Assert.False( batch.IsActive );
+		Assert.Empty( manager.Tabs );
+	}
+
+	[Fact]
 	public async Task SaveAllCancellationAtUntitledKeepsPriorSaveAndDoesNotTouchLaterTab() {
 		string directory = Directory.CreateTempSubdirectory( "dedit-batch-" ).FullName;
 		try {

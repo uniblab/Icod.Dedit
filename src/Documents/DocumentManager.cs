@@ -221,8 +221,7 @@ internal sealed class DocumentManager : IDisposable {
 		this.documents.RemoveAt( index );
 		closing.Shell.Dispose();
 		if ( wasActive ) {
-			if ( this.documents.Count == 0 ) this.OpenUntitled();
-			else this.Activate( this.documents[ Math.Min( index, this.documents.Count - 1 ) ].Key );
+			if ( this.documents.Count > 0 ) this.Activate( this.documents[ Math.Min( index, this.documents.Count - 1 ) ].Key );
 		}
 		this.UpdateCaptions();
 		return true;

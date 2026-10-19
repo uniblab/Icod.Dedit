@@ -397,6 +397,45 @@ public sealed class DeditMenuTests {
 	}
 
 	[Fact]
+	public void NoDocumentDisablesDocumentCommandsButKeepsFileHelpAndRecoveryCommandsAvailable() {
+		using WidgetHost host = new( new CursesScreen( 50, 14 ), WidgetTheme.Default );
+		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );
+		DeditMenu.UpdateState( menu, null );
+
+		Assert.Empty( host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt,
+			new Rune( 'e' ) ), TimeSpan.FromMilliseconds( 1 ) ).Actions );
+		Assert.False( menu.IsOpen );
+		Assert.Empty( host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt,
+			new Rune( 'v' ) ), TimeSpan.FromMilliseconds( 2 ) ).Actions );
+		Assert.False( menu.IsOpen );
+		Assert.Empty( host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control,
+			new Rune( 's' ) ), TimeSpan.FromMilliseconds( 3 ) ).Actions );
+		Assert.Empty( host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control,
+			new Rune( 'p' ) ), TimeSpan.FromMilliseconds( 4 ) ).Actions );
+
+		WidgetInvokedAction create = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control,
+				new Rune( 'n' ) ), TimeSpan.FromMilliseconds( 5 ) ).Actions ) );
+		Assert.Equal( DeditMenu.New, create.CommandId );
+		WidgetInvokedAction open = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Control,
+				new Rune( 'o' ) ), TimeSpan.FromMilliseconds( 6 ) ).Actions ) );
+		Assert.Equal( DeditMenu.Open, open.CommandId );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt,
+			new Rune( 'f' ) ), TimeSpan.FromMilliseconds( 7 ) );
+		WidgetInvokedAction exit = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'x' ) ),
+				TimeSpan.FromMilliseconds( 8 ) ).Actions ) );
+		Assert.Equal( DeditMenu.Exit, exit.CommandId );
+		host.Process( WidgetInput.Key( WidgetKey.Character, WidgetInputModifiers.Alt,
+			new Rune( 'h' ) ), TimeSpan.FromMilliseconds( 9 ) );
+		WidgetInvokedAction about = Assert.IsType<WidgetInvokedAction>( Assert.Single(
+			host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'a' ) ),
+				TimeSpan.FromMilliseconds( 10 ) ).Actions ) );
+		Assert.Equal( DeditMenu.About, about.CommandId );
+	}
+
+	[Fact]
 	public void SaveOnUntitledIsAvailableSoTheTerminalCanRequestSaveAs() {
 		using WidgetHost host = new( new CursesScreen( 40, 12 ), WidgetTheme.Default );
 		WidgetMenuBar menu = DeditMenu.Create(); host.Attach( menu ); menu.Arrange( host.Screen.Bounds );

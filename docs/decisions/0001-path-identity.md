@@ -22,8 +22,9 @@ if resolution changes, treat that as a conflict. Replacing one hard-link alias
 updates only that directory entry, potentially leaving other aliases with the
 old bytes; do not promise preservation of hard-link relationships.
 
-Closing the last ordinary tab immediately creates a fresh empty Untitled tab.
-Exit is a separate command and may leave zero documents during teardown.
+Closing the last ordinary tab leaves a zero-document workspace; a no-path
+startup still creates one empty Untitled document. Exit remains a separate
+command.
 Closing a loading tab invalidates that operation generation; its late result
 cannot recreate it. A cancelled close, Escape, failed save or denied overwrite
 retains the same ID, text and view state. `Close All`/Exit may have already saved

@@ -37,6 +37,9 @@ public sealed class CloseCoordinatorTests {
 
 		Assert.True( close.Request( clean.Key ) );
 		Assert.Null( manager.Find( clean.Key ) );
+		Assert.Empty( manager.Tabs );
+		Assert.Null( manager.Active );
+		Assert.Null( host.GetCaretIntent() );
 		Assert.Equal( 0, host.ModalDepth );
 	}
 
@@ -140,7 +143,8 @@ public sealed class CloseCoordinatorTests {
 				host.Process( WidgetInput.Key( WidgetKey.Character, character: new Rune( 'n' ) ), TimeSpan.FromMilliseconds( 2 ) ).Actions ) );
 			Assert.Equal( WidgetDialogOutcome.No, discarded.Result.Outcome );
 			Assert.Equal( CloseResolution.Closed, await close.CompleteAsync( discarded, CancellationToken.None ) );
-			Assert.NotEqual( dirty.Key, manager.Active?.Key );
+			Assert.Empty( manager.Tabs );
+			Assert.Null( manager.Active );
 		} finally { Directory.Delete( directory, true ); }
 	}
 
@@ -162,7 +166,9 @@ public sealed class CloseCoordinatorTests {
 			Assert.Equal( WidgetDialogOutcome.Yes, save.Result.Outcome );
 			Assert.Equal( CloseResolution.Closed, await close.CompleteAsync( save, CancellationToken.None ) );
 			Assert.Equal( "!before", await File.ReadAllTextAsync( path ) );
-			DocumentEntry untitled = manager.Active!;
+			Assert.Empty( manager.Tabs );
+			Assert.Null( manager.Active );
+			DocumentEntry untitled = manager.OpenUntitled();
 			untitled.Shell.Process( WidgetInput.Paste( "new" ), TimeSpan.FromMilliseconds( 5 ) );
 			Assert.False( close.Request( untitled.Key ) );
 			WidgetDialogCompletedAction needPath = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single(

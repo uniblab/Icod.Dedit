@@ -23,10 +23,47 @@ namespace Icod.Dedit.Tests;
 
 using Icod.DCurses;
 using Icod.Dedit.Documents;
+using Icod.Dedit.Presentation;
 using Icod.Widgets;
 using Xunit;
 
 public sealed class OpenPickerTests {
+	[Fact]
+	public async Task SuccessfulOpenFromEmptyWorkspaceRestoresEditorTabsAndCaret() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-open-picker-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "opened.txt" );
+			await File.WriteAllTextAsync( path, "opened" );
+			using WidgetHost host = new( new CursesScreen( 60, 18 ), WidgetTheme.Default );
+			WidgetTabStrip tabs = new( "tabs" ); host.Attach( tabs );
+			DeditWorkspacePresenter workspace = new( tabs );
+			using DocumentManager manager = new( host );
+			workspace.Update( manager.Tabs, manager.Active?.Key, host.Screen.Bounds );
+			Assert.False( tabs.IsVisible );
+
+			LocalWidgetFileSystemProvider provider = new();
+			WidgetFilePicker picker = new( "open-file", provider, directory,
+				allowMultiple: true, [ WidgetFileFilter.AllFiles ] );
+			host.ShowModal( picker );
+			Assert.True( picker.ApplyLoadResult( await WidgetBrowserLoader.LoadAsync(
+				provider, picker.RequestDirectory( directory ), CancellationToken.None ) ) );
+			picker.ToggleFile( path );
+			Assert.True( picker.ApplyValidationResult( await WidgetPickerValidationLoader.ValidateAsync(
+				provider, picker.RequestAccept(), CancellationToken.None ) ) );
+			WidgetDialogCompletedAction selected = Assert.IsType<WidgetDialogCompletedAction>( Assert.Single( host.DrainActions() ) );
+			string selectedPath = Assert.Single( Assert.IsAssignableFrom<IReadOnlyList<string>>( selected.Result.Value ) );
+			DocumentEntry opened = manager.Open( await new DocumentFileService( directory ).OpenAsync(
+				selectedPath, CancellationToken.None ) );
+			workspace.Update( manager.Tabs, manager.Active?.Key, host.Screen.Bounds );
+
+			Assert.Same( opened, manager.Active );
+			Assert.True( tabs.IsVisible );
+			Assert.True( opened.Shell.IsActive );
+			Assert.Same( opened.Shell.Editor, host.FocusedWidget );
+			Assert.True( host.GetCaretIntent()?.IsVisible );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
 	[Fact]
 	public async Task AcceptedMultipleFilesOpenInSelectionOrderWithoutReplacingExistingTab() {
 		string directory = Directory.CreateTempSubdirectory( "dedit-open-picker-" ).FullName;

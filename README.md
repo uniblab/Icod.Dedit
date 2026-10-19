@@ -92,7 +92,9 @@ The close control on each tab uses the same decision: Y/N/C are the shortcuts,
 with Cancel selected by default; clean documents close without a prompt. File →
 Close All visits tabs in order. File → Exit or Ctrl+Q uses the
 same per-tab decisions and exits only when the sequence completes. Closing the
-last ordinary tab creates a fresh Untitled tab.
+last tab leaves a blank workspace with document commands disabled; Ctrl+N or a
+successful Ctrl+O open restores the editor. Starting without paths still
+creates one Untitled document.
 F6 and Shift+F6 cycle focus among the visible controls; Tab still indents in
 the editor.
 Ctrl+F opens Find and Ctrl+R opens Replace. F3 and Shift+F3 repeat the last
