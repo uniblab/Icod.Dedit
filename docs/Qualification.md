@@ -4,7 +4,7 @@ This record contains historical checkpoints and current development evidence.
 Earlier sections describe their named revisions; they do not qualify the
 current head or certify a 1.0 release.
 
-## Current development head — 2026-10-19
+## Current development head — 2026-10-20
 
 | Revision and run | Scope | Result |
 | --- | --- | --- |
@@ -35,8 +35,11 @@ package checks do not replace a current-head live-terminal exercise.
 
 ### Remaining release gates
 
-- Widgets 1.8.0 is published and restored from NuGet in the current Dedit
-  candidate. Its explicit generic dialog actions and per-instance styles supply
+- Widgets 1.9.0 is published and restored from NuGet in the current Dedit
+  candidate. Dedit enables its standard auto-hidden editor scrollbar; Widgets
+  owns displayed-row range calculations, rendering, pointer and keyboard
+  scrolling, and caret/viewport synchronization. Its explicit generic dialog
+  actions and per-instance styles supply
   the common keyboard/pointer mechanism for Dedit's dirty-only red warning
   prompt. Dedit owns its Yes / Don't Save / Cancel captions, Y/N/C shortcuts,
   Cancel default, and guarded save/discard policy. The dependency also carries

@@ -8,7 +8,11 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Application and editing
 
-- Updated to Icod.Widgets 1.8.0. The 1.7.2 editing correction makes Paste
+- Updated to Icod.Widgets 1.9.0. Dedit now enables its auto-hidden vertical
+  editor scrollbar. Arrow clicks, track clicks, pointer-wheel input, and
+  Ctrl+Up/Ctrl+Down scroll by displayed rows, including wrapped
+  continuations; scrolling carries the caret at the viewport edge when needed.
+  The 1.7.2 editing correction makes Paste
   complete when clipboard text is
   identical to the active selection: the selection collapses at the resulting
   caret without changing document revision or adding undo history. Mouse menu
@@ -106,8 +110,10 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Build and validation
 
-- Updated the application dependency to Icod.Widgets 1.8.0 for explicit generic
-  dialog actions and instance styles. Dedit supplies the dirty-close captions,
+- Updated the application dependency to Icod.Widgets 1.9.0 for its opt-in
+  auto-hidden editor scrollbar, displayed-row scrolling and caret/viewport
+  synchronization, while retaining explicit generic dialog actions and
+  instance styles. Dedit supplies the dirty-close captions,
   Y/N/C mnemonics, safe default and red warning style while Widgets owns common
   keyboard and pointer activation. The dependency also includes identical-paste
   completion, wrapped visual-row caret navigation, preferred-column retention,

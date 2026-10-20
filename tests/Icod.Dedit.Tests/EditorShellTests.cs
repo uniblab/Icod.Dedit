@@ -88,6 +88,31 @@ public sealed class EditorShellTests {
 	}
 
 	[Fact]
+	public void EditorShowsAutoHiddenScrollbarOnlyWhenDocumentOverflows() {
+		using WidgetHost host = new( new CursesScreen( 12, 6 ), PresentationTheme() );
+		using EditorShell shell = new( host, "one\ntwo" ); host.Render();
+
+		Assert.NotEqual( "▲", host.Screen.StandardWindow.GetCell( 2, 11 ).Content );
+		shell.Editor.View.SetSelection( shell.Document.Length, shell.Document.Length );
+		shell.Process( WidgetInput.Paste( "\nthree\nfour" ), TimeSpan.Zero ); host.Render();
+
+		Assert.Equal( "▲", host.Screen.StandardWindow.GetCell( 2, 11 ).Content );
+		Assert.Equal( "▼", host.Screen.StandardWindow.GetCell( 4, 11 ).Content );
+	}
+
+	[Fact]
+	public void ControlDownScrollsDeditEditorByOneWrappedDisplayedRow() {
+		using WidgetHost host = new( new CursesScreen( 8, 6 ), PresentationTheme() );
+		DeditPreferences preferences = new( 4, 4, true, TextFileEncoding.Utf8 );
+		using EditorShell shell = new( host, "abcdefghij\nsecond\nthird", preferences: preferences ); host.Render();
+
+		shell.Process( WidgetInput.Key( WidgetKey.Down, WidgetInputModifiers.Control ), TimeSpan.Zero ); host.Render();
+
+		Assert.Equal( 1, shell.Editor.VerticalScrollRange.Offset );
+		Assert.Equal( 0, shell.Editor.View.VerticalOffset );
+	}
+
+	[Fact]
 	public void DecorativeGutterClickLeavesSelectionUnchanged() {
 		using WidgetHost host = new( new CursesScreen( 20, 6 ), PresentationTheme() );
 		using EditorShell shell = new( host, "first\nsecond" ); shell.Editor.View.SetSelection( 1, 4 ); host.Render();

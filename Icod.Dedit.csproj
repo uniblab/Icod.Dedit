@@ -37,7 +37,7 @@
 		<PackageId>Icod.Dedit</PackageId>
 		<Authors>Timothy J. Bruce</Authors>
 		<Description>Tabbed terminal text editor for .NET 8, 9 and 10.</Description>
-		<PackageReleaseNotes>Initial 1.0.0 release: independent editable tabs, safe file saves, Unicode text editing with wrapped visual-row navigation, pointer and accelerator menu commands, search and replace, linewise clipboard, and explicit file-format controls. See CHANGELOG.md for full history.</PackageReleaseNotes>
+		<PackageReleaseNotes>Initial 1.0.0 release: independent editable tabs, safe file saves, Unicode text editing with wrapped visual-row navigation and an auto-hidden vertical scrollbar, pointer and accelerator menu commands, search and replace, linewise clipboard, and explicit file-format controls. See CHANGELOG.md for full history.</PackageReleaseNotes>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageProjectUrl>https://github.com/uniblab/Icod.Dedit</PackageProjectUrl>
 		<RepositoryType>git</RepositoryType>
@@ -49,7 +49,7 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<Compile Include="src/**/*.cs" />
-		<PackageReference Include="Icod.Widgets" Version="1.8.0" />
+		<PackageReference Include="Icod.Widgets" Version="1.9.0" />
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
 			<_Parameter1>Icod.Dedit.Tests</_Parameter1>
 		</AssemblyAttribute>

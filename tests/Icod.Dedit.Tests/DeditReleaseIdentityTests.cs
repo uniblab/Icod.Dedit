@@ -26,29 +26,32 @@ using Xunit;
 
 public sealed class DeditReleaseIdentityTests {
 	[Fact]
-	public void CandidateUsesPublishedWidgets180() {
+	public void CandidateUsesPublishedWidgets190() {
 		XDocument project = XDocument.Load( Path.Combine( RepositoryRoot(), "Icod.Dedit.csproj" ) );
 		XElement dependency = Assert.Single( project.Descendants( "PackageReference" ),
 			candidate => string.Equals( (string?)candidate.Attribute( "Include" ), "Icod.Widgets", StringComparison.Ordinal ) );
 
-		Assert.Equal( "1.8.0", (string?)dependency.Attribute( "Version" ) );
+		Assert.Equal( "1.9.0", (string?)dependency.Attribute( "Version" ) );
 		Assert.Equal( "1.0.0", Assert.Single( project.Descendants( "Version" ) ).Value );
 		Assert.Equal( "1.0.0", Assert.Single( project.Descendants( "PackageVersion" ) ).Value );
 	}
 
 	[Fact]
-	public void ToolVerifierRequiresWidgets180() {
+	public void ToolVerifierRequiresWidgets190() {
 		string verifier = File.ReadAllText( Path.Combine( RepositoryRoot(), "packaging", "VerifyDeditTool.ps1" ) );
 
-		Assert.Contains( "Icod.Widgets/1.8.0", verifier, StringComparison.Ordinal );
-		Assert.DoesNotContain( "Icod.Widgets/1.7.2", verifier, StringComparison.Ordinal );
+		Assert.Contains( "Icod.Widgets/1.9.0", verifier, StringComparison.Ordinal );
+		Assert.DoesNotContain( "Icod.Widgets/1.8.0", verifier, StringComparison.Ordinal );
 	}
 
 	[Fact]
-	public void CuratedNotesDescribeWidgets180DirtyCloseBehavior() {
+	public void CuratedNotesDescribeWidgets190EditorScrollbarAndDirtyCloseBehavior() {
 		string notes = File.ReadAllText( Path.Combine( RepositoryRoot(), "docs", "releases", "1.0.0.md" ) );
 
-		Assert.Contains( "Icod.Widgets 1.8.0", notes, StringComparison.Ordinal );
+		Assert.Contains( "Icod.Widgets 1.9.0", notes, StringComparison.Ordinal );
+		Assert.Contains( "auto-hidden vertical scrollbar", notes, StringComparison.OrdinalIgnoreCase );
+		Assert.Contains( "Ctrl+Up/Ctrl+Down", notes, StringComparison.Ordinal );
+		Assert.Contains( "displayed rows", notes, StringComparison.OrdinalIgnoreCase );
 		Assert.Contains( "Yes / Don't Save / Cancel", notes, StringComparison.Ordinal );
 		Assert.Contains( "Y/N/C", notes, StringComparison.Ordinal );
 		Assert.Contains( "Cancel", notes, StringComparison.Ordinal );
@@ -77,14 +80,14 @@ public sealed class DeditReleaseIdentityTests {
 	}
 
 	[Fact]
-	public void LibraryContractsTrackPublishedWidgets180() {
+	public void LibraryContractsTrackPublishedWidgets190() {
 		string contracts = File.ReadAllText( Path.Combine( RepositoryRoot(), "docs", "Library-Contracts.md" ) );
 
-		Assert.Contains( "`Icod.Widgets 1.8.0`", contracts, StringComparison.Ordinal );
-		Assert.Contains( "/v1.8.0/README.md", contracts, StringComparison.Ordinal );
+		Assert.Contains( "`Icod.Widgets 1.9.0`", contracts, StringComparison.Ordinal );
+		Assert.Contains( "/v1.9.0/README.md", contracts, StringComparison.Ordinal );
 		Assert.Contains( "`Arrange(CursesRectangle)`", contracts, StringComparison.Ordinal );
 		Assert.Contains( "Dedit supplies the dirty-close dialog bounds", contracts, StringComparison.Ordinal );
-		Assert.DoesNotContain( "`Icod.Widgets 1.7.2`", contracts, StringComparison.Ordinal );
+		Assert.DoesNotContain( "`Icod.Widgets 1.8.0`", contracts, StringComparison.Ordinal );
 	}
 
 	[Fact]
@@ -97,7 +100,8 @@ public sealed class DeditReleaseIdentityTests {
 		Assert.Contains( "fixed line numbers in a decorative left gutter", readme, StringComparison.Ordinal );
 		Assert.Contains( "current logical line", readme, StringComparison.Ordinal );
 		Assert.Contains( "identical to an active selection", readme, StringComparison.Ordinal );
-		Assert.DoesNotContain( "Icod.Widgets 1.8.0", readme, StringComparison.Ordinal );
+		Assert.Contains( "auto-hidden vertical scrollbar", readme, StringComparison.OrdinalIgnoreCase );
+		Assert.DoesNotContain( "Icod.Widgets 1.9.0", readme, StringComparison.Ordinal );
 		Assert.DoesNotContain( "## Release history", readme, StringComparison.OrdinalIgnoreCase );
 	}
 
