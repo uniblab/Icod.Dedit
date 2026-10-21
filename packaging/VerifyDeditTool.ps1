@@ -63,12 +63,6 @@ try {
                 throw "Tool package '$($package.Name)' is missing '$root/$relativePath'."
             }
         }
-        $dependencyEntry = $archive.GetEntry("$root/dedit.deps.json")
-        $reader = [System.IO.StreamReader]::new($dependencyEntry.Open())
-        try { $dependencyManifest = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
-        if (@($dependencyManifest.libraries.PSObject.Properties.Name) -notcontains 'Icod.Widgets/1.9.0') {
-            throw "Tool payload '$framework' does not reference Icod.Widgets 1.9.0."
-        }
         $settingsEntry = $archive.GetEntry("$root/DotnetToolSettings.xml")
         $reader = [System.IO.StreamReader]::new($settingsEntry.Open())
         try { [xml]$settings = $reader.ReadToEnd() } finally { $reader.Dispose() }

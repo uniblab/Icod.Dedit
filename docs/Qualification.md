@@ -36,11 +36,12 @@ package checks do not replace a current-head live-terminal exercise.
 
 ### Remaining release gates
 
-- Widgets 1.9.0 is published and restored from NuGet in the current Dedit
-  candidate. Dedit enables its standard auto-hidden editor scrollbar; Widgets
-  owns displayed-row range calculations, rendering, pointer and keyboard
-  scrolling, and caret/viewport synchronization. Its explicit generic dialog
-  actions and per-instance styles supply
+- Widgets 1.10.0 is published and restored from NuGet in the current Dedit
+  candidate. Dedit enables its standard auto-hidden vertical and horizontal
+  editor scrollbars; the horizontal bar appears only in no-wrap mode. Widgets
+  owns two-axis range and layout, rendering, pointer and keyboard scrolling,
+  context commands, and caret/viewport synchronization. Its explicit generic
+  dialog actions and per-instance styles supply
   the common keyboard/pointer mechanism for Dedit's dirty-only red warning
   prompt. Dedit owns its Yes / Don't Save / Cancel captions, Y/N/C shortcuts,
   Cancel default, and guarded save/discard policy. The dependency also carries

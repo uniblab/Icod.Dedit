@@ -101,6 +101,34 @@ public sealed class EditorShellTests {
 	}
 
 	[Fact]
+	public void NoWrapOverflowComposesBothScrollbarsUntilWrappingIsEnabled() {
+		using WidgetHost host = new( new CursesScreen( 12, 6 ), PresentationTheme() );
+		using EditorShell shell = new( host, "abcdefghijklmnop\nsecond\nthird" ); host.Render();
+
+		Assert.Equal( "▲", host.Screen.StandardWindow.GetCell( 2, 11 ).Content );
+		Assert.Equal( "▼", host.Screen.StandardWindow.GetCell( 3, 11 ).Content );
+		Assert.Equal( "◄", host.Screen.StandardWindow.GetCell( 4, 2 ).Content );
+		Assert.Equal( "►", host.Screen.StandardWindow.GetCell( 4, 10 ).Content );
+		Assert.True( host.Screen.StandardWindow.GetCell( 4, 11 ).IsBlank );
+		( long anchor, long caret, long horizontal, long vertical ) before = ( shell.Editor.View.Anchor,
+			shell.Editor.View.Caret, shell.Editor.HorizontalScrollRange.Offset, shell.Editor.VerticalScrollRange.Offset );
+
+		IReadOnlyList<WidgetAction> press = shell.Process( WidgetInput.PointerInput( new CursesMouseEvent(
+			CursesMouseAction.Press, CursesMouseButton.Primary, 11, 4 ) ), TimeSpan.Zero );
+		IReadOnlyList<WidgetAction> release = shell.Process( WidgetInput.PointerInput( new CursesMouseEvent(
+			CursesMouseAction.Release, CursesMouseButton.Primary, 11, 4 ) ), TimeSpan.FromMilliseconds( 1 ) );
+
+		Assert.Empty( press ); Assert.Empty( release );
+		Assert.Equal( before, ( shell.Editor.View.Anchor, shell.Editor.View.Caret,
+			shell.Editor.HorizontalScrollRange.Offset, shell.Editor.VerticalScrollRange.Offset ) );
+
+		shell.Editor.View.WrapMode = CursesTextWrapMode.Word; host.Render();
+
+		Assert.NotEqual( "◄", host.Screen.StandardWindow.GetCell( 4, 2 ).Content );
+		Assert.NotEqual( "►", host.Screen.StandardWindow.GetCell( 4, 10 ).Content );
+	}
+
+	[Fact]
 	public void ControlDownScrollsDeditEditorByOneWrappedDisplayedRow() {
 		using WidgetHost host = new( new CursesScreen( 8, 6 ), PresentationTheme() );
 		DeditPreferences preferences = new( 4, 4, true, TextFileEncoding.Utf8 );

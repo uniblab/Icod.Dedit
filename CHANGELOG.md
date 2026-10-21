@@ -8,10 +8,14 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Application and editing
 
-- Updated to Icod.Widgets 1.9.0. Dedit now enables its auto-hidden vertical
-  editor scrollbar. Arrow clicks, track clicks, pointer-wheel input, and
-  Ctrl+Up/Ctrl+Down scroll by displayed rows, including wrapped
-  continuations; scrolling carries the caret at the viewport edge when needed.
+- Updated to Icod.Widgets 1.10.0. Dedit now enables its auto-hidden vertical
+  and horizontal editor scrollbars. The horizontal bar appears only in no-wrap
+  mode; ▲/▼ and ◄/► arrows step by one displayed row or column, track clicks
+  page, thumb drags move proportionally, and right-click opens the standard
+  scroll commands. Modified track clicks retain normal paging rather than
+  offering an unsupported direct-position jump. Pointer-wheel input and
+  Ctrl+Up/Ctrl+Down scroll by displayed rows, including wrapped continuations;
+  scrolling carries the caret at the viewport edge when needed.
   The 1.7.2 editing correction makes Paste
   complete when clipboard text is
   identical to the active selection: the selection collapses at the resulting
@@ -110,8 +114,9 @@ The entries under Unreleased describe implemented behavior. They are not a
 
 ### Build and validation
 
-- Updated the application dependency to Icod.Widgets 1.9.0 for its opt-in
-  auto-hidden editor scrollbar, displayed-row scrolling and caret/viewport
+- Updated the application and measurements dependencies to Icod.Widgets 1.10.0
+  for opt-in auto-hidden two-axis editor scrollbars, proportional thumb drag,
+  track paging, context commands, displayed-row scrolling and caret/viewport
   synchronization, while retaining explicit generic dialog actions and
   instance styles. Dedit supplies the dirty-close captions,
   Y/N/C mnemonics, safe default and red warning style while Widgets owns common

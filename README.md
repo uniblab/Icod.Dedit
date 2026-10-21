@@ -115,10 +115,10 @@ unnumbered, gutter clicks leave the caret and selection unchanged, and a
 viewport too narrow for both gutter and text gives the full width to text.
 Vertical movement traverses wrapped screen rows while retaining its preferred
 visual column; the status row continues to report logical line and character.
-An auto-hidden vertical scrollbar appears only when the document exceeds the
-viewport. Its arrows, track, pointer wheel, and Ctrl+Up/Ctrl+Down scroll by
-displayed rows, including wrapped continuations; when scrolling would leave the
-caret off-screen, the viewport carries it along at the nearest visible edge.
+Auto-hidden vertical and horizontal scrollbars appear only when their content
+exceeds the viewport; the horizontal bar is limited to no-wrap mode. Standard
+scroll controls move the viewport while retaining caret visibility, including
+displayed-row navigation through wrapped continuations.
 
 - [Product and architecture design](https://github.com/uniblab/Icod.Dedit/blob/main/docs/DESIGN.md)
 - [Master implementation plan](https://github.com/uniblab/Icod.Dedit/blob/main/docs/superpowers/plans/2026-10-11-dedit-master-plan.md)
