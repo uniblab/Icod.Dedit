@@ -80,9 +80,15 @@ public sealed class DeditReleaseIdentityTests {
 	}
 
 	[Fact]
-	public void ReadmeConciseDescriptionIncludesNumberedEditor() {
+	public void ReadmeProvidesManPageUserReference() {
 		string readme = File.ReadAllText( Path.Combine( RepositoryRoot(), "README.md" ) );
 
+		Assert.Contains( "## SYNOPSIS", readme, StringComparison.Ordinal );
+		Assert.Contains( "## INSTALLATION", readme, StringComparison.Ordinal );
+		Assert.Contains( "## OPTIONS", readme, StringComparison.Ordinal );
+		Assert.Contains( "## KEYBOARD COMMANDS", readme, StringComparison.Ordinal );
+		Assert.Contains( "## EXIT STATUS", readme, StringComparison.Ordinal );
+		Assert.Contains( "## SEE ALSO", readme, StringComparison.Ordinal );
 		Assert.Contains( "Yes / Don't Save / Cancel", readme, StringComparison.Ordinal );
 		Assert.Contains( "Y/N/C", readme, StringComparison.Ordinal );
 		Assert.Contains( "Cancel selected by default", readme, StringComparison.Ordinal );
@@ -91,6 +97,8 @@ public sealed class DeditReleaseIdentityTests {
 		Assert.Contains( "identical to an active selection", readme, StringComparison.Ordinal );
 		Assert.Contains( "auto-hidden vertical and horizontal scrollbars", readme, StringComparison.OrdinalIgnoreCase );
 		Assert.Contains( "no-wrap", readme, StringComparison.OrdinalIgnoreCase );
+		Assert.DoesNotContain( "## STATUS", readme, StringComparison.OrdinalIgnoreCase );
+		Assert.DoesNotContain( "## PROJECT CONTRACT", readme, StringComparison.OrdinalIgnoreCase );
 		Assert.DoesNotContain( "## Release history", readme, StringComparison.OrdinalIgnoreCase );
 	}
 
