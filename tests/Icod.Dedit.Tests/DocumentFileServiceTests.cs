@@ -1,0 +1,335 @@
+/*
+	Icod.Dedit.Tests
+	Verifies bounded file loading leaves failures explicit.
+	Copyright (C) 2026  Timothy J. Bruce <uniblab@hotmail.com>
+*/
+
+/*
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+namespace Icod.Dedit.Tests;
+
+using System.Security.Cryptography;
+using System.Diagnostics;
+using Icod.Dedit.Documents;
+using Icod.DCurses;
+using Icod.Widgets;
+using Xunit;
+
+public sealed class DocumentFileServiceTests {
+	[SkippableFact]
+	public async Task RetargetedParentDuringNewSaveLeavesBothDirectoriesWithoutTemporaryFiles() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-new-retarget-" ).FullName;
+		try {
+			string first = Directory.CreateDirectory( Path.Combine( directory, "first" ) ).FullName;
+			string second = Directory.CreateDirectory( Path.Combine( directory, "second" ) ).FullName;
+			string alias = Path.Combine( directory, "alias" );
+			SymlinkTestSupport.CreateDirectory( alias, first );
+			DocumentFileService files = new( directory, beforeSaveStage: stage => {
+				if ( stage != DocumentSaveStage.BeforeReplacement ) return;
+				Directory.Delete( alias );
+				Directory.CreateSymbolicLink( alias, second );
+			} );
+			await Assert.ThrowsAnyAsync<IOException>( () => files.SaveNewAsync( Path.Combine( alias, "new.txt" ),
+				"editor", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Empty( Directory.GetFiles( first ) );
+			Assert.Empty( Directory.GetFiles( second ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task CancellationAtNewFileReplacementLeavesTargetAbsentAndRemovesTemporaryFile() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-new-cancel-" ).FullName;
+		try {
+			using CancellationTokenSource canceled = new();
+			DocumentFileService files = new( directory, beforeSaveStage: stage => {
+				if ( stage == DocumentSaveStage.BeforeReplacement ) canceled.Cancel();
+			} );
+			await Assert.ThrowsAnyAsync<OperationCanceledException>( () => files.SaveNewAsync( "new.txt",
+				"editor", TextFileEncoding.Utf8, canceled.Token ) );
+			Assert.Empty( Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[SkippableFact]
+	public async Task RetargetedParentSymlinkWithIdenticalBytesIsNotOverwritten() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-parent-retarget-" ).FullName;
+		try {
+			string first = Directory.CreateDirectory( Path.Combine( directory, "first" ) ).FullName;
+			string second = Directory.CreateDirectory( Path.Combine( directory, "second" ) ).FullName;
+			string alias = Path.Combine( directory, "alias" );
+			SymlinkTestSupport.CreateDirectory( alias, first );
+			await File.WriteAllTextAsync( Path.Combine( first, "file.txt" ), "original" );
+			await File.WriteAllTextAsync( Path.Combine( second, "file.txt" ), "original" );
+			DocumentFileService files = new( directory );
+			string path = Path.Combine( alias, "file.txt" );
+			ExistingSaveTarget target = await files.CaptureExistingAsync( path, CancellationToken.None );
+			Directory.Delete( alias );
+			Directory.CreateSymbolicLink( alias, second );
+			await Assert.ThrowsAsync<IOException>( () => files.SaveAsync( path, target.Identity, target.Fingerprint,
+				"editor", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Equal( "original", await File.ReadAllTextAsync( Path.Combine( first, "file.txt" ) ) );
+			Assert.Equal( "original", await File.ReadAllTextAsync( Path.Combine( second, "file.txt" ) ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SavingOneHardLinkReplacesOnlyThatDirectoryEntry() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-hard-link-" ).FullName;
+		try {
+			string original = Path.Combine( directory, "original.txt" );
+			string alias = Path.Combine( directory, "alias.txt" );
+			await File.WriteAllTextAsync( original, "before" );
+			using Process link = new();
+			link.StartInfo = new ProcessStartInfo {
+				FileName = OperatingSystem.IsWindows() ? "cmd.exe" : "ln",
+				UseShellExecute = false, RedirectStandardError = true
+			};
+			if ( OperatingSystem.IsWindows() ) {
+				link.StartInfo.ArgumentList.Add( "/d" );
+				link.StartInfo.ArgumentList.Add( "/c" );
+				link.StartInfo.ArgumentList.Add( "mklink" );
+				link.StartInfo.ArgumentList.Add( "/H" );
+				link.StartInfo.ArgumentList.Add( alias );
+				link.StartInfo.ArgumentList.Add( original );
+			} else {
+				link.StartInfo.ArgumentList.Add( original );
+				link.StartInfo.ArgumentList.Add( alias );
+			}
+			Assert.True( link.Start() );
+			string error = await link.StandardError.ReadToEndAsync();
+			await link.WaitForExitAsync();
+			Assert.True( link.ExitCode == 0, error );
+			Assert.Equal( "before", await File.ReadAllTextAsync( alias ) );
+			Assert.NotEqual( PathIdentity.Resolve( original ), PathIdentity.Resolve( alias ) );
+
+			DocumentFileService files = new( directory );
+			using WidgetHost host = new( new CursesScreen( 40, 10 ), WidgetTheme.Default );
+			using DocumentManager manager = new( host );
+			DocumentEntry first = manager.Open( await files.OpenAsync( original, CancellationToken.None ) );
+			DocumentEntry second = manager.Open( await files.OpenAsync( alias, CancellationToken.None ) );
+			Assert.NotEqual( first.Key, second.Key );
+			LoadedTextFile opened = await files.OpenAsync( original, CancellationToken.None );
+			await files.SaveAsync( original, PathIdentity.Resolve( original ), opened.Fingerprint,
+				"after", TextFileEncoding.Utf8, CancellationToken.None );
+
+			Assert.Equal( "after", await File.ReadAllTextAsync( original ) );
+			Assert.Equal( "before", await File.ReadAllTextAsync( alias ) );
+			Assert.Equal( 2, Directory.GetFiles( directory ).Length );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task OpenResolvesAgainstInitialDirectoryAndCapturesExactBytes() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-read-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			byte[] bytes = TextFileCodec.Encode( "界\r\nnext\n", TextFileEncoding.Utf16BigEndian );
+			await File.WriteAllBytesAsync( path, bytes );
+			DocumentFileService service = new( directory );
+			LoadedTextFile result = await service.OpenAsync( "sample.txt", CancellationToken.None );
+			Assert.Equal( path, result.FullPath );
+			Assert.Equal( "界\r\nnext\n", result.Content.Text );
+			Assert.Equal( TextFileEncoding.Utf16BigEndian, result.Content.Encoding );
+			Assert.Equal( SHA256.HashData( bytes ), result.Fingerprint );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task MissingInvalidOversizeAndCanceledFilesFailWithoutAReplacementValue() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-read-" ).FullName;
+		try {
+			DocumentFileService service = new( directory, maximumBytes: 4 );
+			await Assert.ThrowsAsync<FileNotFoundException>( async () => await service.OpenAsync( "missing", CancellationToken.None ) );
+			await File.WriteAllBytesAsync( Path.Combine( directory, "large" ), [ 1, 2, 3, 4, 5 ] );
+			await Assert.ThrowsAsync<InvalidDataException>( async () => await service.OpenAsync( "large", CancellationToken.None ) );
+			await File.WriteAllBytesAsync( Path.Combine( directory, "invalid" ), [ 0xFF ] );
+			await Assert.ThrowsAsync<InvalidDataException>( async () => await service.OpenAsync( "invalid", CancellationToken.None ) );
+			using CancellationTokenSource canceled = new(); canceled.Cancel();
+			await Assert.ThrowsAnyAsync<OperationCanceledException>( async () => await service.OpenAsync( "invalid", canceled.Token ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SavePreservesSelectedEncodingAndMixedTerminators() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			byte[] original = TextFileCodec.Encode( "old\r\n", TextFileEncoding.Utf16BigEndian );
+			await File.WriteAllBytesAsync( path, original );
+			DocumentFileService service = new( directory );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			string identity = ( await service.CaptureExistingAsync( path, CancellationToken.None ) ).Identity;
+			string edited = "界\r\nnext\nend\r";
+			byte[] fingerprint = await service.SaveAsync( path, identity, loaded.Fingerprint, edited,
+				TextFileEncoding.Utf16BigEndian, CancellationToken.None );
+			byte[] expected = TextFileCodec.Encode( edited, TextFileEncoding.Utf16BigEndian );
+			Assert.Equal( expected, await File.ReadAllBytesAsync( path ) );
+			Assert.Equal( SHA256.HashData( expected ), fingerprint );
+			Assert.Single( Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SaveRefusesExternalChangeAndKeepsBothVersions() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "original" );
+			DocumentFileService service = new( directory );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			string identity = ( await service.CaptureExistingAsync( path, CancellationToken.None ) ).Identity;
+			await File.WriteAllTextAsync( path, "external" );
+			await Assert.ThrowsAsync<IOException>( () => service.SaveAsync( path, identity, loaded.Fingerprint,
+				"editor", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Equal( "external", await File.ReadAllTextAsync( path ) );
+			Assert.Single( Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SaveRefusesReadOnlyTargetWithoutLeavingTemporaryFiles() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-save-" ).FullName;
+		string path = Path.Combine( directory, "sample.txt" );
+		try {
+			await File.WriteAllTextAsync( path, "original" );
+			DocumentFileService service = new( directory );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			string identity = ( await service.CaptureExistingAsync( path, CancellationToken.None ) ).Identity;
+			File.SetAttributes( path, File.GetAttributes( path ) | FileAttributes.ReadOnly );
+			await Assert.ThrowsAnyAsync<Exception>( () => service.SaveAsync( path, identity, loaded.Fingerprint,
+				"editor", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Equal( "original", await File.ReadAllTextAsync( path ) );
+			Assert.Single( Directory.GetFiles( directory ) );
+		} finally {
+			if ( File.Exists( path ) ) File.SetAttributes( path, FileAttributes.Normal );
+			Directory.Delete( directory, true );
+		}
+	}
+
+	[Fact]
+	public async Task CanceledSaveDoesNotTouchDestination() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "original" );
+			DocumentFileService service = new( directory );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			string identity = ( await service.CaptureExistingAsync( path, CancellationToken.None ) ).Identity;
+			using CancellationTokenSource canceled = new(); canceled.Cancel();
+			await Assert.ThrowsAnyAsync<OperationCanceledException>( () => service.SaveAsync( path, identity,
+				loaded.Fingerprint, "editor", TextFileEncoding.Utf8, canceled.Token ) );
+			Assert.Equal( "original", await File.ReadAllTextAsync( path ) );
+			Assert.Single( Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SaveNewCreatesExactBytesAndRejectsExistingTarget() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-new-save-" ).FullName;
+		try {
+			DocumentFileService service = new( directory );
+			string path = Path.Combine( directory, "sample.txt" );
+			byte[] fingerprint = await service.SaveNewAsync( "sample.txt", "界\r\nnext", TextFileEncoding.Utf8Bom, CancellationToken.None );
+			byte[] expected = TextFileCodec.Encode( "界\r\nnext", TextFileEncoding.Utf8Bom );
+			Assert.Equal( expected, await File.ReadAllBytesAsync( path ) );
+			Assert.Equal( SHA256.HashData( expected ), fingerprint );
+			await Assert.ThrowsAsync<IOException>( () => service.SaveNewAsync( path, "overwrite", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Equal( expected, await File.ReadAllBytesAsync( path ) );
+			Assert.Single( Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task SavePreservesTerminalControlCharactersAsFileData() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-control-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "control.txt" );
+			string exact = "a\u001b]52;c;payload\u0007\u009bb\r\n";
+			DocumentFileService service = new( directory );
+
+			await service.SaveNewAsync( path, exact, TextFileEncoding.Utf8, CancellationToken.None );
+
+			Assert.Equal( TextFileCodec.Encode( exact, TextFileEncoding.Utf8 ), await File.ReadAllBytesAsync( path ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task InjectedWriteFailureLeavesOriginalBytesAndRemovesTemporaryFile() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-failed-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "original" );
+			DocumentFileService service = new( directory, beforeSaveStage: stage => {
+				if ( stage == DocumentSaveStage.BeforeWrite ) throw new IOException( "Injected write failure." );
+			} );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			string identity = ( await service.CaptureExistingAsync( path, CancellationToken.None ) ).Identity;
+			await Assert.ThrowsAsync<IOException>( () => service.SaveAsync( path, identity, loaded.Fingerprint,
+				"edited", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Equal( "original", await File.ReadAllTextAsync( path ) );
+			Assert.Equal( [ path ], Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task InjectedReplacementFailureLeavesOriginalBytesAndRemovesTemporaryFile() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-failed-save-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "original" );
+			DocumentFileService service = new( directory, beforeSaveStage: stage => {
+				if ( stage == DocumentSaveStage.BeforeReplacement ) throw new IOException( "Injected replacement failure." );
+			} );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			string identity = ( await service.CaptureExistingAsync( path, CancellationToken.None ) ).Identity;
+			await Assert.ThrowsAsync<IOException>( () => service.SaveAsync( path, identity, loaded.Fingerprint,
+				"edited", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Equal( "original", await File.ReadAllTextAsync( path ) );
+			Assert.Equal( [ path ], Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+	[Fact]
+	public async Task InjectedNewFileReplacementFailureLeavesTargetAbsentAndRemovesTemporaryFile() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-failed-new-save-" ).FullName;
+		try {
+			DocumentFileService service = new( directory, beforeSaveStage: stage => {
+				if ( stage == DocumentSaveStage.BeforeReplacement ) throw new IOException( "Injected replacement failure." );
+			} );
+			await Assert.ThrowsAsync<IOException>( () => service.SaveNewAsync( "draft.txt", "draft",
+				TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Empty( Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+	[Fact]
+	public async Task ExternalEditAfterFinalPreflightIsNotOverwritten() {
+		string directory = Directory.CreateTempSubdirectory( "dedit-last-check-" ).FullName;
+		try {
+			string path = Path.Combine( directory, "sample.txt" );
+			await File.WriteAllTextAsync( path, "original" );
+			DocumentFileService service = new( directory, beforeSaveStage: stage => {
+				if ( stage == DocumentSaveStage.BeforeReplacement ) File.WriteAllText( path, "external" );
+			} );
+			LoadedTextFile loaded = await service.OpenAsync( path, CancellationToken.None );
+			string identity = ( await service.CaptureExistingAsync( path, CancellationToken.None ) ).Identity;
+			await Assert.ThrowsAsync<IOException>( () => service.SaveAsync( path, identity, loaded.Fingerprint,
+				"edited", TextFileEncoding.Utf8, CancellationToken.None ) );
+			Assert.Equal( "external", await File.ReadAllTextAsync( path ) );
+			Assert.Equal( [ path ], Directory.GetFiles( directory ) );
+		} finally { Directory.Delete( directory, true ); }
+	}
+
+}

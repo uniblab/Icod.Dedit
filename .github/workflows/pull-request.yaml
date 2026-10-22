@@ -1,0 +1,69 @@
+name: pull-request
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CONFIGURATION: Staging
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    outputs:
+      has_solution: ${{ steps.repository.outputs.has_solution }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+      - id: repository
+        shell: pwsh
+        run: ./packaging/Get-RepositoryMetadata.ps1 -Configuration '${{ env.CONFIGURATION }}' -GitHubOutputPath $env:GITHUB_OUTPUT
+      - name: Require curated notes for package version
+        shell: pwsh
+        run: ./packaging/Assert-ReleaseNotes.ps1 -Configuration '${{ env.CONFIGURATION }}'
+
+  validate:
+    needs: metadata
+    if: needs.metadata.outputs.has_solution == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: Windows
+          - os: ubuntu-latest
+            name: Linux
+          - os: macos-latest
+            name: macOS
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+      - name: Build, test, pack and install Staging tool
+        shell: pwsh
+        run: ./packaging/VerifyDistribution.ps1 -Configuration '${{ env.CONFIGURATION }}'
+      - name: Verify local pack clears a stale version
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          Set-Content -Path artifacts/Icod.Dedit.0.1.0.nupkg -Value stale
+          ./packaging/Invoke-Build.ps1 -Section pack -Configuration '${{ env.CONFIGURATION }}'
+          ./packaging/Invoke-Build.ps1 -Section validate -Configuration '${{ env.CONFIGURATION }}'
